@@ -1,0 +1,6 @@
+{
+  "name": "Coach Sérgio Cunha - Acompanhamento de Treino e Performance",
+  "description": "Plataforma exclusiva de acompanhamento de treino, nutrição, evolução física e comunicação direta com o Personal Trainer Sérgio Cunha.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

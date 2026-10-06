@@ -1,0 +1,92 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isCoach() {
+      return isSignedIn() && (
+        request.auth.token.email == 'sgpmcunha@gmail.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'coach')
+      );
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isCoach();
+      allow list: if isCoach();
+      allow create: if isSignedIn() && (request.auth.uid == userId || isCoach());
+      allow update: if (isOwner(userId) || isCoach());
+      allow delete: if isCoach();
+    }
+
+    // Exercises catalog
+    match /exercises/{exerciseId} {
+      allow read: if isSignedIn();
+      allow write: if isCoach();
+    }
+
+    // Workout Plans
+    match /workout_plans/{planId} {
+      allow get: if isSignedIn() && (resource.data.clientId == request.auth.uid || isCoach());
+      allow list: if isSignedIn() && (resource.data.clientId == request.auth.uid || isCoach());
+      allow write: if isCoach();
+    }
+
+    // Nutrition Plans
+    match /nutrition_plans/{planId} {
+      allow get: if isSignedIn() && (resource.data.clientId == request.auth.uid || resource.data.isTemplate == true || isCoach());
+      allow list: if isSignedIn() && (resource.data.clientId == request.auth.uid || resource.data.isTemplate == true || isCoach());
+      allow write: if isCoach();
+    }
+
+    // Progress Logs
+    match /progress_logs/{logId} {
+      allow get: if isSignedIn() && (resource.data.clientId == request.auth.uid || isCoach());
+      allow list: if isSignedIn() && (resource.data.clientId == request.auth.uid || isCoach());
+      allow create: if isSignedIn() && (request.resource.data.clientId == request.auth.uid || isCoach());
+      allow update, delete: if isSignedIn() && (resource.data.clientId == request.auth.uid || isCoach());
+    }
+
+    // Workout Logs
+    match /workout_logs/{logId} {
+      allow get: if isSignedIn() && (resource.data.clientId == request.auth.uid || isCoach());
+      allow list: if isSignedIn() && (resource.data.clientId == request.auth.uid || isCoach());
+      allow create: if isSignedIn() && (request.resource.data.clientId == request.auth.uid || isCoach());
+      allow update, delete: if isSignedIn() && (resource.data.clientId == request.auth.uid || isCoach());
+    }
+
+    // Messages
+    match /messages/{messageId} {
+      allow get: if isSignedIn() && (resource.data.clientId == request.auth.uid || resource.data.senderId == request.auth.uid || isCoach());
+      allow list: if isSignedIn() && (resource.data.clientId == request.auth.uid || resource.data.senderId == request.auth.uid || isCoach());
+      allow create: if isSignedIn() && (request.resource.data.senderId == request.auth.uid || isCoach());
+      allow update: if isSignedIn() && (resource.data.clientId == request.auth.uid || isCoach());
+      allow delete: if isCoach();
+    }
+
+    // Notifications
+    match /notifications/{notificationId} {
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isCoach());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isCoach());
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isCoach());
+    }
+  }
+}

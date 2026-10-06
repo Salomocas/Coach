@@ -1,0 +1,189 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with role and subscription status",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 128 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "role": { "type": "string", "enum": ["client", "coach"] },
+        "subscriptionStatus": { "type": "string", "enum": ["active", "pending", "expired", "trial"] },
+        "subscriptionPlan": { "type": "string", "maxLength": 50 },
+        "subscriptionValidUntil": { "type": "string", "maxLength": 50 },
+        "coachId": { "type": "string", "maxLength": 128 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "goals": { "type": "string", "maxLength": 500 },
+        "heightCm": { "type": "number" },
+        "initialWeightKg": { "type": "number" },
+        "createdAt": { "type": "string", "maxLength": 50 },
+        "updatedAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Exercise": {
+      "title": "Exercise",
+      "description": "Reusable exercise library item created by coach",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "coachId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "category": { "type": "string", "maxLength": 50 },
+        "muscleGroup": { "type": "string", "maxLength": 50 },
+        "videoUrl": { "type": "string", "maxLength": 500 },
+        "imageUrl": { "type": "string", "maxLength": 500 },
+        "instructions": { "type": "string", "maxLength": 1000 },
+        "equipment": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["name", "coachId"]
+    },
+    "WorkoutPlan": {
+      "title": "WorkoutPlan",
+      "description": "Weekly workout plan assigned to a client",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "clientId": { "type": "string", "maxLength": 128 },
+        "coachId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 100 },
+        "weekStartDate": { "type": "string", "maxLength": 20 },
+        "weekEndDate": { "type": "string", "maxLength": 20 },
+        "status": { "type": "string", "enum": ["active", "archived", "draft"] },
+        "notes": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "maxLength": 50 },
+        "updatedAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["clientId", "coachId", "title"]
+    },
+    "NutritionPlan": {
+      "title": "NutritionPlan",
+      "description": "Weekly meal and diet plan assigned to a client or template",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "clientId": { "type": "string", "maxLength": 128 },
+        "coachId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 100 },
+        "weekStartDate": { "type": "string", "maxLength": 20 },
+        "weekEndDate": { "type": "string", "maxLength": 20 },
+        "dailyCalories": { "type": "number" },
+        "isTemplate": { "type": "boolean" },
+        "notes": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "maxLength": 50 },
+        "updatedAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["coachId", "title"]
+    },
+    "ProgressLog": {
+      "title": "ProgressLog",
+      "description": "Periodic weight, measurements and photos tracking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "clientId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 20 },
+        "weightKg": { "type": "number" },
+        "bodyFatPercent": { "type": "number" },
+        "chestCm": { "type": "number" },
+        "waistCm": { "type": "number" },
+        "hipsCm": { "type": "number" },
+        "armCm": { "type": "number" },
+        "thighCm": { "type": "number" },
+        "photoFront": { "type": "string", "maxLength": 500 },
+        "photoSide": { "type": "string", "maxLength": 500 },
+        "photoBack": { "type": "string", "maxLength": 500 },
+        "notes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["clientId", "date", "weightKg"]
+    },
+    "WorkoutLog": {
+      "title": "WorkoutLog",
+      "description": "Client performance and load logs per workout day",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "clientId": { "type": "string", "maxLength": 128 },
+        "workoutPlanId": { "type": "string", "maxLength": 128 },
+        "exerciseId": { "type": "string", "maxLength": 128 },
+        "exerciseName": { "type": "string", "maxLength": 100 },
+        "dayOfWeek": { "type": "string", "maxLength": 20 },
+        "date": { "type": "string", "maxLength": 20 },
+        "completed": { "type": "boolean" },
+        "notes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["clientId", "date"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Direct message between client and coach",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "clientId": { "type": "string", "maxLength": 128 },
+        "coachId": { "type": "string", "maxLength": 128 },
+        "senderId": { "type": "string", "maxLength": 128 },
+        "senderRole": { "type": "string", "enum": ["client", "coach"] },
+        "senderName": { "type": "string", "maxLength": 100 },
+        "text": { "type": "string", "maxLength": 2000 },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["clientId", "senderId", "text"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "System notification for training, nutrition or messages",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 100 },
+        "message": { "type": "string", "maxLength": 500 },
+        "type": { "type": "string", "enum": ["workout", "nutrition", "chat", "subscription", "system"] },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["userId", "title", "message"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles and subscription states"
+    },
+    "/exercises/{exerciseId}": {
+      "schema": { "$ref": "#/entities/Exercise" },
+      "description": "Exercise catalog with media uploads"
+    },
+    "/workout_plans/{planId}": {
+      "schema": { "$ref": "#/entities/WorkoutPlan" },
+      "description": "Weekly workout routines for athletes"
+    },
+    "/nutrition_plans/{planId}": {
+      "schema": { "$ref": "#/entities/NutritionPlan" },
+      "description": "Weekly nutrition menus and templates"
+    },
+    "/progress_logs/{logId}": {
+      "schema": { "$ref": "#/entities/ProgressLog" },
+      "description": "Weight, measurements and physical evolution photos"
+    },
+    "/workout_logs/{logId}": {
+      "schema": { "$ref": "#/entities/WorkoutLog" },
+      "description": "Client recorded weights, sets and series"
+    },
+    "/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/Message" },
+      "description": "Direct chat conversation between coach and client"
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "Alerts for new plans and coach feedback"
+    }
+  }
+}
