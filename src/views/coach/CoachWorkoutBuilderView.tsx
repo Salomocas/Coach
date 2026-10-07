@@ -21,7 +21,7 @@ import { WorkoutPlan, DayWorkout, DayExercise, WorkoutSet, Exercise } from '../.
 
 export const CoachWorkoutBuilderView: React.FC = () => {
   const { allClients } = useAuth();
-  const { exercises, saveWorkoutPlan, activeWorkoutPlan, selectedAthleteId, setSelectedAthleteId } = useData();
+  const { exercises, saveWorkoutPlan, workoutPlans, activeWorkoutPlan, selectedAthleteId, setSelectedAthleteId } = useData();
 
   const [selectedClientId, setSelectedClientId] = useState<string>(selectedAthleteId || allClients[0]?.uid || 'client-ricardo-silva');
   const [planTitle, setPlanTitle] = useState('Mesociclo de Hipertrofia & Força Funcional');
@@ -44,6 +44,27 @@ export const CoachWorkoutBuilderView: React.FC = () => {
     { dayOfWeek: 'Sábado', dayIndex: 5, name: 'Cardio & Mobilidade', isRestDay: false, focusArea: 'Condicionamento', exercises: [] },
     { dayOfWeek: 'Domingo', dayIndex: 6, name: 'Descanso Total', isRestDay: true, focusArea: 'Recuperação', exercises: [] },
   ]);
+
+  // Sync when selected athlete changes
+  React.useEffect(() => {
+    if (selectedAthleteId && selectedAthleteId !== selectedClientId) {
+      setSelectedClientId(selectedAthleteId);
+    }
+  }, [selectedAthleteId]);
+
+  // Load client's plan into the builder when client selection changes
+  React.useEffect(() => {
+    const plan = workoutPlans.find(p => p.clientId === selectedClientId && p.status === 'active') || workoutPlans.find(p => p.clientId === selectedClientId);
+    if (plan) {
+      setPlanTitle(plan.title);
+      setWeekStart(plan.weekStartDate);
+      setWeekEnd(plan.weekEndDate);
+      setPlanNotes(plan.notes || '');
+      if (plan.days && plan.days.length > 0) {
+        setDays(JSON.parse(JSON.stringify(plan.days)));
+      }
+    }
+  }, [selectedClientId, workoutPlans]);
 
   const currentDay = days[selectedDayIndex];
   const targetClient = allClients.find(c => c.uid === selectedClientId) || allClients[0];

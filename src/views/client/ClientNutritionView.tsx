@@ -19,6 +19,8 @@ export const ClientNutritionView: React.FC = () => {
   const { activeNutritionPlan } = useData();
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
   const [expandedMealId, setExpandedMealId] = useState<string | null>('meal-1');
+  const [waterIntakeMl, setWaterIntakeMl] = useState<number>(2250);
+  const [completedMeals, setCompletedMeals] = useState<Record<string, boolean>>({ 'meal-1': true, 'meal-2': true });
 
   const daysOfWeek = [
     { label: 'Seg', full: 'Segunda-feira', index: 0 },
@@ -141,12 +143,65 @@ export const ClientNutritionView: React.FC = () => {
         </div>
       </div>
 
+      {/* Interactive Water Tracker */}
+      <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-sky-500/15 text-sky-400 flex items-center justify-center font-bold shrink-0">
+            <Droplet className="w-5 h-5 fill-sky-400" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-sm text-white">Registo de Hidratação Diária</h3>
+              <span className="text-xs font-mono font-bold text-sky-400">
+                {(waterIntakeMl / 1000).toFixed(2)}L / {(currentDayNutrition?.waterIntakeLiters || 3.5).toFixed(1)}L
+              </span>
+            </div>
+            <div className="w-48 sm:w-64 bg-neutral-950 rounded-full h-2 mt-1.5 overflow-hidden border border-neutral-800">
+              <div 
+                className="bg-sky-400 h-full transition-all duration-300 rounded-full"
+                style={{ width: `${Math.min(100, (waterIntakeMl / ((currentDayNutrition?.waterIntakeLiters || 3.5) * 1000)) * 100)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => setWaterIntakeMl(prev => prev + 250)}
+            className="px-3 py-1.5 rounded-xl bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 text-neutral-200 text-xs font-semibold flex items-center gap-1 transition"
+          >
+            <span>+250ml</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setWaterIntakeMl(prev => prev + 500)}
+            className="px-3 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-xs font-bold flex items-center gap-1 transition"
+          >
+            <span>+500ml</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setWaterIntakeMl(0)}
+            className="px-2 py-1.5 rounded-xl bg-neutral-950 hover:bg-neutral-800 text-neutral-500 hover:text-neutral-300 text-[11px]"
+            title="Repor água"
+          >
+            Repor
+          </button>
+        </div>
+      </div>
+
       {/* Meals List */}
       <div className="space-y-4">
         <div className="flex items-center justify-between pb-2 border-b border-neutral-800">
-          <h2 className="text-lg sm:text-xl font-bold text-white">
-            Refeições do Dia • {currentDayNutrition?.dayOfWeek}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg sm:text-xl font-bold text-white">
+              Refeições do Dia • {currentDayNutrition?.dayOfWeek}
+            </h2>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+              {Object.values(completedMeals).filter(Boolean).length} / {currentDayNutrition?.meals.length || 0} consumidas
+            </span>
+          </div>
           <span className="text-xs text-neutral-400">
             {currentDayNutrition?.meals.length || 0} refeições estruturadas
           </span>
@@ -160,20 +215,27 @@ export const ClientNutritionView: React.FC = () => {
         ) : (
           currentDayNutrition.meals.map((meal) => {
             const isExpanded = expandedMealId === meal.id;
+            const isCompleted = !!completedMeals[meal.id];
 
             return (
               <div
                 key={meal.id}
-                className="bg-neutral-900 border border-neutral-800 hover:border-neutral-700/80 rounded-2xl overflow-hidden transition-all shadow-md"
+                className={`bg-neutral-900 border rounded-2xl overflow-hidden transition-all shadow-md ${
+                  isCompleted ? 'border-emerald-500/40 bg-neutral-900/90' : 'border-neutral-800 hover:border-neutral-700/80'
+                }`}
               >
                 {/* Meal Header */}
                 <div
-                  onClick={() => toggleMealExpand(meal.id)}
-                  className="p-4 sm:p-5 flex items-center justify-between cursor-pointer select-none"
+                  className="p-4 sm:p-5 flex items-center justify-between select-none"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-neutral-800 text-amber-500 flex items-center justify-center font-bold">
-                      <Clock className="w-5 h-5" />
+                  <div 
+                    onClick={() => toggleMealExpand(meal.id)}
+                    className="flex items-center gap-3 cursor-pointer flex-1"
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${
+                      isCompleted ? 'bg-emerald-500/20 text-emerald-400' : 'bg-neutral-800 text-amber-500'
+                    }`}>
+                      {isCompleted ? <CheckCircle2 className="w-5 h-5 text-emerald-400" /> : <Clock className="w-5 h-5" />}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
@@ -195,9 +257,30 @@ export const ClientNutritionView: React.FC = () => {
                       <span className="text-emerald-400">{meal.fatG}g G</span>
                     </div>
 
-                    <div className="p-1.5 rounded-lg bg-neutral-800 text-neutral-400">
+                    {/* Meal completed checkmark button */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCompletedMeals(prev => ({ ...prev, [meal.id]: !prev[meal.id] }));
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
+                        isCompleted
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                          : 'bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-700'
+                      }`}
+                    >
+                      <CheckCircle2 className={`w-3.5 h-3.5 ${isCompleted ? 'text-emerald-400' : 'text-neutral-500'}`} />
+                      <span>{isCompleted ? 'Consumida' : 'Marcar'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => toggleMealExpand(meal.id)}
+                      className="p-1.5 rounded-lg bg-neutral-800 text-neutral-400"
+                    >
                       {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </div>
+                    </button>
                   </div>
                 </div>
 

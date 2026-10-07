@@ -68,6 +68,7 @@ export interface WorkoutPlan {
   clientName: string;
   coachId: string;
   title: string;
+  weekNumber?: number;
   weekStartDate: string;
   weekEndDate: string;
   status: 'active' | 'archived' | 'draft';
@@ -106,6 +107,7 @@ export interface Meal {
   id: string;
   name: string;
   time: string;
+  category?: 'Pequeno-Almoço' | 'Almoço' | 'Lanche' | 'Jantar' | 'Ceia' | 'Pré/Pós-Treino';
   description?: string;
   calories: number;
   proteinG: number;
@@ -132,6 +134,7 @@ export interface NutritionPlan {
   clientName: string;
   coachId: string;
   title: string;
+  weekNumber?: number;
   weekStartDate: string;
   weekEndDate: string;
   dailyCalories: number;
@@ -196,4 +199,34 @@ export interface AppNotification {
   read: boolean;
   link?: string;
   createdAt: string;
+}
+
+export interface Invoice {
+  id: string;
+  clientId: string;
+  clientName: string;
+  amount: number; // 100
+  currency: string; // EUR
+  description: string;
+  paymentMethod: 'stripe' | 'mbway' | 'multibanco' | 'manual';
+  status: 'paid' | 'pending' | 'expired';
+  last4?: string;
+  cardBrand?: string;
+  stripePaymentIntentId?: string;
+  phone?: string;
+  entity?: string;
+  reference?: string;
+  paidAt?: string;
+  createdAt: string;
+}
+
+export interface PaymentGatewayConfig {
+  provider: 'stripe' | 'ifthenpay' | 'eupago';
+  stripePublishableKey?: string;
+  stripeSecretKey?: string;
+  stripeWebhookSecret?: string;
+  mbwayKey?: string;
+  multibancoEntity?: string;
+  multibancoSubEntity?: string;
+  antiPhishingKey?: string;
 }

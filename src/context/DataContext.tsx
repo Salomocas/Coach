@@ -23,15 +23,19 @@ import {
   ProgressLog, 
   Message, 
   AppNotification, 
-  UserProfile 
+  UserProfile,
+  Meal 
 } from '../types';
 import { 
   INITIAL_EXERCISES, 
   INITIAL_WORKOUT_PLAN, 
   INITIAL_NUTRITION_PLAN, 
+  ALL_INITIAL_WORKOUT_PLANS,
+  ALL_INITIAL_NUTRITION_PLANS,
   INITIAL_NUTRITION_TEMPLATES, 
   INITIAL_PROGRESS_LOGS, 
-  INITIAL_MESSAGES 
+  INITIAL_MESSAGES,
+  INITIAL_MEAL_LIBRARY 
 } from '../initialData';
 import { useAuth } from './AuthContext';
 
@@ -43,6 +47,7 @@ interface DataContextType {
 
   workoutPlans: WorkoutPlan[];
   activeWorkoutPlan: WorkoutPlan | null;
+  previousWorkoutPlan: WorkoutPlan | null;
   saveWorkoutPlan: (plan: WorkoutPlan) => Promise<void>;
 
   workoutLogs: WorkoutLogEntry[];
@@ -63,6 +68,8 @@ interface DataContextType {
   saveNutritionPlan: (plan: NutritionPlan) => Promise<void>;
   nutritionTemplates: NutritionTemplate[];
   applyTemplateToClient: (templateId: string, clientId: string, clientName: string) => Promise<void>;
+  mealLibrary: Meal[];
+  addMealToLibrary: (meal: Meal) => Promise<void>;
 
   progressLogs: ProgressLog[];
   addProgressLog: (log: Omit<ProgressLog, 'id' | 'createdAt'>) => Promise<void>;
@@ -77,6 +84,14 @@ interface DataContextType {
 
   selectedAthleteId: string;
   setSelectedAthleteId: (id: string) => void;
+
+  currentWeekNumber: number;
+  startNewWeekReset: (options: {
+    newWeekNumber: number;
+    startDate: string;
+    endDate: string;
+    notes?: string;
+  }) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -84,10 +99,11 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, isCoach } = useAuth();
   const [exercises, setExercises] = useState<Exercise[]>(INITIAL_EXERCISES);
-  const [workoutPlans, setWorkoutPlans] = useState<WorkoutPlan[]>([INITIAL_WORKOUT_PLAN]);
+  const [workoutPlans, setWorkoutPlans] = useState<WorkoutPlan[]>(ALL_INITIAL_WORKOUT_PLANS);
   const [workoutLogs, setWorkoutLogs] = useState<WorkoutLogEntry[]>([]);
-  const [nutritionPlans, setNutritionPlans] = useState<NutritionPlan[]>([INITIAL_NUTRITION_PLAN]);
+  const [nutritionPlans, setNutritionPlans] = useState<NutritionPlan[]>(ALL_INITIAL_NUTRITION_PLANS);
   const [nutritionTemplates, setNutritionTemplates] = useState<NutritionTemplate[]>(INITIAL_NUTRITION_TEMPLATES);
+  const [mealLibrary, setMealLibrary] = useState<Meal[]>(INITIAL_MEAL_LIBRARY);
   const [progressLogs, setProgressLogs] = useState<ProgressLog[]>(INITIAL_PROGRESS_LOGS);
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [notifications, setNotifications] = useState<AppNotification[]>([
@@ -111,6 +127,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   ]);
   const [selectedAthleteId, setSelectedAthleteId] = useState<string>('client-ricardo-silva');
+  const [currentWeekNumber, setCurrentWeekNumber] = useState<number>(1);
 
   // Client ID currently targeted: if athlete is logged in, their own UID; if coach, the selected athlete
   const targetClientId = isCoach ? selectedAthleteId : (currentUser?.uid || 'client-ricardo-silva');
@@ -324,6 +341,97 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await saveNutritionPlan(newPlan);
   };
 
+  const addMealToLibrary = async (meal: Meal) => {
+    const newLibMeal: Meal = {
+      ...meal,
+      id: 'lib-meal-' + Date.now()
+    };
+    setMealLibrary(prev => [newLibMeal, ...prev]);
+    try {
+      await setDoc(doc(db, 'meal_library', newLibMeal.id), newLibMeal);
+    } catch (e) {
+      console.warn('Sync meal to library Firestore:', e);
+    }
+  };
+
+  const startNewWeekReset = async (options: {
+    newWeekNumber: number;
+    startDate: string;
+    endDate: string;
+    notes?: string;
+  }) => {
+    setCurrentWeekNumber(options.newWeekNumber);
+
+    // Update workout plans: archive current active plans and create new week active plans
+    setWorkoutPlans(prev => {
+      const activePlans = prev.filter(p => p.status === 'active');
+      const otherPlans = prev.filter(p => p.status !== 'active');
+
+      const archivedOldPlans: WorkoutPlan[] = activePlans.map(p => ({
+        ...p,
+        id: p.id + '-archived-sem-' + (p.weekNumber || 1),
+        status: 'archived' as const
+      }));
+
+      const newWeekPlans: WorkoutPlan[] = activePlans.map(plan => ({
+        ...plan,
+        id: 'workout-' + plan.clientId + '-sem-' + options.newWeekNumber,
+        weekNumber: options.newWeekNumber,
+        weekStartDate: options.startDate,
+        weekEndDate: options.endDate,
+        notes: options.notes || plan.notes,
+        status: 'active' as const,
+        days: plan.days.map(d => ({
+          ...d,
+          exercises: d.exercises.map(ex => ({
+            ...ex,
+            sets: ex.sets.map(s => ({
+              ...s,
+              completed: false,
+              targetWeightKg: s.loggedWeightKg || s.targetWeightKg,
+              loggedWeightKg: undefined
+            }))
+          }))
+        }))
+      }));
+
+      return [...newWeekPlans, ...archivedOldPlans, ...otherPlans];
+    });
+
+    // Update nutrition plans
+    setNutritionPlans(prev => {
+      return prev.map(np => ({
+        ...np,
+        weekNumber: options.newWeekNumber,
+        weekStartDate: options.startDate,
+        weekEndDate: options.endDate
+      }));
+    });
+
+    // Notify all clients
+    const notifRicardo: AppNotification = {
+      id: 'notif-reset-' + Date.now(),
+      userId: 'client-ricardo-silva',
+      title: `🔥 Nova Semana ${options.newWeekNumber} Ativada pelo Coach!`,
+      message: `O Coach Sérgio Cunha iniciou o novo ciclo semanal (${options.startDate} a ${options.endDate}). Os teus treinos e ementas foram reiniciados para a nova semana.`,
+      type: 'workout',
+      read: false,
+      createdAt: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    const notifMarta: AppNotification = {
+      id: 'notif-reset-' + (Date.now() + 1),
+      userId: 'client-marta-pereira',
+      title: `🔥 Nova Semana ${options.newWeekNumber} Ativada pelo Coach!`,
+      message: `O Coach Sérgio Cunha iniciou o novo ciclo semanal (${options.startDate} a ${options.endDate}).`,
+      type: 'workout',
+      read: false,
+      createdAt: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setNotifications(prev => [notifRicardo, notifMarta, ...prev]);
+  };
+
   // Progress logs
   const addProgressLog = async (logData: Omit<ProgressLog, 'id' | 'createdAt'>) => {
     const newLog: ProgressLog = {
@@ -391,7 +499,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const activeWorkoutPlan = workoutPlans.find(
     p => p.clientId === targetClientId && p.status === 'active'
-  ) || workoutPlans[0] || null;
+  ) || workoutPlans.find(p => p.clientId === targetClientId) || workoutPlans[0] || null;
+
+  const previousWorkoutPlan = workoutPlans.find(
+    p => p.clientId === targetClientId && p.status === 'archived'
+  ) || null;
 
   const activeNutritionPlan = nutritionPlans.find(
     p => p.clientId === targetClientId
@@ -410,6 +522,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       deleteExercise,
       workoutPlans,
       activeWorkoutPlan,
+      previousWorkoutPlan,
       saveWorkoutPlan,
       workoutLogs,
       logExerciseSet,
@@ -418,6 +531,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       saveNutritionPlan,
       nutritionTemplates,
       applyTemplateToClient,
+      mealLibrary,
+      addMealToLibrary,
       progressLogs: progressLogs.filter(p => isCoach ? (p.clientId === selectedAthleteId) : (p.clientId === (currentUser?.uid || 'client-ricardo-silva'))),
       addProgressLog,
       messages,
@@ -428,6 +543,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       unreadCount,
       selectedAthleteId,
       setSelectedAthleteId,
+      currentWeekNumber,
+      startNewWeekReset,
     }}>
       {children}
     </DataContext.Provider>

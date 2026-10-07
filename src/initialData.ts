@@ -1,4 +1,4 @@
-import { Exercise, WorkoutPlan, NutritionPlan, NutritionTemplate, ProgressLog, Message, UserProfile } from './types';
+import { Exercise, WorkoutPlan, NutritionPlan, NutritionTemplate, ProgressLog, Message, UserProfile, Meal } from './types';
 
 export const COACH_PROFILE: UserProfile = {
   uid: 'coach-sergio-cunha',
@@ -171,6 +171,7 @@ export const INITIAL_WORKOUT_PLAN: WorkoutPlan = {
   clientName: 'Ricardo Silva',
   coachId: 'coach-sergio-cunha',
   title: 'Mesociclo 2: Hipertrofia & Força Funcional',
+  weekNumber: 1,
   weekStartDate: '2026-10-05',
   weekEndDate: '2026-10-11',
   status: 'active',
@@ -598,6 +599,237 @@ export const INITIAL_NUTRITION_PLAN: NutritionPlan = {
   ]
 };
 
+export const INITIAL_MARTA_WORKOUT_PLAN: WorkoutPlan = {
+  id: 'workout-marta-sem-1',
+  clientId: 'client-marta-pereira',
+  clientName: 'Marta Pereira',
+  coachId: 'coach-sergio-cunha',
+  title: 'Mesociclo de Tonificação & Foco em Glúteos (Semana 1)',
+  weekNumber: 1,
+  weekStartDate: '2026-10-05',
+  weekEndDate: '2026-10-11',
+  status: 'active',
+  notes: 'Foco na ativação máxima de glúteos e posterior de coxa. Cadência lenta na fase excêntrica.',
+  createdAt: '2026-10-05',
+  days: [
+    {
+      dayOfWeek: 'Segunda-feira',
+      dayIndex: 0,
+      name: 'Treino A - Foco em Glúteos e Isquiotibiais',
+      isRestDay: false,
+      focusArea: 'Glúteos & Posteriores',
+      exercises: [
+        {
+          exerciseId: 'ex-hip-thrust',
+          exerciseName: 'Hip Thrust com Barra',
+          sets: [
+            { setNumber: 1, reps: '12', targetWeightKg: 80, restSeconds: 90, completed: false },
+            { setNumber: 2, reps: '12', targetWeightKg: 85, restSeconds: 90, completed: false },
+            { setNumber: 3, reps: '10', targetWeightKg: 90, restSeconds: 120, completed: false },
+          ],
+          notes: 'Pausa de 2 segundos no pico de contração.',
+          videoUrl: 'https://www.youtube.com/watch?v=SEdqd1n0cvg',
+          imageUrl: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80',
+          muscleGroup: 'Glúteos'
+        },
+        {
+          exerciseId: 'ex-peso-morto-romeno',
+          exerciseName: 'Peso Morto Romeno (RDL)',
+          sets: [
+            { setNumber: 1, reps: '12', targetWeightKg: 45, restSeconds: 90, completed: false },
+            { setNumber: 2, reps: '10', targetWeightKg: 50, restSeconds: 90, completed: false },
+            { setNumber: 3, reps: '10', targetWeightKg: 50, restSeconds: 90, completed: false },
+          ],
+          notes: 'Alongar os isquiotibiais com costas retas.',
+          videoUrl: 'https://www.youtube.com/watch?v=jEy_czb3RKA',
+          imageUrl: 'https://images.unsplash.com/photo-1534367507873-d2d7e24c797f?auto=format&fit=crop&w=600&q=80',
+          muscleGroup: 'Isquiotibiais'
+        }
+      ]
+    },
+    {
+      dayOfWeek: 'Terça-feira',
+      dayIndex: 1,
+      name: 'Treino B - Membros Superiores & Core',
+      isRestDay: false,
+      focusArea: 'Dorsal, Ombros & Abdómen',
+      exercises: [
+        {
+          exerciseId: 'ex-puxada-polia',
+          exerciseName: 'Puxada Aberta na Polia Alta',
+          sets: [
+            { setNumber: 1, reps: '12', targetWeightKg: 35, restSeconds: 75, completed: false },
+            { setNumber: 2, reps: '10', targetWeightKg: 40, restSeconds: 75, completed: false },
+            { setNumber: 3, reps: '10', targetWeightKg: 40, restSeconds: 90, completed: false },
+          ],
+          notes: 'Puxar com as costas, sem curvar o pescoço.',
+          videoUrl: 'https://www.youtube.com/watch?v=CAwf7n6Luuc',
+          imageUrl: 'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?auto=format&fit=crop&w=600&q=80',
+          muscleGroup: 'Costas'
+        }
+      ]
+    },
+    {
+      dayOfWeek: 'Quarta-feira',
+      dayIndex: 2,
+      name: 'Descanso Ativo / Caminhada Zona 2',
+      isRestDay: true,
+      focusArea: 'Recuperação',
+      exercises: []
+    },
+    {
+      dayOfWeek: 'Quinta-feira',
+      dayIndex: 3,
+      name: 'Treino C - Quadríceps e Panturrilhas',
+      isRestDay: false,
+      focusArea: 'Quadríceps',
+      exercises: [
+        {
+          exerciseId: 'ex-agachamento-livre',
+          exerciseName: 'Agachamento Livre com Barra',
+          sets: [
+            { setNumber: 1, reps: '12', targetWeightKg: 40, restSeconds: 90, completed: false },
+            { setNumber: 2, reps: '10', targetWeightKg: 45, restSeconds: 90, completed: false },
+            { setNumber: 3, reps: '8', targetWeightKg: 50, restSeconds: 120, completed: false },
+          ],
+          notes: 'Profundidade máxima mantendo o calcanhar firme.',
+          videoUrl: 'https://www.youtube.com/watch?v=bEv6CCg2BC8',
+          imageUrl: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=600&q=80',
+          muscleGroup: 'Pernas'
+        }
+      ]
+    },
+    {
+      dayOfWeek: 'Sexta-feira',
+      dayIndex: 4,
+      name: 'Treino D - Full Body Tonificação & HIIT',
+      isRestDay: false,
+      focusArea: 'Cardio & Resistência',
+      exercises: []
+    },
+    {
+      dayOfWeek: 'Sábado',
+      dayIndex: 5,
+      name: 'Descanso ou Alongamento',
+      isRestDay: true,
+      focusArea: 'Mobilidade',
+      exercises: []
+    },
+    {
+      dayOfWeek: 'Domingo',
+      dayIndex: 6,
+      name: 'Descanso Total de Domingo',
+      isRestDay: true,
+      focusArea: 'Recuperação & Planeamento',
+      exercises: []
+    }
+  ]
+};
+
+export const INITIAL_MARTA_NUTRITION_PLAN: NutritionPlan = {
+  id: 'nutrition-marta-sem-1',
+  clientId: 'client-marta-pereira',
+  clientName: 'Marta Pereira',
+  coachId: 'coach-sergio-cunha',
+  title: 'Ementa de Tonificação & Definição Feminina (1900 kcal)',
+  weekNumber: 1,
+  weekStartDate: '2026-10-05',
+  weekEndDate: '2026-10-11',
+  dailyCalories: 1900,
+  notes: 'Consumo de pelo menos 2.8L de água diários. Hidratos de carbono concentrados no pequeno-almoço e pré-treino.',
+  createdAt: '2026-10-05',
+  days: [
+    {
+      dayOfWeek: 'Segunda-feira',
+      dayIndex: 0,
+      totalCalories: 1900,
+      totalProtein: 140,
+      totalCarbs: 180,
+      totalFat: 50,
+      waterIntakeLiters: 3.0,
+      notes: 'Dia de glúteos e pernas.',
+      meals: [
+        {
+          id: 'm-meal-1',
+          name: 'Pequeno-Almoço',
+          time: '08:30',
+          category: 'Pequeno-Almoço',
+          description: 'Papas de aveia proteica com bagas e canela',
+          calories: 420,
+          proteinG: 32,
+          carbsG: 50,
+          fatG: 9,
+          foods: [
+            { item: 'Flocos de aveia finos', quantity: '55g' },
+            { item: 'Whey Protein Isolado Baunilha', quantity: '30g' },
+            { item: 'Mirtilos e morangos', quantity: '70g' },
+            { item: 'Manteiga de amêndoa', quantity: '10g' }
+          ]
+        },
+        {
+          id: 'm-meal-2',
+          name: 'Almoço',
+          time: '13:00',
+          category: 'Almoço',
+          description: 'Peito de frango grelhado com arroz basmati e espinafres',
+          calories: 550,
+          proteinG: 45,
+          carbsG: 55,
+          fatG: 14,
+          foods: [
+            { item: 'Peito de frango grelhado', quantity: '150g' },
+            { item: 'Arroz basmati cozido', quantity: '150g' },
+            { item: 'Azeite virgem extra', quantity: '8ml' },
+            { item: 'Espinafres salteados e tomate', quantity: '150g' }
+          ]
+        },
+        {
+          id: 'm-meal-3',
+          name: 'Lanche',
+          time: '17:00',
+          category: 'Lanche',
+          description: 'Iogurte Skyr com nozes e maçã',
+          calories: 320,
+          proteinG: 24,
+          carbsG: 35,
+          fatG: 8,
+          foods: [
+            { item: 'Iogurte Skyr natural', quantity: '180g' },
+            { item: 'Maçã reineta fatiada', quantity: '1 unidade' },
+            { item: 'Miolo de noz', quantity: '12g' }
+          ]
+        },
+        {
+          id: 'm-meal-4',
+          name: 'Jantar',
+          time: '20:30',
+          category: 'Jantar',
+          description: 'Lombo de salmão com batata-doce e brócolos',
+          calories: 510,
+          proteinG: 38,
+          carbsG: 38,
+          fatG: 18,
+          foods: [
+            { item: 'Salmão fresco', quantity: '140g' },
+            { item: 'Batata-doce assada', quantity: '140g' },
+            { item: 'Brócolos ao vapor', quantity: '150g' }
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+export const ALL_INITIAL_WORKOUT_PLANS: WorkoutPlan[] = [
+  INITIAL_WORKOUT_PLAN,
+  INITIAL_MARTA_WORKOUT_PLAN
+];
+
+export const ALL_INITIAL_NUTRITION_PLANS: NutritionPlan[] = [
+  INITIAL_NUTRITION_PLAN,
+  INITIAL_MARTA_NUTRITION_PLAN
+];
+
 export const INITIAL_NUTRITION_TEMPLATES: NutritionTemplate[] = [
   {
     id: 'tmpl-cutting-2000',
@@ -606,7 +838,232 @@ export const INITIAL_NUTRITION_TEMPLATES: NutritionTemplate[] = [
     description: 'Protocolo de alta proteína (2.2g/kg) com hidratos moderados a baixos para perda de massa gorda preservando massa muscular magra.',
     dailyCalories: 2000,
     macros: { protein: 170, carbs: 160, fat: 55 },
-    days: [],
+    days: [
+      {
+        dayOfWeek: 'Segunda-feira',
+        dayIndex: 0,
+        totalCalories: 2000,
+        totalProtein: 170,
+        totalCarbs: 160,
+        totalFat: 55,
+        waterIntakeLiters: 3.5,
+        notes: 'Défice calórico controlado. Iniciar com hidratos centrados no pré e pós-treino.',
+        meals: [
+          {
+            id: 'c-meal-1',
+            name: 'Pequeno-Almoço',
+            time: '08:00',
+            category: 'Pequeno-Almoço',
+            description: 'Omelete de 4 claras e 1 gema com espinafres e pão de centeio integral',
+            calories: 380,
+            proteinG: 34,
+            carbsG: 35,
+            fatG: 10,
+            foods: [
+              { item: 'Claras de ovo pasteurizadas', quantity: '180ml' },
+              { item: 'Ovo inteiro biológico', quantity: '1 unidade' },
+              { item: 'Pão de centeio integral', quantity: '1 fatia (50g)' },
+              { item: 'Espinafres frescos salteados', quantity: '80g' }
+            ]
+          },
+          {
+            id: 'c-meal-2',
+            name: 'Almoço',
+            time: '13:00',
+            category: 'Almoço',
+            description: 'Peito de frango grelhado com arroz basmati e brócolos ao vapor',
+            calories: 580,
+            proteinG: 50,
+            carbsG: 55,
+            fatG: 14,
+            foods: [
+              { item: 'Peito de frango grelhado', quantity: '180g' },
+              { item: 'Arroz basmati cozido', quantity: '140g' },
+              { item: 'Azeite virgem extra', quantity: '8ml' },
+              { item: 'Brócolos ao vapor', quantity: '150g' }
+            ]
+          },
+          {
+            id: 'c-meal-3',
+            name: 'Lanche / Pré-Treino',
+            time: '16:30',
+            category: 'Lanche',
+            description: 'Iogurte Skyr natural com maçã e canela',
+            calories: 260,
+            proteinG: 25,
+            carbsG: 30,
+            fatG: 3,
+            foods: [
+              { item: 'Iogurte Skyr ou Grego 0%', quantity: '200g' },
+              { item: 'Maçã verde fatiada', quantity: '1 unidade (120g)' },
+              { item: 'Canela de Ceilão', quantity: '1 colher de chá' }
+            ]
+          },
+          {
+            id: 'c-meal-4',
+            name: 'Jantar',
+            time: '20:30',
+            category: 'Jantar',
+            description: 'Filete de dourada com batata-doce e espargos grelhados',
+            calories: 520,
+            proteinG: 45,
+            carbsG: 35,
+            fatG: 16,
+            foods: [
+              { item: 'Dourada fresca grelhada', quantity: '180g' },
+              { item: 'Batata-doce assada', quantity: '140g' },
+              { item: 'Espargos e curgete grelhados', quantity: '150g' }
+            ]
+          },
+          {
+            id: 'c-meal-5',
+            name: 'Ceia',
+            time: '22:45',
+            category: 'Ceia',
+            description: 'Chá verde/camomila e queijo quark 0%',
+            calories: 140,
+            proteinG: 16,
+            carbsG: 5,
+            fatG: 1,
+            foods: [
+              { item: 'Queijo Quark 0%', quantity: '120g' },
+              { item: 'Infusão de ervas naturais', quantity: '1 caneca' }
+            ]
+          }
+        ]
+      },
+      {
+        dayOfWeek: 'Terça-feira',
+        dayIndex: 1,
+        totalCalories: 2000,
+        totalProtein: 170,
+        totalCarbs: 160,
+        totalFat: 55,
+        waterIntakeLiters: 3.5,
+        notes: 'Manter horários e hidratação regular.',
+        meals: [
+          {
+            id: 'c-meal-t1',
+            name: 'Pequeno-Almoço',
+            time: '08:00',
+            category: 'Pequeno-Almoço',
+            description: 'Papas de aveia proteicas e mirtilos',
+            calories: 410,
+            proteinG: 35,
+            carbsG: 45,
+            fatG: 8,
+            foods: [
+              { item: 'Aveia fina', quantity: '50g' },
+              { item: 'Whey Protein Isolado', quantity: '35g' },
+              { item: 'Mirtilos frescos', quantity: '60g' }
+            ]
+          },
+          {
+            id: 'c-meal-t2',
+            name: 'Almoço',
+            time: '13:00',
+            category: 'Almoço',
+            description: 'Bife de peru com batata cozida e salada mista',
+            calories: 570,
+            proteinG: 48,
+            carbsG: 55,
+            fatG: 12,
+            foods: [
+              { item: 'Bife de peru grelhado', quantity: '180g' },
+              { item: 'Batata cozida com casca', quantity: '180g' },
+              { item: 'Salada de alface e pepino com 5ml azeite', quantity: '1 prato' }
+            ]
+          },
+          {
+            id: 'c-meal-t3',
+            name: 'Lanche',
+            time: '16:30',
+            category: 'Lanche',
+            description: 'Batido proteico com fruta fresca',
+            calories: 270,
+            proteinG: 32,
+            carbsG: 25,
+            fatG: 4,
+            foods: [
+              { item: 'Whey Protein Isolado', quantity: '35g' },
+              { item: 'Bebida de amêndoa sem açúcar', quantity: '200ml' },
+              { item: 'Morangos', quantity: '80g' }
+            ]
+          },
+          {
+            id: 'c-meal-t4',
+            name: 'Jantar',
+            time: '20:30',
+            category: 'Jantar',
+            description: 'Lombo de pescada com quinoa e feijão verde',
+            calories: 510,
+            proteinG: 45,
+            carbsG: 30,
+            fatG: 14,
+            foods: [
+              { item: 'Pescada fresca', quantity: '200g' },
+              { item: 'Quinoa cozida', quantity: '120g' },
+              { item: 'Feijão verde cozido', quantity: '150g' }
+            ]
+          }
+        ]
+      },
+      {
+        dayOfWeek: 'Quarta-feira',
+        dayIndex: 2,
+        totalCalories: 1950,
+        totalProtein: 170,
+        totalCarbs: 150,
+        totalFat: 55,
+        waterIntakeLiters: 3.5,
+        notes: 'Dia de descanso ativo.',
+        meals: []
+      },
+      {
+        dayOfWeek: 'Quinta-feira',
+        dayIndex: 3,
+        totalCalories: 2000,
+        totalProtein: 170,
+        totalCarbs: 160,
+        totalFat: 55,
+        waterIntakeLiters: 3.5,
+        notes: 'Dia de pernas. Foco na recuperação.',
+        meals: []
+      },
+      {
+        dayOfWeek: 'Sexta-feira',
+        dayIndex: 4,
+        totalCalories: 2000,
+        totalProtein: 170,
+        totalCarbs: 160,
+        totalFat: 55,
+        waterIntakeLiters: 3.5,
+        notes: 'Manter disciplina no fim de semana.',
+        meals: []
+      },
+      {
+        dayOfWeek: 'Sábado',
+        dayIndex: 5,
+        totalCalories: 2000,
+        totalProtein: 170,
+        totalCarbs: 160,
+        totalFat: 55,
+        waterIntakeLiters: 3.0,
+        notes: 'Manter hidratação.',
+        meals: []
+      },
+      {
+        dayOfWeek: 'Domingo',
+        dayIndex: 6,
+        totalCalories: 1900,
+        totalProtein: 170,
+        totalCarbs: 140,
+        totalFat: 55,
+        waterIntakeLiters: 3.0,
+        notes: 'Domingo de planeamento e tupperwares.',
+        meals: []
+      }
+    ],
     createdAt: '2026-08-10'
   },
   {
@@ -616,7 +1073,7 @@ export const INITIAL_NUTRITION_TEMPLATES: NutritionTemplate[] = [
     description: 'Equilíbrio ideal entre rendimento em treino com cargas pesadas e oxidação lipídica controlada.',
     dailyCalories: 2350,
     macros: { protein: 180, carbs: 230, fat: 65 },
-    days: [],
+    days: INITIAL_NUTRITION_PLAN.days,
     createdAt: '2026-08-12'
   },
   {
@@ -626,7 +1083,87 @@ export const INITIAL_NUTRITION_TEMPLATES: NutritionTemplate[] = [
     description: 'Superávit calórico controlado (+300 kcal acima da manutenção) para maximizar ganhos de hipertrofia com mínimo acúmulo de gordura.',
     dailyCalories: 2800,
     macros: { protein: 190, carbs: 340, fat: 75 },
-    days: [],
+    days: [
+      {
+        dayOfWeek: 'Segunda-feira',
+        dayIndex: 0,
+        totalCalories: 2800,
+        totalProtein: 190,
+        totalCarbs: 340,
+        totalFat: 75,
+        waterIntakeLiters: 4.0,
+        notes: 'Superávit anabólico com alta densidade nutricional.',
+        meals: [
+          {
+            id: 'b-meal-1',
+            name: 'Pequeno-Almoço',
+            time: '08:00',
+            category: 'Pequeno-Almoço',
+            description: 'Papas de aveia reforçadas com banana, whey e manteiga de amendoim',
+            calories: 680,
+            proteinG: 45,
+            carbsG: 85,
+            fatG: 18,
+            foods: [
+              { item: 'Aveia integral', quantity: '90g' },
+              { item: 'Whey Protein Isolado', quantity: '40g' },
+              { item: 'Banana grande fatiada', quantity: '1 unidade' },
+              { item: 'Manteiga de amendoim 100%', quantity: '25g' }
+            ]
+          },
+          {
+            id: 'b-meal-2',
+            name: 'Almoço',
+            time: '13:00',
+            category: 'Almoço',
+            description: 'Carne de vaca picada com arroz basmati, abacate e salada',
+            calories: 820,
+            proteinG: 55,
+            carbsG: 95,
+            fatG: 24,
+            foods: [
+              { item: 'Carne de vaca magra', quantity: '200g' },
+              { item: 'Arroz basmati cozido', quantity: '260g' },
+              { item: 'Abacate fatiado', quantity: '50g' },
+              { item: 'Legumes variados', quantity: '150g' }
+            ]
+          },
+          {
+            id: 'b-meal-3',
+            name: 'Lanche / Pré-Treino',
+            time: '16:45',
+            category: 'Lanche',
+            description: 'Batido anabólico com aveia e mel',
+            calories: 460,
+            proteinG: 35,
+            carbsG: 65,
+            fatG: 8,
+            foods: [
+              { item: 'Whey Protein', quantity: '35g' },
+              { item: 'Farinha de aveia', quantity: '50g' },
+              { item: 'Mel de abelha biológico', quantity: '15g' },
+              { item: 'Leite magro ou bebida vegetal', quantity: '250ml' }
+            ]
+          },
+          {
+            id: 'b-meal-4',
+            name: 'Jantar',
+            time: '20:30',
+            category: 'Jantar',
+            description: 'Salmão fresco com batata-doce assada e azeite virgem extra',
+            calories: 740,
+            proteinG: 45,
+            carbsG: 70,
+            fatG: 26,
+            foods: [
+              { item: 'Salmão fresco grelhado', quantity: '200g' },
+              { item: 'Batata-doce assada', quantity: '260g' },
+              { item: 'Salada mista com azeite', quantity: '1 prato' }
+            ]
+          }
+        ]
+      }
+    ],
     createdAt: '2026-08-15'
   }
 ];
@@ -748,3 +1285,176 @@ export const INITIAL_MESSAGES: Message[] = [
     createdAt: '2026-10-05 19:40'
   }
 ];
+
+export const INITIAL_MEAL_LIBRARY: Meal[] = [
+  {
+    id: 'lib-meal-aveia-whey',
+    name: 'Papas de Aveia Anabólicas & Whey',
+    time: '08:00',
+    category: 'Pequeno-Almoço',
+    description: 'Pequeno-almoço rico em hidratos complexos, proteína de alto valor biológico e antioxidantes.',
+    calories: 520,
+    proteinG: 42,
+    carbsG: 65,
+    fatG: 12,
+    foods: [
+      { item: 'Flocos de aveia finos', quantity: '70g' },
+      { item: 'Whey Protein Isolado', quantity: '35g' },
+      { item: 'Bagas vermelhas ou mirtilos', quantity: '80g' },
+      { item: 'Manteiga de amendoim natural', quantity: '15g' },
+      { item: 'Canela de Ceilão em pó', quantity: '1 colher de chá' }
+    ]
+  },
+  {
+    id: 'lib-meal-omelete-centeno',
+    name: 'Omelete de Claras, Ovos & Pão de Centeio',
+    time: '08:00',
+    category: 'Pequeno-Almoço',
+    description: 'Opção rica em micronutrientes, colina e saciedade prolongada.',
+    calories: 510,
+    proteinG: 40,
+    carbsG: 45,
+    fatG: 16,
+    foods: [
+      { item: 'Ovos inteiros classe L', quantity: '2 unidades' },
+      { item: 'Claras de ovo pasteurizadas', quantity: '150ml' },
+      { item: 'Pão de centeio 100% integral', quantity: '2 fatias (70g)' },
+      { item: 'Espinafres frescos salteados', quantity: '50g' }
+    ]
+  },
+  {
+    id: 'lib-meal-panquecas-banana',
+    name: 'Panquecas Proteicas de Aveia & Banana',
+    time: '08:30',
+    category: 'Pequeno-Almoço',
+    description: 'Panquecas fáceis e saborosas para dias de treino matinal.',
+    calories: 490,
+    proteinG: 38,
+    carbsG: 60,
+    fatG: 10,
+    foods: [
+      { item: 'Farinha de aveia integral', quantity: '60g' },
+      { item: 'Whey Protein baunilha', quantity: '30g' },
+      { item: 'Claras de ovo', quantity: '120ml' },
+      { item: 'Banana média madura', quantity: '1 unidade' }
+    ]
+  },
+  {
+    id: 'lib-meal-frango-basmati',
+    name: 'Peito de Frango Grelhado, Arroz Basmati & Brócolos',
+    time: '13:00',
+    category: 'Almoço',
+    description: 'O clássico de recomposição corporal: proteína magra, glicogénio limpo e micronutrientes.',
+    calories: 680,
+    proteinG: 55,
+    carbsG: 75,
+    fatG: 18,
+    foods: [
+      { item: 'Peito de frango grelhado', quantity: '180g (pesado cru)' },
+      { item: 'Arroz basmati cozido', quantity: '200g' },
+      { item: 'Azeite virgem extra', quantity: '1 colher de sobremesa (10ml)' },
+      { item: 'Brócolos ao vapor com sal marinho', quantity: '150g' },
+      { item: 'Salada de folhas verdes à vontade', quantity: '1 prato' }
+    ]
+  },
+  {
+    id: 'lib-meal-vaca-batata',
+    name: 'Carne de Vaca Magra & Batata Branca Cozida',
+    time: '13:00',
+    category: 'Almoço',
+    description: 'Refeição densa em ferro, creatina natural e potássio.',
+    calories: 690,
+    proteinG: 54,
+    carbsG: 75,
+    fatG: 18,
+    foods: [
+      { item: 'Carne de vaca picada < 5% gordura', quantity: '180g' },
+      { item: 'Batata branca cozida com casca', quantity: '250g' },
+      { item: 'Feijão verde ou curgete grelhada', quantity: '150g' },
+      { item: 'Azeite virgem extra', quantity: '1 colher de sobremesa' }
+    ]
+  },
+  {
+    id: 'lib-meal-salmao-batatadoce',
+    name: 'Lombo de Salmão Fresco & Batata-Doce Assada',
+    time: '20:30',
+    category: 'Jantar',
+    description: 'Fonte nobre de ómega-3 para redução da inflamação e absorção de vitaminas lipossolúveis.',
+    calories: 610,
+    proteinG: 48,
+    carbsG: 40,
+    fatG: 24,
+    foods: [
+      { item: 'Lombo de salmão fresco', quantity: '160g' },
+      { item: 'Batata-doce assada no forno', quantity: '180g' },
+      { item: 'Espargos verdes salteados', quantity: '120g' },
+      { item: 'Gotas de limão e orégãos', quantity: 'A gosto' }
+    ]
+  },
+  {
+    id: 'lib-meal-robalo-quinoa',
+    name: 'Filete de Robalo no Forno com Quinoa Real',
+    time: '20:30',
+    category: 'Jantar',
+    description: 'Jantar leve com digestão fácil para otimizar o sono profundo e GH noturno.',
+    calories: 590,
+    proteinG: 50,
+    carbsG: 50,
+    fatG: 15,
+    foods: [
+      { item: 'Robalo ou dourada fresca', quantity: '200g' },
+      { item: 'Quinoa real cozida', quantity: '160g' },
+      { item: 'Tomate cereja e rúcula com azeite', quantity: '1 prato generoso' }
+    ]
+  },
+  {
+    id: 'lib-meal-iogurte-nozes',
+    name: 'Iogurte Grego 0%, Nozes & Banana',
+    time: '17:00',
+    category: 'Lanche',
+    description: 'Lanche prático ou pré-treino de libertação sustentada.',
+    calories: 410,
+    proteinG: 30,
+    carbsG: 50,
+    fatG: 10,
+    foods: [
+      { item: 'Iogurte grego natural 0% ou Skyr', quantity: '200g' },
+      { item: 'Banana média fatiada', quantity: '1 unidade (~100g)' },
+      { item: 'Miolo de noz picado', quantity: '15g' },
+      { item: 'Canela em pó', quantity: 'A gosto' }
+    ]
+  },
+  {
+    id: 'lib-meal-batido-recup',
+    name: 'Batido Anabólico de Whey, Aveia & Morangos',
+    time: '17:00',
+    category: 'Pré/Pós-Treino',
+    description: 'Absorção rápida para reposição pós-treino ou lanche de trabalho.',
+    calories: 420,
+    proteinG: 35,
+    carbsG: 55,
+    fatG: 8,
+    foods: [
+      { item: 'Whey Protein Isolado', quantity: '35g' },
+      { item: 'Bebida vegetal de amêndoa sem açúcar', quantity: '250ml' },
+      { item: 'Farinha de aveia micronizada', quantity: '40g' },
+      { item: 'Morangos ou frutos vermelhos congelados', quantity: '100g' }
+    ]
+  },
+  {
+    id: 'lib-meal-ceia-caseina',
+    name: 'Ceia Anticorpos: Queijo Quark 0% & Infusão Calmante',
+    time: '22:45',
+    category: 'Ceia',
+    description: 'Libertação lenta de aminoácidos durante as horas de sono para evitar catabolismo noturno.',
+    calories: 130,
+    proteinG: 18,
+    carbsG: 4,
+    fatG: 2,
+    foods: [
+      { item: 'Queijo Quark 0% ou Caseína Micelar', quantity: '120g' },
+      { item: 'Chá de camomila ou melissa sem açúcar', quantity: '1 caneca' }
+    ]
+  }
+];
+

@@ -11,6 +11,7 @@ import {
   doc, 
   getDoc, 
   setDoc,
+  updateDoc,
   type FirebaseUser
 } from '../firebase';
 import { UserProfile, UserRole, SubscriptionStatus } from '../types';
@@ -29,6 +30,7 @@ interface AuthContextType {
   switchPersona: (persona: 'coach' | 'client', clientIndex?: number) => void;
   updateUserProfile: (data: Partial<UserProfile>) => Promise<void>;
   renewSubscription: (planName: string) => Promise<void>;
+  updateClientSubscription: (clientId: string, status: SubscriptionStatus) => Promise<void>;
   allClients: UserProfile[];
 }
 
@@ -208,6 +210,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateClientSubscription = async (clientId: string, status: SubscriptionStatus) => {
+    const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    setAllClients(prev => prev.map(c => {
+      if (c.uid === clientId) {
+        return {
+          ...c,
+          subscriptionStatus: status,
+          subscriptionPlan: status === 'active' ? 'Acompanhamento VIP Mensal (100€)' : c.subscriptionPlan,
+          subscriptionValidUntil: status === 'active' ? nextMonth : '2026-10-01'
+        };
+      }
+      return c;
+    }));
+
+    if (currentUser?.uid === clientId) {
+      setCurrentUser(prev => prev ? {
+        ...prev,
+        subscriptionStatus: status,
+        subscriptionPlan: status === 'active' ? 'Acompanhamento VIP Mensal (100€)' : prev.subscriptionPlan,
+        subscriptionValidUntil: status === 'active' ? nextMonth : '2026-10-01'
+      } : null);
+    }
+
+    try {
+      await updateDoc(doc(db, 'users', clientId), {
+        subscriptionStatus: status,
+        subscriptionValidUntil: status === 'active' ? nextMonth : '2026-10-01'
+      });
+    } catch (e) {
+      console.warn('Update client subscription firestore error:', e);
+    }
+  };
+
   const isCoach = currentUser?.role === 'coach';
   const isSubscriptionActive = isCoach || currentUser?.subscriptionStatus === 'active';
 
@@ -225,6 +260,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       switchPersona,
       updateUserProfile,
       renewSubscription,
+      updateClientSubscription,
       allClients,
     }}>
       {children}

@@ -25,7 +25,7 @@ interface CoachAthletesViewProps {
 }
 
 export const CoachAthletesView: React.FC<CoachAthletesViewProps> = ({ onNavigateTab }) => {
-  const { allClients } = useAuth();
+  const { allClients, updateClientSubscription } = useAuth();
   const { 
     workoutPlans, 
     nutritionPlans, 
@@ -37,6 +37,7 @@ export const CoachAthletesView: React.FC<CoachAthletesViewProps> = ({ onNavigate
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expired'>('all');
   const [selectedClientModal, setSelectedClientModal] = useState<UserProfile | null>(null);
+  const [comparisonAngle, setComparisonAngle] = useState<'front' | 'side' | 'back'>('front');
 
   const filteredClients = allClients.filter(c => {
     const matchesSearch = c.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -213,8 +214,21 @@ export const CoachAthletesView: React.FC<CoachAthletesViewProps> = ({ onNavigate
                         ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
                         : 'bg-red-500/15 text-red-400 border border-red-500/30'
                     }`}>
-                      {selectedClientModal.subscriptionStatus === 'active' ? 'Mensalidade Ativa' : 'Expirada'}
+                      {selectedClientModal.subscriptionStatus === 'active' ? 'Mensalidade Ativa (100€)' : 'Expirada'}
                     </span>
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const newStatus = selectedClientModal.subscriptionStatus === 'active' ? 'expired' : 'active';
+                        await updateClientSubscription(selectedClientModal.uid, newStatus);
+                        setSelectedClientModal(prev => prev ? { ...prev, subscriptionStatus: newStatus } : null);
+                      }}
+                      className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white border border-neutral-700 transition"
+                      title="Alternar estado de pagamento"
+                    >
+                      {selectedClientModal.subscriptionStatus === 'active' ? 'Marcar Pendente' : 'Validar Mensalidade (100€)'}
+                    </button>
                   </div>
                   <p className="text-xs text-neutral-400 mt-0.5">
                     {selectedClientModal.email} • {selectedClientModal.phone}
@@ -321,6 +335,129 @@ export const CoachAthletesView: React.FC<CoachAthletesViewProps> = ({ onNavigate
                   </table>
                 </div>
               </div>
+
+              {/* ANTES VS DEPOIS COMPARISON GALLERY */}
+              {progressLogs.length >= 2 && (
+                <div className="bg-neutral-950 p-5 rounded-2xl border border-neutral-800 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-amber-500" />
+                        <span>Comparação Visual: Antes vs Depois</span>
+                      </h4>
+                      <p className="text-xs text-neutral-400">
+                        Evolução fotográfica lado a lado de {selectedClientModal.displayName}
+                      </p>
+                    </div>
+
+                    {/* Angle pills */}
+                    <div className="flex items-center gap-1.5 bg-neutral-900 p-1 rounded-xl border border-neutral-800 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setComparisonAngle('front')}
+                        className={`px-3 py-1 rounded-lg font-medium transition ${
+                          comparisonAngle === 'front' ? 'bg-amber-500 text-black font-bold' : 'text-neutral-400'
+                        }`}
+                      >
+                        Frente
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setComparisonAngle('side')}
+                        className={`px-3 py-1 rounded-lg font-medium transition ${
+                          comparisonAngle === 'side' ? 'bg-amber-500 text-black font-bold' : 'text-neutral-400'
+                        }`}
+                      >
+                        Perfil
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setComparisonAngle('back')}
+                        className={`px-3 py-1 rounded-lg font-medium transition ${
+                          comparisonAngle === 'back' ? 'bg-amber-500 text-black font-bold' : 'text-neutral-400'
+                        }`}
+                      >
+                        Costas
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Side-by-side photo comparison */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Before Card */}
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-3 relative overflow-hidden">
+                      <span className="absolute top-5 left-5 z-10 px-2.5 py-0.5 rounded-full bg-neutral-950/80 backdrop-blur-md border border-neutral-800 text-[10px] font-bold text-neutral-300">
+                        INÍCIO ({progressLogs[0].date})
+                      </span>
+                      <div className="aspect-[4/5] rounded-xl overflow-hidden bg-neutral-950 mb-3">
+                        <img
+                          src={
+                            comparisonAngle === 'front' ? progressLogs[0].photoFront :
+                            comparisonAngle === 'side' ? progressLogs[0].photoSide :
+                            progressLogs[0].photoBack
+                          }
+                          alt="Antes"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-xs px-1">
+                        <span className="text-neutral-400">Peso Inicial:</span>
+                        <span className="font-mono font-bold text-white">{progressLogs[0].weightKg} kg</span>
+                      </div>
+                    </div>
+
+                    {/* After Card */}
+                    <div className="bg-neutral-900 border border-amber-500/40 rounded-2xl p-3 relative overflow-hidden">
+                      <span className="absolute top-5 left-5 z-10 px-2.5 py-0.5 rounded-full bg-amber-500 text-black text-[10px] font-extrabold shadow-md">
+                        ATUAL ({progressLogs[progressLogs.length - 1].date})
+                      </span>
+                      <div className="aspect-[4/5] rounded-xl overflow-hidden bg-neutral-950 mb-3">
+                        <img
+                          src={
+                            comparisonAngle === 'front' ? progressLogs[progressLogs.length - 1].photoFront :
+                            comparisonAngle === 'side' ? progressLogs[progressLogs.length - 1].photoSide :
+                            progressLogs[progressLogs.length - 1].photoBack
+                          }
+                          alt="Depois"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-xs px-1">
+                        <span className="text-neutral-400">Peso Atual:</span>
+                        <span className="font-mono font-bold text-amber-400">
+                          {progressLogs[progressLogs.length - 1].weightKg} kg
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Summary Delta Banner */}
+                  <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-around text-center text-xs">
+                    <div>
+                      <span className="text-[10px] text-neutral-500 block">Diferença de Peso</span>
+                      <span className="font-mono font-bold text-emerald-400 text-sm">
+                        {(progressLogs[progressLogs.length - 1].weightKg - progressLogs[0].weightKg).toFixed(1)} kg
+                      </span>
+                    </div>
+                    {progressLogs[0].waistCm && progressLogs[progressLogs.length - 1].waistCm && (
+                      <div>
+                        <span className="text-[10px] text-neutral-500 block">Perímetro Cintura</span>
+                        <span className="font-mono font-bold text-emerald-400 text-sm">
+                          {(progressLogs[progressLogs.length - 1].waistCm! - progressLogs[0].waistCm!).toFixed(1)} cm
+                        </span>
+                      </div>
+                    )}
+                    {progressLogs[0].armCm && progressLogs[progressLogs.length - 1].armCm && (
+                      <div>
+                        <span className="text-[10px] text-neutral-500 block">Perímetro Braço</span>
+                        <span className="font-mono font-bold text-amber-400 text-sm">
+                          +{(progressLogs[progressLogs.length - 1].armCm! - progressLogs[0].armCm!).toFixed(1)} cm
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
             </div>
 

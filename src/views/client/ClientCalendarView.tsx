@@ -21,12 +21,52 @@ import { DayWorkout, DayExercise, WorkoutSet } from '../../types';
 
 export const ClientCalendarView: React.FC = () => {
   const { currentUser } = useAuth();
-  const { activeWorkoutPlan, logExerciseSet } = useData();
+  const { activeWorkoutPlan, previousWorkoutPlan, logExerciseSet, currentWeekNumber } = useData();
   
   // Default to today's day of week or Monday (0)
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
   const [selectedExerciseForModal, setSelectedExerciseForModal] = useState<DayExercise | null>(null);
   const [completedWorkoutToday, setCompletedWorkoutToday] = useState(false);
+  const [viewingPreviousWeek, setViewingPreviousWeek] = useState(false);
+
+  // Rest Timer State
+  const [restTimeRemaining, setRestTimeRemaining] = useState<number | null>(null);
+  const [totalRestSeconds, setTotalRestSeconds] = useState<number>(90);
+
+  const displayedPlan = (viewingPreviousWeek && previousWorkoutPlan) ? previousWorkoutPlan : activeWorkoutPlan;
+
+  React.useEffect(() => {
+    if (restTimeRemaining === null || restTimeRemaining <= 0) return;
+    const timer = setInterval(() => {
+      setRestTimeRemaining(prev => {
+        if (prev === null || prev <= 1) {
+          try {
+            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+            gain.gain.setValueAtTime(0.15, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.5);
+          } catch (e) {
+            // Audio context policy
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [restTimeRemaining]);
+
+  const startRestTimer = (seconds: number) => {
+    setTotalRestSeconds(seconds);
+    setRestTimeRemaining(seconds);
+  };
 
   const daysOfWeek = [
     { label: 'Seg', full: 'Segunda-feira', index: 0 },
@@ -38,7 +78,7 @@ export const ClientCalendarView: React.FC = () => {
     { label: 'Dom', full: 'Domingo', index: 6 },
   ];
 
-  if (!activeWorkoutPlan) {
+  if (!displayedPlan) {
     return (
       <div className="p-8 text-center bg-neutral-900 border border-neutral-800 rounded-3xl">
         <Dumbbell className="w-12 h-12 text-amber-500 mx-auto mb-3 opacity-60" />
@@ -48,16 +88,16 @@ export const ClientCalendarView: React.FC = () => {
     );
   }
 
-  const currentDayWorkout: DayWorkout | undefined = activeWorkoutPlan.days.find(
+  const currentDayWorkout: DayWorkout | undefined = displayedPlan.days.find(
     d => d.dayIndex === selectedDayIndex
-  ) || activeWorkoutPlan.days[0];
+  ) || displayedPlan.days[0];
 
   const handleSetToggle = (exercise: DayExercise, set: WorkoutSet, index: number, loggedWeight?: number) => {
     const isCompleted = !set.completed;
     const finalWeight = loggedWeight !== undefined ? loggedWeight : (set.loggedWeightKg || set.targetWeightKg || 0);
 
     logExerciseSet({
-      workoutPlanId: activeWorkoutPlan.id,
+      workoutPlanId: displayedPlan.id,
       exerciseId: exercise.exerciseId,
       exerciseName: exercise.exerciseName,
       dayOfWeek: currentDayWorkout.dayOfWeek,
@@ -67,6 +107,10 @@ export const ClientCalendarView: React.FC = () => {
       weightKg: finalWeight,
       completed: isCompleted,
     });
+
+    if (isCompleted) {
+      startRestTimer(set.restSeconds || 90);
+    }
   };
 
   const handleCompleteWorkout = () => {
@@ -99,19 +143,45 @@ export const ClientCalendarView: React.FC = () => {
       <div className="bg-gradient-to-r from-neutral-900 via-neutral-900 to-neutral-950 border border-neutral-800 rounded-3xl p-6 sm:p-8 relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-semibold">
-                Plano Semanal em Vigor
+                Plano da Semana {displayedPlan.weekNumber || 1}
               </span>
-              <span className="text-xs text-neutral-400">
-                {activeWorkoutPlan.weekStartDate} até {activeWorkoutPlan.weekEndDate}
+              <span className="text-xs text-neutral-400 font-mono">
+                {displayedPlan.weekStartDate} até {displayedPlan.weekEndDate}
               </span>
+              
+              {/* Optional previous week toggle if available */}
+              {previousWorkoutPlan && (
+                <div className="flex items-center gap-1 ml-2">
+                  <button
+                    onClick={() => setViewingPreviousWeek(false)}
+                    className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition ${
+                      !viewingPreviousWeek 
+                        ? 'bg-amber-500 text-black' 
+                        : 'bg-neutral-800 text-neutral-400 hover:text-white'
+                    }`}
+                  >
+                    Semana Atual ({activeWorkoutPlan?.weekNumber || 1})
+                  </button>
+                  <button
+                    onClick={() => setViewingPreviousWeek(true)}
+                    className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition ${
+                      viewingPreviousWeek 
+                        ? 'bg-amber-500 text-black' 
+                        : 'bg-neutral-800 text-neutral-400 hover:text-white'
+                    }`}
+                  >
+                    Semana Anterior
+                  </button>
+                </div>
+              )}
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              {activeWorkoutPlan.title}
+              {displayedPlan.title}
             </h1>
             <p className="text-xs sm:text-sm text-neutral-300 mt-2 max-w-2xl leading-relaxed">
-              {activeWorkoutPlan.notes}
+              {displayedPlan.notes}
             </p>
           </div>
 
@@ -127,11 +197,61 @@ export const ClientCalendarView: React.FC = () => {
         </div>
       </div>
 
+      {/* SUNDAY TRANSITION & CYCLE STATUS BANNER */}
+      {selectedDayIndex === 6 ? (
+        <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-500 flex items-center justify-center shrink-0">
+              <Clock className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="font-bold text-white flex items-center gap-2">
+                <span>Domingo • Último Dia da Semana {displayedPlan.weekNumber || 1}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                  Rotina em Aberto
+                </span>
+              </div>
+              <p className="text-neutral-300 mt-0.5 leading-relaxed">
+                Ainda não acabaste o teu último treino? Fica tranquilo: todas as séries continuam ativas para poderes registar as cargas até ao final do dia. A nova semana só será exibida após o Coach Sérgio Cunha confirmar o reset de domingo.
+              </p>
+            </div>
+          </div>
+
+          <div className="shrink-0 flex items-center gap-2 bg-neutral-950 px-3 py-1.5 rounded-xl border border-neutral-800 font-mono text-[11px] text-neutral-300">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            <span>Semana {displayedPlan.weekNumber || 1} em Conclusão</span>
+          </div>
+        </div>
+      ) : (displayedPlan.weekNumber && displayedPlan.weekNumber > 1) ? (
+        <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 rounded-2xl p-3.5 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2.5">
+            <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>
+              <strong>Semana {displayedPlan.weekNumber} Ativa!</strong> As tuas séries foram reiniciadas pelo Coach Sérgio Cunha com novo ciclo de cargas.
+            </span>
+          </div>
+          <span className="text-[10px] font-mono font-bold bg-emerald-500/20 px-2 py-0.5 rounded text-emerald-200">
+            Novo Ciclo
+          </span>
+        </div>
+      ) : null}
+
+      {completedWorkoutToday && (
+        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between gap-3 shadow-md">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>
+              <strong>Sessão Concluída com Sucesso! 🔥</strong> Treino registado. O Coach Sérgio Cunha está a avaliar as tuas cargas para o próximo ciclo de domingo.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Week Day Pills Selector */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
         {daysOfWeek.map((day) => {
           const isSelected = selectedDayIndex === day.index;
-          const dayPlan = activeWorkoutPlan.days.find(d => d.dayIndex === day.index);
+          const dayPlan = displayedPlan.days.find(d => d.dayIndex === day.index);
           const isRest = dayPlan?.isRestDay;
           const hasExercises = (dayPlan?.exercises.length || 0) > 0;
 
@@ -283,9 +403,18 @@ export const ClientCalendarView: React.FC = () => {
                               {set.reps} reps
                             </div>
 
-                            {/* Target Weight */}
-                            <div className="col-span-3 sm:col-span-3 text-neutral-300">
-                              {set.targetWeightKg ? `${set.targetWeightKg} kg` : 'Carga livre'}
+                            {/* Target Weight and Rest badge */}
+                            <div className="col-span-3 sm:col-span-3 flex items-center gap-1.5 text-neutral-300 flex-wrap">
+                              <span>{set.targetWeightKg ? `${set.targetWeightKg} kg` : 'Carga livre'}</span>
+                              <button
+                                type="button"
+                                onClick={() => startRestTimer(set.restSeconds || 90)}
+                                className="text-[10px] text-neutral-500 hover:text-amber-400 font-mono flex items-center gap-1 px-1.5 py-0.5 rounded bg-neutral-900 border border-neutral-800 transition"
+                                title="Iniciar cronómetro de descanso para esta série"
+                              >
+                                <Clock className="w-2.5 h-2.5 text-amber-500" />
+                                <span>{set.restSeconds || 90}s</span>
+                              </button>
                             </div>
 
                             {/* User Logged Weight Field */}
@@ -339,6 +468,47 @@ export const ClientCalendarView: React.FC = () => {
             })}
           </div>
 
+        </div>
+      )}
+
+      {/* Floating Rest Timer Bar */}
+      {restTimeRemaining !== null && (
+        <div className="fixed bottom-20 md:bottom-8 left-1/2 -translate-x-1/2 z-50 bg-neutral-900/95 backdrop-blur-md border border-amber-500/50 rounded-2xl p-3 shadow-2xl flex items-center gap-3 text-xs min-w-[290px] sm:min-w-[360px] animate-in fade-in slide-in-from-bottom-4">
+          <div className="w-9 h-9 rounded-xl bg-amber-500 text-black flex items-center justify-center font-bold shrink-0">
+            <Clock className="w-4 h-4 animate-spin" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="font-bold text-white truncate">Descanso entre Séries</span>
+              <span className="font-mono font-bold text-amber-400 text-sm">
+                {Math.floor(restTimeRemaining / 60).toString().padStart(2, '0')}:{(restTimeRemaining % 60).toString().padStart(2, '0')}
+              </span>
+            </div>
+            <div className="w-full bg-neutral-800 rounded-full h-1.5 mt-1 overflow-hidden">
+              <div 
+                className="bg-amber-500 h-full transition-all duration-1000"
+                style={{ width: `${Math.min(100, (restTimeRemaining / (totalRestSeconds || 1)) * 100)}%` }}
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => setRestTimeRemaining(prev => (prev || 0) + 30)}
+              className="px-2 py-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-[10px] font-mono text-neutral-300"
+              title="Adicionar 30 segundos"
+            >
+              +30s
+            </button>
+            <button
+              type="button"
+              onClick={() => setRestTimeRemaining(null)}
+              className="p-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-white"
+              title="Parar / Fechar Cronómetro"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       )}
 
