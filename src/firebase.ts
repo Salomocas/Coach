@@ -7,6 +7,13 @@ import {
   GoogleAuthProvider, 
   signOut as fbSignOut,
   onAuthStateChanged,
+  updateProfile as fbUpdateProfile,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  reload,
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
   type User as FirebaseUser
 } from 'firebase/auth';
 import { 
@@ -101,6 +108,13 @@ export {
   signInWithPopup,
   fbSignOut,
   onAuthStateChanged,
+  fbUpdateProfile,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  reload,
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
   type FirebaseUser,
   doc,
   setDoc,

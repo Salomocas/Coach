@@ -23,8 +23,16 @@ export const ClientCalendarView: React.FC = () => {
   const { currentUser } = useAuth();
   const { activeWorkoutPlan, previousWorkoutPlan, logExerciseSet, currentWeekNumber } = useData();
   
-  // Default to today's day of week or Monday (0)
-  const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
+  // Get today's index in Monday..Sunday (0..6)
+  const getTodayDayIndex = (): number => {
+    const jsDay = new Date().getDay(); // 0 is Sunday, 1 is Monday ... 6 is Saturday
+    return jsDay === 0 ? 6 : jsDay - 1;
+  };
+
+  const todayIndex = getTodayDayIndex();
+
+  // Default directly to today's day of week, so students never start locked to Monday
+  const [selectedDayIndex, setSelectedDayIndex] = useState<number>(todayIndex);
   const [selectedExerciseForModal, setSelectedExerciseForModal] = useState<DayExercise | null>(null);
   const [completedWorkoutToday, setCompletedWorkoutToday] = useState(false);
   const [viewingPreviousWeek, setViewingPreviousWeek] = useState(false);
@@ -140,14 +148,14 @@ export const ClientCalendarView: React.FC = () => {
     <div className="space-y-6">
       
       {/* Plan Header */}
-      <div className="bg-gradient-to-r from-neutral-900 via-neutral-900 to-neutral-950 border border-neutral-800 rounded-3xl p-6 sm:p-8 relative overflow-hidden">
+      <div className="bg-white dark:bg-gradient-to-r dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-sm transition-colors">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-semibold">
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-semibold">
                 Plano da Semana {displayedPlan.weekNumber || 1}
               </span>
-              <span className="text-xs text-neutral-400 font-mono">
+              <span className="text-xs text-slate-500 dark:text-neutral-400 font-mono">
                 {displayedPlan.weekStartDate} até {displayedPlan.weekEndDate}
               </span>
               
@@ -159,7 +167,7 @@ export const ClientCalendarView: React.FC = () => {
                     className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition ${
                       !viewingPreviousWeek 
                         ? 'bg-amber-500 text-black' 
-                        : 'bg-neutral-800 text-neutral-400 hover:text-white'
+                        : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     Semana Atual ({activeWorkoutPlan?.weekNumber || 1})
@@ -169,7 +177,7 @@ export const ClientCalendarView: React.FC = () => {
                     className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition ${
                       viewingPreviousWeek 
                         ? 'bg-amber-500 text-black' 
-                        : 'bg-neutral-800 text-neutral-400 hover:text-white'
+                        : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     Semana Anterior
@@ -177,21 +185,21 @@ export const ClientCalendarView: React.FC = () => {
                 </div>
               )}
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               {displayedPlan.title}
             </h1>
-            <p className="text-xs sm:text-sm text-neutral-300 mt-2 max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-300 mt-2 max-w-2xl leading-relaxed">
               {displayedPlan.notes}
             </p>
           </div>
 
-          <div className="bg-neutral-950/80 border border-neutral-800 rounded-2xl p-4 shrink-0 flex items-center gap-3">
+          <div className="bg-slate-50 dark:bg-neutral-950/80 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4 shrink-0 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-bold">
               <Flame className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xs text-neutral-400">Prescrito por</div>
-              <div className="text-sm font-bold text-white">Coach Sérgio Cunha</div>
+              <div className="text-xs text-slate-500 dark:text-neutral-400">Prescrito por</div>
+              <div className="text-sm font-bold text-slate-900 dark:text-white">Coach Sérgio Cunha</div>
             </div>
           </div>
         </div>
@@ -251,6 +259,7 @@ export const ClientCalendarView: React.FC = () => {
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
         {daysOfWeek.map((day) => {
           const isSelected = selectedDayIndex === day.index;
+          const isToday = todayIndex === day.index;
           const dayPlan = displayedPlan.days.find(d => d.dayIndex === day.index);
           const isRest = dayPlan?.isRestDay;
           const hasExercises = (dayPlan?.exercises.length || 0) > 0;
@@ -262,13 +271,22 @@ export const ClientCalendarView: React.FC = () => {
                 setSelectedDayIndex(day.index);
                 setCompletedWorkoutToday(false);
               }}
-              className={`flex-1 min-w-[70px] sm:min-w-[100px] py-3 px-3 rounded-2xl border text-center transition-all ${
+              className={`flex-1 min-w-[75px] sm:min-w-[100px] py-3 px-3 rounded-2xl border text-center transition-all cursor-pointer relative ${
                 isSelected
-                  ? 'bg-amber-500 text-black border-amber-500 font-extrabold shadow-lg shadow-amber-500/15 scale-[1.02]'
-                  : 'bg-neutral-900/80 border-neutral-800 text-neutral-300 hover:border-neutral-700 hover:text-white'
+                  ? 'bg-amber-500 text-black border-amber-500 font-extrabold shadow-md shadow-amber-500/15 scale-[1.02]'
+                  : 'bg-white dark:bg-neutral-900/80 border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-neutral-300 hover:border-slate-300 dark:hover:border-neutral-700 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <div className="text-xs uppercase tracking-wider">{day.label}</div>
+              {isToday && (
+                <span className={`inline-block text-[9px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded-full mb-0.5 ${
+                  isSelected 
+                    ? 'bg-black text-amber-400' 
+                    : 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40'
+                }`}>
+                  Hoje
+                </span>
+              )}
+              <div className="text-xs uppercase tracking-wider font-semibold">{day.label}</div>
               <div className="text-sm font-bold mt-0.5">
                 {isRest ? 'Descanso' : hasExercises ? `${dayPlan?.exercises.length} ex.` : 'Ativo'}
               </div>
@@ -279,12 +297,18 @@ export const ClientCalendarView: React.FC = () => {
 
       {/* Selected Day Workout Container */}
       {currentDayWorkout?.isRestDay ? (
-        <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-10 text-center max-w-xl mx-auto my-8">
+        <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl p-10 text-center max-w-xl mx-auto my-8 shadow-sm">
           <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto mb-4">
             <Clock className="w-8 h-8" />
           </div>
-          <h3 className="text-xl font-bold text-white">{currentDayWorkout.name}</h3>
-          <p className="text-sm text-neutral-400 mt-2 leading-relaxed">
+          {selectedDayIndex === todayIndex && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-bold mb-3">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+              Treino de Hoje
+            </div>
+          )}
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white">{currentDayWorkout.name}</h3>
+          <p className="text-sm text-slate-600 dark:text-neutral-400 mt-2 leading-relaxed">
             Dia programado pelo Coach para recuperação neuromuscular, síntese proteica e hidratação. Aproveita para caminhar 30 a 45 minutos (Zona 2) ou fazer mobilidade articular suave.
           </p>
         </div>
@@ -292,26 +316,34 @@ export const ClientCalendarView: React.FC = () => {
         <div className="space-y-6">
           
           {/* Day Title bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-neutral-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-neutral-800">
             <div>
-              <span className="text-xs font-semibold text-amber-500 uppercase tracking-wider">
-                {currentDayWorkout?.dayOfWeek} • {currentDayWorkout?.focusArea}
-              </span>
-              <h2 className="text-xl sm:text-2xl font-bold text-white">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-semibold text-amber-500 uppercase tracking-wider">
+                  {currentDayWorkout?.dayOfWeek} • {currentDayWorkout?.focusArea}
+                </span>
+                {selectedDayIndex === todayIndex && (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] font-extrabold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    HOJE
+                  </span>
+                )}
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
                 {currentDayWorkout?.name}
               </h2>
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="text-xs text-neutral-400">
+              <span className="text-xs text-slate-500 dark:text-neutral-400">
                 {currentDayWorkout?.exercises.length} exercícios programados
               </span>
               <button
                 onClick={handleCompleteWorkout}
-                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
                   completedWorkoutToday
                     ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20'
-                    : 'bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-700'
+                    : 'bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 text-slate-900 dark:text-white border border-slate-200 dark:border-neutral-700'
                 }`}
               >
                 <CheckCircle2 className="w-4 h-4" />
@@ -328,7 +360,7 @@ export const ClientCalendarView: React.FC = () => {
               return (
                 <div
                   key={exercise.exerciseId + exIdx}
-                  className="bg-neutral-900 border border-neutral-800 hover:border-neutral-700/80 rounded-2xl p-5 transition-all shadow-md"
+                  className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700/80 rounded-2xl p-5 transition-all shadow-sm"
                 >
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
                     
@@ -338,23 +370,23 @@ export const ClientCalendarView: React.FC = () => {
                         <img
                           src={exercise.imageUrl}
                           alt={exercise.exerciseName}
-                          className="w-16 h-16 rounded-xl object-cover ring-1 ring-neutral-700 shrink-0 hidden sm:block"
+                          className="w-16 h-16 rounded-xl object-cover ring-1 ring-slate-200 dark:ring-neutral-700 shrink-0 hidden sm:block"
                         />
                       )}
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="w-5 h-5 rounded-md bg-neutral-800 text-amber-400 text-xs font-mono font-bold flex items-center justify-center">
+                          <span className="w-5 h-5 rounded-md bg-slate-100 dark:bg-neutral-800 text-amber-600 dark:text-amber-400 text-xs font-mono font-bold flex items-center justify-center">
                             {exIdx + 1}
                           </span>
-                          <h3 className="font-bold text-base text-white">
+                          <h3 className="font-bold text-base text-slate-900 dark:text-white">
                             {exercise.exerciseName}
                           </h3>
                         </div>
-                        <p className="text-xs text-neutral-400 mt-1">
-                          Grupo Muscular: <span className="text-neutral-200">{exercise.muscleGroup || 'Peitoral / Tronco'}</span>
+                        <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1">
+                          Grupo Muscular: <span className="text-slate-900 dark:text-neutral-200 font-medium">{exercise.muscleGroup || 'Peitoral / Tronco'}</span>
                         </p>
                         {exercise.notes && (
-                          <div className="mt-1 text-xs text-amber-400/90 flex items-center gap-1.5 font-medium">
+                          <div className="mt-1 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5 font-medium">
                             <Info className="w-3.5 h-3.5 shrink-0" />
                             <span>Nota do Coach: {exercise.notes}</span>
                           </div>
@@ -366,7 +398,7 @@ export const ClientCalendarView: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setSelectedExerciseForModal(exercise)}
-                        className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold flex items-center gap-1.5 transition"
+                        className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 border border-slate-200 dark:border-neutral-700 text-slate-800 dark:text-neutral-200 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
                       >
                         <Play className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                         <span>Ver Vídeo Demonstrativo & Execução</span>
@@ -375,8 +407,8 @@ export const ClientCalendarView: React.FC = () => {
                   </div>
 
                   {/* Series and Load Logging Table */}
-                  <div className="bg-neutral-950/60 rounded-xl p-3 border border-neutral-800/80">
-                    <div className="grid grid-cols-12 gap-2 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider pb-2 border-b border-neutral-800 px-2">
+                  <div className="bg-slate-50 dark:bg-neutral-950/60 rounded-xl p-3 border border-slate-200 dark:border-neutral-800/80">
+                    <div className="grid grid-cols-12 gap-2 text-[11px] font-semibold text-slate-500 dark:text-neutral-400 uppercase tracking-wider pb-2 border-b border-slate-200 dark:border-neutral-800 px-2">
                       <div className="col-span-2 sm:col-span-1 text-center">Série</div>
                       <div className="col-span-3 sm:col-span-2">Reps Alvo</div>
                       <div className="col-span-3 sm:col-span-3">Carga Prescrita</div>
@@ -384,32 +416,32 @@ export const ClientCalendarView: React.FC = () => {
                       <div className="hidden sm:block sm:col-span-2 text-right">Ação</div>
                     </div>
 
-                    <div className="divide-y divide-neutral-900 mt-1">
+                    <div className="divide-y divide-slate-200 dark:divide-neutral-900 mt-1">
                       {exercise.sets.map((set, sIdx) => {
                         return (
                           <div
                             key={sIdx}
                             className={`grid grid-cols-12 gap-2 items-center py-2 px-2 text-xs rounded-lg transition ${
-                              set.completed ? 'bg-amber-500/5' : ''
+                              set.completed ? 'bg-amber-500/10 dark:bg-amber-500/5' : ''
                             }`}
                           >
                             {/* Set # */}
-                            <div className="col-span-2 sm:col-span-1 text-center font-mono font-bold text-neutral-300">
+                            <div className="col-span-2 sm:col-span-1 text-center font-mono font-bold text-slate-700 dark:text-neutral-300">
                               #{set.setNumber}
                             </div>
 
                             {/* Reps */}
-                            <div className="col-span-3 sm:col-span-2 font-mono text-white">
+                            <div className="col-span-3 sm:col-span-2 font-mono text-slate-900 dark:text-white font-medium">
                               {set.reps} reps
                             </div>
 
                             {/* Target Weight and Rest badge */}
-                            <div className="col-span-3 sm:col-span-3 flex items-center gap-1.5 text-neutral-300 flex-wrap">
+                            <div className="col-span-3 sm:col-span-3 flex items-center gap-1.5 text-slate-700 dark:text-neutral-300 flex-wrap">
                               <span>{set.targetWeightKg ? `${set.targetWeightKg} kg` : 'Carga livre'}</span>
                               <button
                                 type="button"
                                 onClick={() => startRestTimer(set.restSeconds || 90)}
-                                className="text-[10px] text-neutral-500 hover:text-amber-400 font-mono flex items-center gap-1 px-1.5 py-0.5 rounded bg-neutral-900 border border-neutral-800 transition"
+                                className="text-[10px] text-slate-500 dark:text-neutral-500 hover:text-amber-500 font-mono flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 transition cursor-pointer"
                                 title="Iniciar cronómetro de descanso para esta série"
                               >
                                 <Clock className="w-2.5 h-2.5 text-amber-500" />
@@ -429,24 +461,24 @@ export const ClientCalendarView: React.FC = () => {
                                     handleSetToggle(exercise, set, sIdx, val);
                                   }
                                 }}
-                                className="w-16 sm:w-20 px-2 py-1 rounded bg-neutral-900 border border-neutral-700 text-white font-mono text-xs focus:border-amber-500 focus:outline-none"
+                                className="w-16 sm:w-20 px-2 py-1 rounded bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 text-slate-900 dark:text-white font-mono text-xs focus:border-amber-500 focus:outline-none"
                               />
-                              <span className="text-[11px] text-neutral-400">kg</span>
+                              <span className="text-[11px] text-slate-500 dark:text-neutral-400">kg</span>
                             </div>
 
                             {/* Complete Checkbox */}
                             <div className="col-span-12 sm:col-span-2 flex justify-end mt-1 sm:mt-0">
                               <button
                                 onClick={() => handleSetToggle(exercise, set, sIdx)}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
+                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
                                   set.completed
-                                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                                    : 'bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-700'
+                                    ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40'
+                                    : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-neutral-700'
                                 }`}
                               >
                                 {set.completed ? (
                                   <>
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
                                     <span>Feita</span>
                                   </>
                                 ) : (
@@ -473,18 +505,18 @@ export const ClientCalendarView: React.FC = () => {
 
       {/* Floating Rest Timer Bar */}
       {restTimeRemaining !== null && (
-        <div className="fixed bottom-20 md:bottom-8 left-1/2 -translate-x-1/2 z-50 bg-neutral-900/95 backdrop-blur-md border border-amber-500/50 rounded-2xl p-3 shadow-2xl flex items-center gap-3 text-xs min-w-[290px] sm:min-w-[360px] animate-in fade-in slide-in-from-bottom-4">
+        <div className="fixed bottom-20 md:bottom-8 left-1/2 -translate-x-1/2 z-50 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md border border-amber-500/50 rounded-2xl p-3 shadow-2xl flex items-center gap-3 text-xs min-w-[290px] sm:min-w-[360px] animate-in fade-in slide-in-from-bottom-4">
           <div className="w-9 h-9 rounded-xl bg-amber-500 text-black flex items-center justify-center font-bold shrink-0">
             <Clock className="w-4 h-4 animate-spin" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between text-[11px]">
-              <span className="font-bold text-white truncate">Descanso entre Séries</span>
-              <span className="font-mono font-bold text-amber-400 text-sm">
+              <span className="font-bold text-slate-900 dark:text-white truncate">Descanso entre Séries</span>
+              <span className="font-mono font-bold text-amber-500 dark:text-amber-400 text-sm">
                 {Math.floor(restTimeRemaining / 60).toString().padStart(2, '0')}:{(restTimeRemaining % 60).toString().padStart(2, '0')}
               </span>
             </div>
-            <div className="w-full bg-neutral-800 rounded-full h-1.5 mt-1 overflow-hidden">
+            <div className="w-full bg-slate-200 dark:bg-neutral-800 rounded-full h-1.5 mt-1 overflow-hidden">
               <div 
                 className="bg-amber-500 h-full transition-all duration-1000"
                 style={{ width: `${Math.min(100, (restTimeRemaining / (totalRestSeconds || 1)) * 100)}%` }}
@@ -495,7 +527,7 @@ export const ClientCalendarView: React.FC = () => {
             <button
               type="button"
               onClick={() => setRestTimeRemaining(prev => (prev || 0) + 30)}
-              className="px-2 py-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-[10px] font-mono text-neutral-300"
+              className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 text-[10px] font-mono text-slate-700 dark:text-neutral-300 cursor-pointer"
               title="Adicionar 30 segundos"
             >
               +30s
@@ -503,7 +535,7 @@ export const ClientCalendarView: React.FC = () => {
             <button
               type="button"
               onClick={() => setRestTimeRemaining(null)}
-              className="p-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-white"
+              className="p-1 rounded-lg bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 text-slate-400 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
               title="Parar / Fechar Cronómetro"
             >
               <X className="w-3.5 h-3.5" />
@@ -515,20 +547,20 @@ export const ClientCalendarView: React.FC = () => {
       {/* Exercise Modal with Technique Video & Instructions */}
       {selectedExerciseForModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl overflow-hidden relative max-h-[90vh] flex flex-col">
+          <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl overflow-hidden relative max-h-[90vh] flex flex-col">
             
-            <div className="flex items-center justify-between pb-4 border-b border-neutral-800">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-neutral-800">
               <div>
                 <span className="text-xs font-semibold text-amber-500 uppercase tracking-wider">
                   Técnica de Execução & Vídeo
                 </span>
-                <h3 className="text-xl font-bold text-white">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                   {selectedExerciseForModal.exerciseName}
                 </h3>
               </div>
               <button
                 onClick={() => setSelectedExerciseForModal(null)}
-                className="p-2 rounded-xl bg-neutral-800 text-neutral-400 hover:text-white"
+                className="p-2 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -538,7 +570,7 @@ export const ClientCalendarView: React.FC = () => {
               
               {/* Video Player or Embed */}
               {selectedExerciseForModal.videoUrl ? (
-                <div className="aspect-video w-full rounded-2xl overflow-hidden bg-black border border-neutral-800">
+                <div className="aspect-video w-full rounded-2xl overflow-hidden bg-black border border-slate-200 dark:border-neutral-800">
                   {getEmbedUrl(selectedExerciseForModal.videoUrl)?.includes('embed') ? (
                     <iframe
                       src={getEmbedUrl(selectedExerciseForModal.videoUrl) || ''}
@@ -559,26 +591,26 @@ export const ClientCalendarView: React.FC = () => {
                 <img
                   src={selectedExerciseForModal.imageUrl}
                   alt={selectedExerciseForModal.exerciseName}
-                  className="w-full max-h-72 object-cover rounded-2xl border border-neutral-800"
+                  className="w-full max-h-72 object-cover rounded-2xl border border-slate-200 dark:border-neutral-800"
                 />
               ) : null}
 
               {/* Coach execution instructions */}
-              <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800">
-                <h4 className="font-bold text-sm text-white mb-2 flex items-center gap-2">
+              <div className="bg-slate-50 dark:bg-neutral-950 p-4 rounded-2xl border border-slate-200 dark:border-neutral-800">
+                <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-2 flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-amber-500" />
                   Instruções & Dicas Posturais do Coach Sérgio Cunha
                 </h4>
-                <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-300 leading-relaxed">
                   {selectedExerciseForModal.notes || 'Executa o movimento com cadência controlada (3 segundos na fase excêntrica). Mantém a estabilidade articular e evita compensações com a lombar.'}
                 </p>
               </div>
             </div>
 
-            <div className="pt-3 border-t border-neutral-800 flex justify-end">
+            <div className="pt-3 border-t border-slate-200 dark:border-neutral-800 flex justify-end">
               <button
                 onClick={() => setSelectedExerciseForModal(null)}
-                className="px-5 py-2.5 rounded-xl bg-amber-500 text-black font-bold text-xs"
+                className="px-5 py-2.5 rounded-xl bg-amber-500 text-black font-bold text-xs cursor-pointer shadow-md shadow-amber-500/20 hover:bg-amber-400 transition"
               >
                 Entendido, Continuar Treino
               </button>

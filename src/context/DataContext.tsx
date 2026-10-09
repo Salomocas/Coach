@@ -24,7 +24,11 @@ import {
   Message, 
   AppNotification, 
   UserProfile,
-  Meal 
+  Meal,
+  DailyWorkoutTemplate,
+  WeeklyWorkoutTemplate,
+  DailyMealTemplate,
+  WeeklyMealTemplate 
 } from '../types';
 import { 
   INITIAL_EXERCISES, 
@@ -35,7 +39,11 @@ import {
   INITIAL_NUTRITION_TEMPLATES, 
   INITIAL_PROGRESS_LOGS, 
   INITIAL_MESSAGES,
-  INITIAL_MEAL_LIBRARY 
+  INITIAL_MEAL_LIBRARY,
+  INITIAL_DAILY_WORKOUT_TEMPLATES,
+  INITIAL_WEEKLY_WORKOUT_TEMPLATES,
+  INITIAL_DAILY_MEAL_TEMPLATES,
+  INITIAL_WEEKLY_MEAL_TEMPLATES
 } from '../initialData';
 import { useAuth } from './AuthContext';
 
@@ -73,6 +81,7 @@ interface DataContextType {
 
   progressLogs: ProgressLog[];
   addProgressLog: (log: Omit<ProgressLog, 'id' | 'createdAt'>) => Promise<void>;
+  deleteProgressLog: (id: string) => Promise<void>;
 
   messages: Message[];
   sendMessage: (text: string, recipientClientId?: string) => Promise<void>;
@@ -92,6 +101,30 @@ interface DataContextType {
     endDate: string;
     notes?: string;
   }) => Promise<void>;
+
+  // Library Templates: Daily & Weekly Workouts
+  dailyWorkoutTemplates: DailyWorkoutTemplate[];
+  addDailyWorkoutTemplate: (template: Omit<DailyWorkoutTemplate, 'id' | 'createdAt'>) => Promise<void>;
+  updateDailyWorkoutTemplate: (id: string, template: Partial<DailyWorkoutTemplate>) => Promise<void>;
+  deleteDailyWorkoutTemplate: (id: string) => Promise<void>;
+
+  weeklyWorkoutTemplates: WeeklyWorkoutTemplate[];
+  addWeeklyWorkoutTemplate: (template: Omit<WeeklyWorkoutTemplate, 'id' | 'createdAt'>) => Promise<void>;
+  updateWeeklyWorkoutTemplate: (id: string, template: Partial<WeeklyWorkoutTemplate>) => Promise<void>;
+  deleteWeeklyWorkoutTemplate: (id: string) => Promise<void>;
+
+  // Library Templates: Daily & Weekly Meals
+  deleteMealFromLibrary: (id: string) => Promise<void>;
+  updateMealInLibrary: (id: string, meal: Partial<Meal>) => Promise<void>;
+  dailyMealTemplates: DailyMealTemplate[];
+  addDailyMealTemplate: (template: Omit<DailyMealTemplate, 'id' | 'createdAt'>) => Promise<void>;
+  updateDailyMealTemplate: (id: string, template: Partial<DailyMealTemplate>) => Promise<void>;
+  deleteDailyMealTemplate: (id: string) => Promise<void>;
+
+  weeklyMealTemplates: WeeklyMealTemplate[];
+  addWeeklyMealTemplate: (template: Omit<WeeklyMealTemplate, 'id' | 'createdAt'>) => Promise<void>;
+  updateWeeklyMealTemplate: (id: string, template: Partial<WeeklyMealTemplate>) => Promise<void>;
+  deleteWeeklyMealTemplate: (id: string) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -128,6 +161,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   ]);
   const [selectedAthleteId, setSelectedAthleteId] = useState<string>('client-ricardo-silva');
   const [currentWeekNumber, setCurrentWeekNumber] = useState<number>(1);
+
+  // Library Templates State
+  const [dailyWorkoutTemplates, setDailyWorkoutTemplates] = useState<DailyWorkoutTemplate[]>(INITIAL_DAILY_WORKOUT_TEMPLATES);
+  const [weeklyWorkoutTemplates, setWeeklyWorkoutTemplates] = useState<WeeklyWorkoutTemplate[]>(INITIAL_WEEKLY_WORKOUT_TEMPLATES);
+  const [dailyMealTemplates, setDailyMealTemplates] = useState<DailyMealTemplate[]>(INITIAL_DAILY_MEAL_TEMPLATES);
+  const [weeklyMealTemplates, setWeeklyMealTemplates] = useState<WeeklyMealTemplate[]>(INITIAL_WEEKLY_MEAL_TEMPLATES);
 
   // Client ID currently targeted: if athlete is logged in, their own UID; if coach, the selected athlete
   const targetClientId = isCoach ? selectedAthleteId : (currentUser?.uid || 'client-ricardo-silva');
@@ -354,6 +393,156 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateMealInLibrary = async (id: string, mealData: Partial<Meal>) => {
+    setMealLibrary(prev => prev.map(m => m.id === id ? { ...m, ...mealData } : m));
+    try {
+      await updateDoc(doc(db, 'meal_library', id), mealData);
+    } catch (e) {
+      console.warn('Update meal in Firestore:', e);
+    }
+  };
+
+  const deleteMealFromLibrary = async (id: string) => {
+    setMealLibrary(prev => prev.filter(m => m.id !== id));
+    try {
+      await deleteDoc(doc(db, 'meal_library', id));
+    } catch (e) {
+      console.warn('Delete meal from Firestore:', e);
+    }
+  };
+
+  // Daily Workout Templates
+  const addDailyWorkoutTemplate = async (tmplData: Omit<DailyWorkoutTemplate, 'id' | 'createdAt'>) => {
+    const newTmpl: DailyWorkoutTemplate = {
+      ...tmplData,
+      id: 'daily-tmpl-' + Date.now(),
+      createdAt: new Date().toISOString()
+    };
+    setDailyWorkoutTemplates(prev => [newTmpl, ...prev]);
+    try {
+      await setDoc(doc(db, 'daily_workout_templates', newTmpl.id), newTmpl);
+    } catch (e) {
+      console.warn('Sync daily workout template to Firestore:', e);
+    }
+  };
+
+  const updateDailyWorkoutTemplate = async (id: string, tmplData: Partial<DailyWorkoutTemplate>) => {
+    setDailyWorkoutTemplates(prev => prev.map(t => t.id === id ? { ...t, ...tmplData } : t));
+    try {
+      await updateDoc(doc(db, 'daily_workout_templates', id), tmplData);
+    } catch (e) {
+      console.warn('Update daily workout template in Firestore:', e);
+    }
+  };
+
+  const deleteDailyWorkoutTemplate = async (id: string) => {
+    setDailyWorkoutTemplates(prev => prev.filter(t => t.id !== id));
+    try {
+      await deleteDoc(doc(db, 'daily_workout_templates', id));
+    } catch (e) {
+      console.warn('Delete daily workout template in Firestore:', e);
+    }
+  };
+
+  // Weekly Workout Templates
+  const addWeeklyWorkoutTemplate = async (tmplData: Omit<WeeklyWorkoutTemplate, 'id' | 'createdAt'>) => {
+    const newTmpl: WeeklyWorkoutTemplate = {
+      ...tmplData,
+      id: 'weekly-tmpl-' + Date.now(),
+      createdAt: new Date().toISOString()
+    };
+    setWeeklyWorkoutTemplates(prev => [newTmpl, ...prev]);
+    try {
+      await setDoc(doc(db, 'weekly_workout_templates', newTmpl.id), newTmpl);
+    } catch (e) {
+      console.warn('Sync weekly workout template to Firestore:', e);
+    }
+  };
+
+  const updateWeeklyWorkoutTemplate = async (id: string, tmplData: Partial<WeeklyWorkoutTemplate>) => {
+    setWeeklyWorkoutTemplates(prev => prev.map(t => t.id === id ? { ...t, ...tmplData } : t));
+    try {
+      await updateDoc(doc(db, 'weekly_workout_templates', id), tmplData);
+    } catch (e) {
+      console.warn('Update weekly workout template in Firestore:', e);
+    }
+  };
+
+  const deleteWeeklyWorkoutTemplate = async (id: string) => {
+    setWeeklyWorkoutTemplates(prev => prev.filter(t => t.id !== id));
+    try {
+      await deleteDoc(doc(db, 'weekly_workout_templates', id));
+    } catch (e) {
+      console.warn('Delete weekly workout template in Firestore:', e);
+    }
+  };
+
+  // Daily Meal Templates
+  const addDailyMealTemplate = async (tmplData: Omit<DailyMealTemplate, 'id' | 'createdAt'>) => {
+    const newTmpl: DailyMealTemplate = {
+      ...tmplData,
+      id: 'daily-meal-tmpl-' + Date.now(),
+      createdAt: new Date().toISOString()
+    };
+    setDailyMealTemplates(prev => [newTmpl, ...prev]);
+    try {
+      await setDoc(doc(db, 'daily_meal_templates', newTmpl.id), newTmpl);
+    } catch (e) {
+      console.warn('Sync daily meal template to Firestore:', e);
+    }
+  };
+
+  const updateDailyMealTemplate = async (id: string, tmplData: Partial<DailyMealTemplate>) => {
+    setDailyMealTemplates(prev => prev.map(t => t.id === id ? { ...t, ...tmplData } : t));
+    try {
+      await updateDoc(doc(db, 'daily_meal_templates', id), tmplData);
+    } catch (e) {
+      console.warn('Update daily meal template in Firestore:', e);
+    }
+  };
+
+  const deleteDailyMealTemplate = async (id: string) => {
+    setDailyMealTemplates(prev => prev.filter(t => t.id !== id));
+    try {
+      await deleteDoc(doc(db, 'daily_meal_templates', id));
+    } catch (e) {
+      console.warn('Delete daily meal template in Firestore:', e);
+    }
+  };
+
+  // Weekly Meal Templates
+  const addWeeklyMealTemplate = async (tmplData: Omit<WeeklyMealTemplate, 'id' | 'createdAt'>) => {
+    const newTmpl: WeeklyMealTemplate = {
+      ...tmplData,
+      id: 'weekly-meal-tmpl-' + Date.now(),
+      createdAt: new Date().toISOString()
+    };
+    setWeeklyMealTemplates(prev => [newTmpl, ...prev]);
+    try {
+      await setDoc(doc(db, 'weekly_meal_templates', newTmpl.id), newTmpl);
+    } catch (e) {
+      console.warn('Sync weekly meal template to Firestore:', e);
+    }
+  };
+
+  const updateWeeklyMealTemplate = async (id: string, tmplData: Partial<WeeklyMealTemplate>) => {
+    setWeeklyMealTemplates(prev => prev.map(t => t.id === id ? { ...t, ...tmplData } : t));
+    try {
+      await updateDoc(doc(db, 'weekly_meal_templates', id), tmplData);
+    } catch (e) {
+      console.warn('Update weekly meal template in Firestore:', e);
+    }
+  };
+
+  const deleteWeeklyMealTemplate = async (id: string) => {
+    setWeeklyMealTemplates(prev => prev.filter(t => t.id !== id));
+    try {
+      await deleteDoc(doc(db, 'weekly_meal_templates', id));
+    } catch (e) {
+      console.warn('Delete weekly meal template in Firestore:', e);
+    }
+  };
+
   const startNewWeekReset = async (options: {
     newWeekNumber: number;
     startDate: string;
@@ -447,6 +636,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const deleteProgressLog = async (id: string) => {
+    setProgressLogs(prev => prev.filter(p => p.id !== id));
+    try {
+      await deleteDoc(doc(db, 'progress_logs', id));
+    } catch (e) {
+      console.warn('Delete progress log from Firestore:', e);
+    }
+  };
+
   // Messages / Chat
   const sendMessage = async (text: string, recipientClientId?: string) => {
     if (!text.trim()) return;
@@ -535,6 +733,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addMealToLibrary,
       progressLogs: progressLogs.filter(p => isCoach ? (p.clientId === selectedAthleteId) : (p.clientId === (currentUser?.uid || 'client-ricardo-silva'))),
       addProgressLog,
+      deleteProgressLog,
       messages,
       sendMessage,
       markMessagesAsRead,
@@ -545,6 +744,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSelectedAthleteId,
       currentWeekNumber,
       startNewWeekReset,
+      dailyWorkoutTemplates,
+      addDailyWorkoutTemplate,
+      updateDailyWorkoutTemplate,
+      deleteDailyWorkoutTemplate,
+      weeklyWorkoutTemplates,
+      addWeeklyWorkoutTemplate,
+      updateWeeklyWorkoutTemplate,
+      deleteWeeklyWorkoutTemplate,
+      updateMealInLibrary,
+      deleteMealFromLibrary,
+      dailyMealTemplates,
+      addDailyMealTemplate,
+      updateDailyMealTemplate,
+      deleteDailyMealTemplate,
+      weeklyMealTemplates,
+      addWeeklyMealTemplate,
+      updateWeeklyMealTemplate,
+      deleteWeeklyMealTemplate,
     }}>
       {children}
     </DataContext.Provider>

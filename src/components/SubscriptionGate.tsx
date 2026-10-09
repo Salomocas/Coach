@@ -105,87 +105,92 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ onSuccess })
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center p-4">
-      <div className="max-w-3xl w-full bg-neutral-900 border border-neutral-800 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden">
+      <div className="max-w-3xl w-full bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden transition-colors">
         
         {/* Glow backdrop */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 dark:bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
         {/* Header */}
         <div className="text-center max-w-xl mx-auto mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center mx-auto mb-4">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center mx-auto mb-4">
             <Lock className="w-7 h-7" />
           </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Acesso Reservado a Alunos VIP
           </h2>
-          <p className="text-neutral-400 text-xs sm:text-sm mt-2 leading-relaxed">
-            Olá, <strong className="text-white">{currentUser?.displayName}</strong>. Para acederes aos teus treinos, ementa alimentar e chat direto com o Personal Trainer Sérgio Cunha, regulariza a tua mensalidade.
+          <p className="text-slate-500 dark:text-neutral-400 text-xs sm:text-sm mt-2 leading-relaxed">
+            Olá, <strong className="text-slate-900 dark:text-white">{currentUser?.displayName}</strong>. Para acederes aos teus treinos, ementa alimentar e chat direto com o Personal Trainer Sérgio Cunha, regulariza a tua mensalidade.
           </p>
+
+          <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-700 dark:text-amber-300">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <span>O Coach pode também desbloquear o teu acesso manualmente a qualquer momento.</span>
+          </div>
         </div>
 
         {/* Pricing Plan Highlight: 100€ Fixo com Stripe */}
-        <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-neutral-950 via-neutral-950 to-neutral-900 border border-indigo-500/40 relative overflow-hidden shadow-lg">
+        <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-slate-50 via-slate-50 to-amber-50/30 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900 border border-amber-500/30 dark:border-indigo-500/40 relative overflow-hidden shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-[10px] font-extrabold uppercase tracking-wider">
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-500 dark:text-indigo-400 border border-indigo-500/30 text-[10px] font-extrabold uppercase tracking-wider">
                   Processado via Stripe
                 </span>
-                <span className="text-xs text-neutral-400">Mensalidade Oficial</span>
+                <span className="text-xs text-slate-500 dark:text-neutral-400">Mensalidade Oficial</span>
               </div>
-              <h3 className="text-xl sm:text-2xl font-black text-white mt-1">
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">
                 Acompanhamento VIP com Coach Sérgio Cunha
               </h3>
-              <p className="text-xs text-neutral-400 mt-1 max-w-md">
+              <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1 max-w-md">
                 Treinos individualizados semanais, ementa e cálculo de macronutrientes, biblioteca de vídeos de exercícios e acompanhamento direto.
               </p>
             </div>
 
             <div className="text-left sm:text-right shrink-0">
               <div className="flex items-baseline gap-1 sm:justify-end">
-                <span className="text-4xl sm:text-5xl font-black text-white font-mono tracking-tight">
+                <span className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
                   {FIXED_MONTHLY_FEE} €
                 </span>
-                <span className="text-xs text-neutral-400 font-semibold">/mês</span>
+                <span className="text-xs text-slate-500 dark:text-neutral-400 font-semibold">/mês</span>
               </div>
-              <span className="text-[11px] text-emerald-400 font-semibold block mt-0.5">
+              <span className="text-[11px] text-emerald-500 font-semibold block mt-0.5">
                 Cobrança segura • Sem fidelização
               </span>
             </div>
           </div>
 
-          <div className="mt-5 pt-4 border-t border-neutral-800/80 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-neutral-300">
+          <div className="mt-5 pt-4 border-t border-slate-200 dark:border-neutral-800/80 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 dark:text-neutral-300">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
               <span>Rotinas e cargas revistas ao domingo</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
               <span>Ementa nutricional ajustada a cada ciclo</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
               <span>Tira-dúvidas diário no chat com o Sérgio</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Desbloqueio imediato após pagamento</span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span>Desbloqueio imediato após pagamento ou pelo Coach</span>
             </div>
           </div>
         </div>
 
         {/* STRIPE CHECKOUT CONTAINER */}
-        <div className="bg-neutral-950/80 border border-neutral-800 rounded-2xl p-6 sm:p-7">
+        <div className="bg-slate-50 dark:bg-neutral-950/80 border border-slate-200 dark:border-neutral-800 rounded-2xl p-6 sm:p-7">
           
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div>
               <div className="flex items-center gap-2">
-                <h4 className="font-bold text-white text-sm">Pagamento Seguro com Stripe</h4>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300">
+                <h4 className="font-bold text-slate-900 dark:text-white text-sm">Pagamento Seguro com Stripe</h4>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300">
                   Stripe Elements
                 </span>
               </div>
-              <p className="text-xs text-neutral-400">Cartão de Crédito/Débito, Apple Pay, MB WAY ou Multibanco</p>
+              <p className="text-xs text-slate-500 dark:text-neutral-400">Cartão de Crédito/Débito, MB WAY ou Multibanco</p>
             </div>
 
             {/* Payment method selector inside Stripe */}
@@ -236,14 +241,14 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ onSuccess })
             <div className="space-y-4">
               
               {/* Quick Fill Test Card Button */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-neutral-900/90 border border-neutral-800 text-xs">
-                <span className="text-neutral-400">Modo de Teste / Sandbox Stripe ativo:</span>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-100 dark:bg-neutral-900/90 border border-slate-200 dark:border-neutral-800 text-xs">
+                <span className="text-slate-600 dark:text-neutral-400">Modo de Teste / Sandbox Stripe:</span>
                 <button
                   type="button"
                   onClick={handleFillTestCard}
-                  className="px-3 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 font-bold text-[11px] border border-indigo-500/30 transition cursor-pointer flex items-center gap-1.5"
+                  className="px-3 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 font-bold text-[11px] border border-indigo-500/30 transition cursor-pointer flex items-center gap-1.5"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
                   <span>Usar Cartão de Teste (4242...)</span>
                 </button>
               </div>
@@ -251,7 +256,7 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ onSuccess })
               {/* Virtual Card Form */}
               <div className="space-y-3">
                 <div>
-                  <label className="text-xs text-neutral-300 block mb-1">
+                  <label className="text-xs text-slate-700 dark:text-neutral-300 block mb-1">
                     Número do Cartão *
                   </label>
                   <div className="relative">
@@ -261,9 +266,9 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ onSuccess })
                       value={cardNumber}
                       onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
                       placeholder="4242 4242 4242 4242"
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl pl-4 pr-16 py-2.5 text-white font-mono text-sm focus:border-indigo-500 focus:outline-none"
+                      className="w-full bg-white dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl pl-4 pr-16 py-2.5 text-slate-900 dark:text-white font-mono text-sm focus:border-indigo-500 focus:outline-none"
                     />
-                    <div className="absolute right-3.5 top-2.5 text-xs font-bold uppercase text-neutral-400 font-mono">
+                    <div className="absolute right-3.5 top-2.5 text-xs font-bold uppercase text-slate-400 dark:text-neutral-400 font-mono">
                       {cardBrand !== 'generic' ? cardBrand : 'CARTÃO'}
                     </div>
                   </div>
@@ -271,7 +276,7 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ onSuccess })
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="sm:col-span-1">
-                    <label className="text-xs text-neutral-300 block mb-1">
+                    <label className="text-xs text-slate-700 dark:text-neutral-300 block mb-1">
                       Validade (MM/AA) *
                     </label>
                     <input
@@ -280,12 +285,12 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ onSuccess })
                       value={expiry}
                       onChange={(e) => setExpiry(formatExpiry(e.target.value))}
                       placeholder="12/28"
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-white font-mono text-sm focus:border-indigo-500 focus:outline-none"
+                      className="w-full bg-white dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-mono text-sm focus:border-indigo-500 focus:outline-none"
                     />
                   </div>
 
                   <div className="sm:col-span-1">
-                    <label className="text-xs text-neutral-300 block mb-1">
+                    <label className="text-xs text-slate-700 dark:text-neutral-300 block mb-1">
                       CVC / CVV *
                     </label>
                     <input
@@ -294,12 +299,12 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ onSuccess })
                       value={cvc}
                       onChange={(e) => setCvc(e.target.value.replace(/\D/g, ''))}
                       placeholder="123"
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-white font-mono text-sm focus:border-indigo-500 focus:outline-none"
+                      className="w-full bg-white dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-mono text-sm focus:border-indigo-500 focus:outline-none"
                     />
                   </div>
 
                   <div className="sm:col-span-1">
-                    <label className="text-xs text-neutral-300 block mb-1">
+                    <label className="text-xs text-slate-700 dark:text-neutral-300 block mb-1">
                       Nome no Cartão *
                     </label>
                     <input
@@ -307,7 +312,7 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ onSuccess })
                       value={cardHolder}
                       onChange={(e) => setCardHolder(e.target.value)}
                       placeholder="Nome Apelido"
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-white text-xs focus:border-indigo-500 focus:outline-none"
+                      className="w-full bg-white dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white text-xs focus:border-indigo-500 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -319,20 +324,20 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ onSuccess })
           {/* METHOD: MB WAY VIA STRIPE */}
           {stripeMethod === 'mbway' && (
             <div className="space-y-3">
-              <div className="bg-neutral-900 p-4 rounded-xl border border-neutral-800 flex items-center gap-3">
-                <Smartphone className="w-5 h-5 text-indigo-400 shrink-0" />
+              <div className="bg-white dark:bg-neutral-900 p-4 rounded-xl border border-slate-200 dark:border-neutral-800 flex items-center gap-3">
+                <Smartphone className="w-5 h-5 text-indigo-500 dark:text-indigo-400 shrink-0" />
                 <div className="flex-1">
-                  <label className="text-[11px] text-neutral-400 block mb-0.5">Telemóvel MB WAY (via Stripe)</label>
+                  <label className="text-[11px] text-slate-500 dark:text-neutral-400 block mb-0.5">Telemóvel MB WAY (via Stripe)</label>
                   <input
                     type="text"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="9xx xxx xxx"
-                    className="w-full bg-transparent text-white font-mono text-sm focus:outline-none font-bold"
+                    className="w-full bg-transparent text-slate-900 dark:text-white font-mono text-sm focus:outline-none font-bold"
                   />
                 </div>
               </div>
-              <p className="text-[11px] text-neutral-400">
+              <p className="text-[11px] text-slate-500 dark:text-neutral-400">
                 A Stripe enviará uma confirmação de <strong>{FIXED_MONTHLY_FEE},00 €</strong> diretamente para a tua aplicação MB WAY.
               </p>
             </div>
@@ -341,21 +346,21 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ onSuccess })
           {/* METHOD: MULTIBANCO VIA STRIPE */}
           {stripeMethod === 'multibanco' && (
             <div className="space-y-3">
-              <div className="bg-neutral-900 p-4 rounded-xl border border-neutral-800 text-xs space-y-2">
+              <div className="bg-white dark:bg-neutral-900 p-4 rounded-xl border border-slate-200 dark:border-neutral-800 text-xs space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-neutral-400">Entidade Multibanco Stripe:</span>
-                  <span className="font-mono font-bold text-white">11249</span>
+                  <span className="text-slate-500 dark:text-neutral-400">Entidade Multibanco Stripe:</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-white">11249</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-neutral-400">Referência Provisória:</span>
-                  <span className="font-mono font-bold text-indigo-300">928 341 552</span>
+                  <span className="text-slate-500 dark:text-neutral-400">Referência Provisória:</span>
+                  <span className="font-mono font-bold text-indigo-600 dark:text-indigo-300">928 341 552</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-neutral-400">Montante:</span>
-                  <span className="font-mono font-bold text-white">{FIXED_MONTHLY_FEE},00 €</span>
+                  <span className="text-slate-500 dark:text-neutral-400">Montante:</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-white">{FIXED_MONTHLY_FEE},00 €</span>
                 </div>
               </div>
-              <p className="text-[11px] text-neutral-400">
+              <p className="text-[11px] text-slate-500 dark:text-neutral-400">
                 A referência Multibanco é gerada e reconciliada automaticamente através da Stripe.
               </p>
             </div>

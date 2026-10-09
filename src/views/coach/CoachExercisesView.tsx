@@ -101,22 +101,22 @@ export const CoachExercisesView: React.FC = () => {
     <div className="space-y-6">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-neutral-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-neutral-800">
         <div>
           <span className="text-xs font-semibold text-amber-500 uppercase tracking-wider">
             Variáveis Reutilizáveis & Vídeos
           </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
             Biblioteca de Exercícios do Coach
           </h1>
-          <p className="text-xs sm:text-sm text-neutral-400 mt-1">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-400 mt-1">
             Cadastra exercícios com links de demonstração e instruções posturais para vincular diretamente aos planos.
           </p>
         </div>
 
         <button
           onClick={handleOpenCreate}
-          className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition shrink-0"
+          className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Novo Exercício</span>
@@ -124,15 +124,15 @@ export const CoachExercisesView: React.FC = () => {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-neutral-900 border border-neutral-800 rounded-2xl p-3">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-3 shadow-sm">
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-neutral-500 absolute left-3.5 top-3" />
+          <Search className="w-4 h-4 text-slate-400 dark:text-neutral-500 absolute left-3.5 top-3" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Pesquisar exercício ou músculo..."
-            className="w-full bg-neutral-950 border border-neutral-800 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-neutral-500 focus:border-amber-500 focus:outline-none"
+            className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-neutral-500 focus:border-amber-500 focus:outline-none"
           />
         </div>
 
@@ -142,8 +142,10 @@ export const CoachExercisesView: React.FC = () => {
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
-                categoryFilter === cat ? 'bg-amber-500 text-black font-bold' : 'bg-neutral-950 text-neutral-400 hover:text-white'
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                categoryFilter === cat 
+                  ? 'bg-amber-500 text-black font-bold' 
+                  : 'bg-slate-100 dark:bg-neutral-950 text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               {cat}
@@ -157,17 +159,17 @@ export const CoachExercisesView: React.FC = () => {
         {filteredExercises.map((ex) => (
           <div
             key={ex.id}
-            className="bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-3xl p-5 flex flex-col justify-between transition-all shadow-md group"
+            className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 rounded-3xl p-5 flex flex-col justify-between transition-all shadow-sm hover:shadow-md group"
           >
             <div>
               {/* Image & Video Tag */}
-              <div className="relative aspect-video rounded-2xl overflow-hidden bg-neutral-950 border border-neutral-800 mb-3">
+              <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 mb-3">
                 <img
                   src={ex.imageUrl || 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=600&q=80'}
                   alt={ex.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                 />
-                <span className="absolute top-2 left-2 bg-neutral-950/80 backdrop-blur-md text-[10px] uppercase font-bold px-2 py-0.5 rounded-md text-amber-400 border border-neutral-800">
+                <span className="absolute top-2 left-2 bg-white/90 dark:bg-neutral-950/80 backdrop-blur-md text-[10px] uppercase font-bold px-2 py-0.5 rounded-md text-amber-600 dark:text-amber-400 border border-slate-200 dark:border-neutral-800">
                   {ex.category}
                 </span>
                 {ex.videoUrl && (
@@ -179,38 +181,38 @@ export const CoachExercisesView: React.FC = () => {
               </div>
 
               {/* Title & Muscles */}
-              <h3 className="font-bold text-base text-white">{ex.name}</h3>
-              <p className="text-xs text-neutral-400 mt-1">
-                Foco: <span className="text-neutral-200 font-medium">{ex.muscleGroup}</span>
+              <h3 className="font-bold text-base text-slate-900 dark:text-white">{ex.name}</h3>
+              <p className="text-xs text-slate-600 dark:text-neutral-400 mt-1">
+                Foco: <span className="text-slate-900 dark:text-neutral-200 font-medium">{ex.muscleGroup}</span>
               </p>
               {ex.equipment && (
-                <p className="text-[11px] text-neutral-500 mt-0.5">
+                <p className="text-[11px] text-slate-400 dark:text-neutral-500 mt-0.5">
                   Equipamento: {ex.equipment}
                 </p>
               )}
 
               {/* Instructions preview */}
-              <p className="text-xs text-neutral-400 mt-2 line-clamp-2 leading-relaxed italic bg-neutral-950/40 p-2.5 rounded-xl border border-neutral-800/80">
+              <p className="text-xs text-slate-600 dark:text-neutral-400 mt-2 line-clamp-2 leading-relaxed italic bg-slate-50 dark:bg-neutral-950/40 p-2.5 rounded-xl border border-slate-200 dark:border-neutral-800/80">
                 "{ex.instructions}"
               </p>
             </div>
 
             {/* Actions */}
-            <div className="mt-4 pt-3 border-t border-neutral-800 flex items-center justify-between">
-              <span className="text-[10px] text-neutral-500 font-mono">
+            <div className="mt-4 pt-3 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between">
+              <span className="text-[10px] text-slate-400 dark:text-neutral-500 font-mono">
                 Variável de treino
               </span>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => handleOpenEdit(ex)}
-                  className="p-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white"
+                  className="p-2 rounded-xl bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 text-slate-700 dark:text-neutral-300 hover:text-slate-950 dark:hover:text-white transition cursor-pointer"
                   title="Editar"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => deleteExercise(ex.id)}
-                  className="p-2 rounded-xl bg-neutral-800 hover:bg-red-500/20 text-neutral-400 hover:text-red-400"
+                  className="p-2 rounded-xl bg-slate-100 dark:bg-neutral-800 hover:bg-red-500/20 text-slate-400 dark:text-neutral-400 hover:text-red-500 dark:hover:text-red-400 transition cursor-pointer"
                   title="Eliminar"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -224,20 +226,20 @@ export const CoachExercisesView: React.FC = () => {
       {/* Modal: Create/Edit Exercise */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             
-            <div className="flex items-center justify-between pb-4 border-b border-neutral-800">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-neutral-800">
               <div>
-                <h3 className="font-bold text-lg text-white">
+                <h3 className="font-bold text-lg text-slate-900 dark:text-white">
                   {editingExercise ? 'Editar Exercício' : 'Adicionar Novo Exercício'}
                 </h3>
-                <p className="text-xs text-neutral-400">
+                <p className="text-xs text-slate-500 dark:text-neutral-400">
                   Preenche os dados e o vídeo demonstrativo
                 </p>
               </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-2 rounded-xl bg-neutral-800 text-neutral-400 hover:text-white"
+                className="p-2 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -246,7 +248,7 @@ export const CoachExercisesView: React.FC = () => {
             <form onSubmit={handleSubmit} className="py-4 space-y-4">
               
               <div>
-                <label className="text-xs font-semibold text-neutral-300 block mb-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-neutral-300 block mb-1">
                   Nome do Exercício *
                 </label>
                 <input
@@ -255,19 +257,19 @@ export const CoachExercisesView: React.FC = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="ex: Supino Inclinado com Halteres"
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-xs text-white focus:border-amber-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-neutral-300 block mb-1">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-neutral-300 block mb-1">
                     Categoria
                   </label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value as any)}
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-xs text-white focus:border-amber-500 focus:outline-none"
+                    className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none"
                   >
                     {categories.filter(c => c !== 'Todos').map(c => (
                       <option key={c} value={c}>{c}</option>
@@ -275,7 +277,7 @@ export const CoachExercisesView: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-neutral-300 block mb-1">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-neutral-300 block mb-1">
                     Músculo Alvo / Grupo
                   </label>
                   <input
@@ -283,13 +285,13 @@ export const CoachExercisesView: React.FC = () => {
                     value={muscleGroup}
                     onChange={(e) => setMuscleGroup(e.target.value)}
                     placeholder="ex: Peitoral Superior, Tríceps"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-xs text-white focus:border-amber-500 focus:outline-none"
+                    className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-neutral-300 block mb-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-neutral-300 block mb-1">
                   Equipamento Necessário
                 </label>
                 <input
@@ -297,12 +299,12 @@ export const CoachExercisesView: React.FC = () => {
                   value={equipment}
                   onChange={(e) => setEquipment(e.target.value)}
                   placeholder="ex: Banco Inclinado 30° e Halteres"
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-xs text-white focus:border-amber-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-neutral-300 block mb-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-neutral-300 block mb-1">
                   URL do Vídeo Demonstrativo (YouTube / Vimeo / MP4)
                 </label>
                 <input
@@ -310,12 +312,12 @@ export const CoachExercisesView: React.FC = () => {
                   value={videoUrl}
                   onChange={(e) => setVideoUrl(e.target.value)}
                   placeholder="https://www.youtube.com/watch?v=..."
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-xs text-white font-mono focus:border-amber-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white font-mono focus:border-amber-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-neutral-300 block mb-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-neutral-300 block mb-1">
                   URL da Imagem de Capa
                 </label>
                 <input
@@ -323,12 +325,12 @@ export const CoachExercisesView: React.FC = () => {
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
                   placeholder="https://images.unsplash.com/..."
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-xs text-white font-mono focus:border-amber-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white font-mono focus:border-amber-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-neutral-300 block mb-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-neutral-300 block mb-1">
                   Instruções de Execução & Cues do Coach
                 </label>
                 <textarea
@@ -336,21 +338,21 @@ export const CoachExercisesView: React.FC = () => {
                   value={instructions}
                   onChange={(e) => setInstructions(e.target.value)}
                   placeholder="Descreve o posicionamento das omoplatas, cotovelos, trajetória e cadência..."
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-xs text-white focus:border-amber-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none"
                 />
               </div>
 
-              <div className="pt-3 border-t border-neutral-800 flex justify-end gap-2">
+              <div className="pt-3 border-t border-slate-200 dark:border-neutral-800 flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-neutral-800 text-neutral-300 hover:text-white text-xs font-semibold"
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 hover:text-slate-900 dark:hover:text-white text-xs font-semibold transition cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold shadow-lg shadow-amber-500/20"
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold shadow-lg shadow-amber-500/20 cursor-pointer"
                 >
                   {editingExercise ? 'Atualizar Exercício' : 'Gravar Exercício'}
                 </button>

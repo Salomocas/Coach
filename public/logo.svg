@@ -1,0 +1,206 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 750" width="100%" height="100%">
+  <defs>
+    <!-- Gold Gradients -->
+    <linearGradient id="goldMetallic" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF2A3" />
+      <stop offset="25%" stop-color="#E5B342" />
+      <stop offset="50%" stop-color="#C58E1A" />
+      <stop offset="75%" stop-color="#FCE588" />
+      <stop offset="100%" stop-color="#8C5C08" />
+    </linearGradient>
+    <linearGradient id="goldBorder" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#E5B342" />
+      <stop offset="50%" stop-color="#FFF5BE" />
+      <stop offset="100%" stop-color="#B37E17" />
+    </linearGradient>
+    <radialGradient id="badgeGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#2D4028" />
+      <stop offset="70%" stop-color="#141E11" />
+      <stop offset="100%" stop-color="#090E08" />
+    </radialGradient>
+    <linearGradient id="muscleSkin" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E38954" />
+      <stop offset="40%" stop-color="#C96836" />
+      <stop offset="80%" stop-color="#A5491E" />
+      <stop offset="100%" stop-color="#732909" />
+    </linearGradient>
+    <linearGradient id="muscleHighlight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFAE80" />
+      <stop offset="100%" stop-color="#C96836" stop-opacity="0" />
+    </linearGradient>
+    <linearGradient id="redTrunk" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#EF4444" />
+      <stop offset="100%" stop-color="#991B1B" />
+    </linearGradient>
+    <filter id="shadowDrop" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.8" />
+    </filter>
+  </defs>
+
+  <!-- Background Shield Point at Bottom -->
+  <polygon points="250,580 340,510 320,440 180,440 160,510" fill="#1C2718" stroke="url(#goldMetallic)" stroke-width="4" filter="url(#shadowDrop)" />
+
+  <!-- Outer Wings Left -->
+  <g id="leftWings" filter="url(#shadowDrop)">
+    <path d="M 120,310 C 60,300 20,240 10,210 C 25,235 50,250 85,255 C 50,240 25,210 15,185 C 35,205 70,225 105,230 C 70,205 45,175 35,150 C 60,180 100,200 135,210 Z" fill="url(#goldMetallic)" stroke="#8C5C08" stroke-width="2" />
+    <path d="M 110,340 C 65,335 30,305 20,285 C 40,300 75,310 105,312 Z" fill="url(#goldMetallic)" />
+  </g>
+
+  <!-- Outer Wings Right (Mirrored) -->
+  <g id="rightWings" transform="translate(500,0) scale(-1,1)" filter="url(#shadowDrop)">
+    <path d="M 120,310 C 60,300 20,240 10,210 C 25,235 50,250 85,255 C 50,240 25,210 15,185 C 35,205 70,225 105,230 C 70,205 45,175 35,150 C 60,180 100,200 135,210 Z" fill="url(#goldMetallic)" stroke="#8C5C08" stroke-width="2" />
+    <path d="M 110,340 C 65,335 30,305 20,285 C 40,300 75,310 105,312 Z" fill="url(#goldMetallic)" />
+  </g>
+
+  <!-- Main Medallion Circular Outer Gold Ring -->
+  <circle cx="250" cy="275" r="210" fill="#141E11" stroke="url(#goldMetallic)" stroke-width="16" filter="url(#shadowDrop)" />
+  <circle cx="250" cy="275" r="198" fill="none" stroke="#251605" stroke-width="3" />
+  <circle cx="250" cy="275" r="185" fill="url(#badgeGlow)" stroke="url(#goldBorder)" stroke-width="6" />
+
+  <!-- Gold Rivets around rim -->
+  <circle cx="250" cy="72" r="4.5" fill="url(#goldBorder)" />
+  <circle cx="370" cy="115" r="4.5" fill="url(#goldBorder)" />
+  <circle cx="430" cy="210" r="4.5" fill="url(#goldBorder)" />
+  <circle cx="430" cy="340" r="4.5" fill="url(#goldBorder)" />
+  <circle cx="370" cy="435" r="4.5" fill="url(#goldBorder)" />
+  <circle cx="130" cy="115" r="4.5" fill="url(#goldBorder)" />
+  <circle cx="70" cy="210" r="4.5" fill="url(#goldBorder)" />
+  <circle cx="70" cy="340" r="4.5" fill="url(#goldBorder)" />
+  <circle cx="130" cy="435" r="4.5" fill="url(#goldBorder)" />
+
+  <!-- Chainlink / Mesh Pattern in background -->
+  <g opacity="0.25" stroke="#E5B342" stroke-width="1.2">
+    <line x1="100" y1="200" x2="400" y2="200" />
+    <line x1="100" y1="240" x2="400" y2="240" />
+    <line x1="100" y1="280" x2="400" y2="280" />
+    <line x1="100" y1="320" x2="400" y2="320" />
+    <line x1="100" y1="360" x2="400" y2="360" />
+    <line x1="160" y1="160" x2="160" y2="400" />
+    <line x1="200" y1="140" x2="200" y2="420" />
+    <line x1="250" y1="130" x2="250" y2="440" />
+    <line x1="300" y1="140" x2="300" y2="420" />
+    <line x1="340" y1="160" x2="340" y2="400" />
+  </g>
+
+  <!-- Growth / Performance Vertical Graphic Equalizer Bars in Center Background -->
+  <g fill="url(#goldMetallic)" opacity="0.45">
+    <rect x="145" y="270" width="6" height="35" rx="3" />
+    <rect x="156" y="255" width="6" height="50" rx="3" />
+    <rect x="167" y="240" width="6" height="65" rx="3" />
+    <rect x="178" y="260" width="6" height="45" rx="3" />
+
+    <rect x="316" y="260" width="6" height="45" rx="3" />
+    <rect x="327" y="240" width="6" height="65" rx="3" />
+    <rect x="338" y="255" width="6" height="50" rx="3" />
+    <rect x="349" y="270" width="6" height="35" rx="3" />
+  </g>
+
+  <!-- Stars on the Medallion Rim -->
+  <!-- Left Stars -->
+  <g fill="url(#goldMetallic)">
+    <polygon points="90,360 93,368 102,369 95,375 97,384 90,379 83,384 85,375 78,369 87,368" />
+    <polygon points="105,395 108,403 117,404 110,410 112,419 105,414 98,419 100,410 93,404 102,403" />
+    <polygon points="128,425 131,433 140,434 133,440 135,449 128,444 121,449 123,440 116,434 125,433" />
+  </g>
+  <!-- Right Stars -->
+  <g fill="url(#goldMetallic)">
+    <polygon points="410,360 413,368 422,369 415,375 417,384 410,379 403,384 405,375 398,369 407,368" />
+    <polygon points="395,395 398,403 407,404 400,410 402,419 395,414 388,419 390,410 383,404 392,403" />
+    <polygon points="372,425 375,433 384,434 377,440 379,449 372,444 365,449 367,440 360,434 369,433" />
+  </g>
+
+  <!-- Muscular Bodybuilder Silhouette & Muscle Shading (Center) -->
+  <!-- Legs / Quads -->
+  <g id="bodybuilderLegs">
+    <!-- Left Quad -->
+    <path d="M 230,370 C 220,410 200,460 205,520 C 225,525 240,480 242,420 Z" fill="url(#muscleSkin)" stroke="#521B05" stroke-width="2" />
+    <!-- Right Quad -->
+    <path d="M 270,370 C 280,410 300,460 295,520 C 275,525 260,480 258,420 Z" fill="url(#muscleSkin)" stroke="#521B05" stroke-width="2" />
+    <!-- Quad Cuts & Striations -->
+    <path d="M 215,440 Q 225,470 220,505" stroke="#FFAE80" stroke-width="3" fill="none" opacity="0.6" />
+    <path d="M 285,440 Q 275,470 280,505" stroke="#FFAE80" stroke-width="3" fill="none" opacity="0.6" />
+  </g>
+
+  <!-- Red Competition Trunks -->
+  <polygon points="218,365 282,365 265,425 235,425" fill="url(#redTrunk)" stroke="#7F1D1D" stroke-width="2" />
+  <!-- Competition Badge #45 -->
+  <circle cx="272" cy="385" r="14" fill="#FFFFFF" stroke="#000000" stroke-width="1.5" />
+  <text x="272" y="390" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="11" text-anchor="middle" fill="#000000">45</text>
+
+  <!-- Upper Body / Torso -->
+  <g id="bodybuilderTorso">
+    <!-- Abs / Core -->
+    <path d="M 235,270 L 265,270 L 260,370 L 240,370 Z" fill="url(#muscleSkin)" stroke="#521B05" stroke-width="2" />
+    <!-- 6-pack cuts -->
+    <path d="M 250,270 L 250,365" stroke="#521B05" stroke-width="2" />
+    <line x1="240" y1="290" x2="260" y2="290" stroke="#521B05" stroke-width="2" />
+    <line x1="240" y1="315" x2="260" y2="315" stroke="#521B05" stroke-width="2" />
+    <line x1="240" y1="340" x2="260" y2="340" stroke="#521B05" stroke-width="2" />
+    <!-- Chest / Pectorals -->
+    <path d="M 195,210 C 220,215 245,230 250,265 C 235,268 200,260 195,210 Z" fill="url(#muscleSkin)" stroke="#521B05" stroke-width="2" />
+    <path d="M 305,210 C 280,215 255,230 250,265 C 265,268 300,260 305,210 Z" fill="url(#muscleSkin)" stroke="#521B05" stroke-width="2" />
+    <!-- Chest Highlights -->
+    <path d="M 205,225 Q 235,230 245,255" stroke="#FFAE80" stroke-width="3" fill="none" opacity="0.6" />
+    <path d="M 295,225 Q 265,230 255,255" stroke="#FFAE80" stroke-width="3" fill="none" opacity="0.6" />
+  </g>
+
+  <!-- Arms - Front Double Biceps Pose -->
+  <!-- Left Arm (Viewer Left) -->
+  <g id="leftBicep">
+    <!-- Shoulder / Deltoid -->
+    <path d="M 180,210 C 150,210 135,235 145,265 C 165,265 185,245 195,210 Z" fill="url(#muscleSkin)" stroke="#521B05" stroke-width="2" />
+    <!-- Bicep peak -->
+    <path d="M 145,265 C 115,245 105,275 125,325 C 155,315 170,290 145,265 Z" fill="url(#muscleSkin)" stroke="#521B05" stroke-width="2" />
+    <!-- Forearm & Clenched Fist -->
+    <path d="M 125,325 C 145,355 175,360 205,345 C 195,330 165,315 125,325 Z" fill="url(#muscleSkin)" stroke="#521B05" stroke-width="2" />
+    <!-- Wristband White -->
+    <rect x="180" y="335" width="12" height="18" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" />
+  </g>
+
+  <!-- Right Arm (Viewer Right) -->
+  <g id="rightBicep">
+    <!-- Shoulder / Deltoid -->
+    <path d="M 320,210 C 350,210 365,235 355,265 C 335,265 315,245 305,210 Z" fill="url(#muscleSkin)" stroke="#521B05" stroke-width="2" />
+    <!-- Bicep peak -->
+    <path d="M 355,265 C 385,245 395,275 375,325 C 345,315 330,290 355,265 Z" fill="url(#muscleSkin)" stroke="#521B05" stroke-width="2" />
+    <!-- Forearm & Clenched Fist -->
+    <path d="M 375,325 C 355,355 325,360 295,345 C 305,330 335,315 375,325 Z" fill="url(#muscleSkin)" stroke="#521B05" stroke-width="2" />
+    <!-- Wristband White -->
+    <rect x="308" y="335" width="12" height="18" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" />
+  </g>
+
+  <!-- Head & Neck -->
+  <g id="bodybuilderHead">
+    <!-- Traps -->
+    <path d="M 220,185 L 280,185 L 290,215 L 210,215 Z" fill="url(#muscleSkin)" stroke="#521B05" stroke-width="2" />
+    <!-- Face / Head -->
+    <ellipse cx="250" cy="155" rx="24" ry="28" fill="#F49E69" stroke="#521B05" stroke-width="2" />
+    <!-- Short Brown Hair -->
+    <path d="M 226,145 C 226,120 274,120 274,145 C 265,130 235,130 226,145 Z" fill="#451A03" />
+    <!-- Beard & Smile -->
+    <path d="M 235,165 C 240,178 260,178 265,165 C 260,172 240,172 235,165 Z" fill="#291204" />
+    <path d="M 242,166 Q 250,172 258,166" stroke="#FFFFFF" stroke-width="2" fill="none" />
+  </g>
+
+  <!-- TOP ARCHED TEXT: COACH CUNHA -->
+  <path id="archTextPath" d="M 85,230 A 185,185 0 0,1 415,230" fill="none" />
+  <text font-family="'Plus Jakarta Sans', impact, sans-serif" font-weight="900" font-size="34" letter-spacing="4" fill="url(#goldMetallic)" stroke="#1A0D02" stroke-width="1.5" filter="url(#shadowDrop)">
+    <textPath href="#archTextPath" startOffset="50%" text-anchor="middle">
+      COACH CUNHA
+    </textPath>
+  </text>
+
+  <!-- BOTTOM RIBBON BANNER: PROJECT -->
+  <g id="bottomRibbon" filter="url(#shadowDrop)">
+    <!-- Ribbon Shadow Tails -->
+    <polygon points="120,490 85,460 120,430 145,460" fill="#0C0E0A" stroke="url(#goldMetallic)" stroke-width="2" />
+    <polygon points="380,490 415,460 380,430 355,460" fill="#0C0E0A" stroke="url(#goldMetallic)" stroke-width="2" />
+    <!-- Main Black Banner Box with Gold Border -->
+    <polygon points="110,480 390,480 375,545 125,545" fill="#0B0E0A" stroke="url(#goldMetallic)" stroke-width="7" />
+    <polygon points="118,487 382,487 369,537 131,537" fill="#141812" stroke="#483311" stroke-width="1.5" />
+    <!-- Text: PROJECT -->
+    <text x="250" y="526" font-family="'Plus Jakarta Sans', impact, sans-serif" font-weight="900" font-size="40" letter-spacing="8" fill="url(#goldMetallic)" stroke="#1C1004" stroke-width="2" text-anchor="middle">
+      PROJECT
+    </text>
+  </g>
+</svg>

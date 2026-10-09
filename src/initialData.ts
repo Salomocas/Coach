@@ -1,4 +1,17 @@
-import { Exercise, WorkoutPlan, NutritionPlan, NutritionTemplate, ProgressLog, Message, UserProfile, Meal } from './types';
+import { 
+  Exercise, 
+  WorkoutPlan, 
+  NutritionPlan, 
+  NutritionTemplate, 
+  ProgressLog, 
+  Message, 
+  UserProfile, 
+  Meal,
+  DailyWorkoutTemplate,
+  WeeklyWorkoutTemplate,
+  DailyMealTemplate,
+  WeeklyMealTemplate
+} from './types';
 
 export const COACH_PROFILE: UserProfile = {
   uid: 'coach-sergio-cunha',
@@ -9,6 +22,18 @@ export const COACH_PROFILE: UserProfile = {
   subscriptionStatus: 'active',
   subscriptionPlan: 'Plano Treinador Pro',
   phone: '+351 912 345 678',
+  createdAt: '2026-01-01',
+};
+
+export const ADMIN_PROFILE: UserProfile = {
+  uid: 'admin-super-master',
+  email: 'admin@cunhaproject.com',
+  displayName: 'Administrador Master',
+  photoURL: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=400&q=80',
+  role: 'admin',
+  subscriptionStatus: 'active',
+  subscriptionPlan: 'Super Administrador (Acesso Total)',
+  phone: '+351 900 000 001',
   createdAt: '2026-01-01',
 };
 
@@ -1231,11 +1256,106 @@ export const INITIAL_PROGRESS_LOGS: ProgressLog[] = [
     hipsCm: 96.5,
     armCm: 38.8,
     thighCm: 61.0,
-    photoFront: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&w=400&q=80',
-    photoSide: 'https://images.unsplash.com/photo-1534367507873-d2d7e24c797f?auto=format&fit=crop&w=400&q=80',
-    photoBack: 'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?auto=format&fit=crop&w=400&q=80',
-    notes: 'Meta de 80kg batida! Definição abdominal visível e melhoria notória no tónus.',
+    muscleMassKg: 40.2,
+    visceralFat: 4,
+    notes: 'Meta dos 80kg batida! Definição abdominal nítida e aumento de força geral.',
     createdAt: '2026-10-01'
+  },
+  {
+    id: 'prog-marta-1',
+    clientId: 'client-marta-pereira',
+    date: '2026-09-01',
+    weightKg: 63.0,
+    bodyFatPercent: 24.5,
+    muscleMassKg: 24.8,
+    visceralFat: 3,
+    chestCm: 88,
+    waistCm: 71,
+    hipsCm: 99,
+    armCm: 26.5,
+    thighCm: 56.0,
+    notes: 'Avaliação inicial com foco em tonificação e resistência muscular.',
+    createdAt: '2026-09-01'
+  },
+  {
+    id: 'prog-marta-2',
+    clientId: 'client-marta-pereira',
+    date: '2026-09-18',
+    weightKg: 61.8,
+    bodyFatPercent: 23.2,
+    muscleMassKg: 25.1,
+    visceralFat: 3,
+    chestCm: 88,
+    waistCm: 69,
+    hipsCm: 98,
+    armCm: 26.8,
+    thighCm: 56.5,
+    notes: 'Excelente adaptação ao plano de nutrição e treinos de glúteos e core.',
+    createdAt: '2026-09-18'
+  },
+  {
+    id: 'prog-marta-3',
+    clientId: 'client-marta-pereira',
+    date: '2026-10-05',
+    weightKg: 60.5,
+    bodyFatPercent: 21.9,
+    muscleMassKg: 25.5,
+    visceralFat: 2,
+    chestCm: 88.5,
+    waistCm: 67.5,
+    hipsCm: 97.5,
+    armCm: 27.2,
+    thighCm: 57.0,
+    notes: 'Resultados consistentes em 5 semanas: redução de 2.5kg de gordura e mais firmeza.',
+    createdAt: '2026-10-05'
+  },
+  {
+    id: 'prog-diogo-1',
+    clientId: 'client-diogo-costa',
+    date: '2026-07-10',
+    weightKg: 77.0,
+    bodyFatPercent: 15.0,
+    muscleMassKg: 38.5,
+    visceralFat: 3,
+    chestCm: 101,
+    waistCm: 82,
+    hipsCm: 97,
+    armCm: 35.0,
+    thighCm: 58.0,
+    notes: 'Início de preparação para a prova de atletismo.',
+    createdAt: '2026-07-10'
+  },
+  {
+    id: 'prog-diogo-2',
+    clientId: 'client-diogo-costa',
+    date: '2026-08-15',
+    weightKg: 76.5,
+    bodyFatPercent: 14.2,
+    muscleMassKg: 38.8,
+    visceralFat: 2,
+    chestCm: 101.5,
+    waistCm: 81,
+    hipsCm: 96.5,
+    armCm: 35.4,
+    thighCm: 58.5,
+    notes: 'Ganhos notáveis na capacidade aeróbica e recuperação entre séries.',
+    createdAt: '2026-08-15'
+  },
+  {
+    id: 'prog-diogo-3',
+    clientId: 'client-diogo-costa',
+    date: '2026-09-20',
+    weightKg: 76.2,
+    bodyFatPercent: 13.8,
+    muscleMassKg: 39.0,
+    visceralFat: 2,
+    chestCm: 102.0,
+    waistCm: 80,
+    hipsCm: 96.0,
+    armCm: 35.8,
+    thighCm: 58.8,
+    notes: 'Manutenção de peso competitivo e aumento de força isométrica.',
+    createdAt: '2026-09-20'
   }
 ];
 
@@ -1455,6 +1575,371 @@ export const INITIAL_MEAL_LIBRARY: Meal[] = [
       { item: 'Queijo Quark 0% ou Caseína Micelar', quantity: '120g' },
       { item: 'Chá de camomila ou melissa sem açúcar', quantity: '1 caneca' }
     ]
+  }
+];
+
+export const INITIAL_DAILY_WORKOUT_TEMPLATES: DailyWorkoutTemplate[] = [
+  {
+    id: 'daily-treino-a-peito-triceps',
+    coachId: 'coach-sergio-cunha',
+    name: 'Treino A - Peito, Deltoide Anterior & Tríceps',
+    focusArea: 'Peitoral & Tríceps',
+    notes: 'Aquecimento específico nos manguitos rotadores e progressão nas primeiras 2 séries.',
+    exercises: [
+      {
+        exerciseId: 'ex-supino-reto',
+        exerciseName: 'Supino Reto com Barra',
+        muscleGroup: 'Peitoral Maior',
+        videoUrl: 'https://www.youtube.com/watch?v=rT7DgCr-3pg',
+        imageUrl: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=600&q=80',
+        sets: [
+          { setNumber: 1, reps: '10', targetWeightKg: 70, restSeconds: 90, completed: false },
+          { setNumber: 2, reps: '10', targetWeightKg: 75, restSeconds: 90, completed: false },
+          { setNumber: 3, reps: '8-10', targetWeightKg: 80, restSeconds: 120, completed: false }
+        ]
+      },
+      {
+        exerciseId: 'ex-elevacao-lateral',
+        exerciseName: 'Elevação Lateral com Halteres',
+        muscleGroup: 'Deltoide Lateral',
+        videoUrl: 'https://www.youtube.com/watch?v=3VcKaXpzqRo',
+        imageUrl: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=600&q=80',
+        sets: [
+          { setNumber: 1, reps: '12', targetWeightKg: 12, restSeconds: 60, completed: false },
+          { setNumber: 2, reps: '12', targetWeightKg: 12, restSeconds: 60, completed: false },
+          { setNumber: 3, reps: '10-12', targetWeightKg: 14, restSeconds: 75, completed: false }
+        ]
+      },
+      {
+        exerciseId: 'ex-triceps-corda',
+        exerciseName: 'Tríceps na Polia com Corda',
+        muscleGroup: 'Tríceps',
+        videoUrl: 'https://www.youtube.com/watch?v=vB5OHsJ3EME',
+        imageUrl: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&w=600&q=80',
+        sets: [
+          { setNumber: 1, reps: '12', targetWeightKg: 25, restSeconds: 60, completed: false },
+          { setNumber: 2, reps: '12', targetWeightKg: 25, restSeconds: 60, completed: false },
+          { setNumber: 3, reps: '10', targetWeightKg: 30, restSeconds: 60, completed: false }
+        ]
+      }
+    ],
+    createdAt: '2026-09-01'
+  },
+  {
+    id: 'daily-treino-b-costas-biceps',
+    coachId: 'coach-sergio-cunha',
+    name: 'Treino B - Costas, Deltoide Posterior & Bíceps',
+    focusArea: 'Costas & Bíceps',
+    notes: 'Manter a coluna neutra e focar na contração escapular em cada puxada.',
+    exercises: [
+      {
+        exerciseId: 'ex-puxada-polia',
+        exerciseName: 'Puxada Aberta na Polia Alta',
+        muscleGroup: 'Costas / Dorsal',
+        videoUrl: 'https://www.youtube.com/watch?v=CAwf7n6Luuc',
+        imageUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80',
+        sets: [
+          { setNumber: 1, reps: '10', targetWeightKg: 60, restSeconds: 90, completed: false },
+          { setNumber: 2, reps: '10', targetWeightKg: 65, restSeconds: 90, completed: false },
+          { setNumber: 3, reps: '8', targetWeightKg: 70, restSeconds: 90, completed: false }
+        ]
+      },
+      {
+        exerciseId: 'ex-curl-halteres',
+        exerciseName: 'Bíceps Curl com Halteres (Supinado)',
+        muscleGroup: 'Bíceps',
+        videoUrl: 'https://www.youtube.com/watch?v=ykJmrZ5v0Oo',
+        imageUrl: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=600&q=80',
+        sets: [
+          { setNumber: 1, reps: '12', targetWeightKg: 14, restSeconds: 60, completed: false },
+          { setNumber: 2, reps: '10', targetWeightKg: 16, restSeconds: 75, completed: false },
+          { setNumber: 3, reps: '10', targetWeightKg: 16, restSeconds: 75, completed: false }
+        ]
+      }
+    ],
+    createdAt: '2026-09-02'
+  },
+  {
+    id: 'daily-treino-c-pernas-completo',
+    coachId: 'coach-sergio-cunha',
+    name: 'Treino C - Pernas, Glúteos & Isquiotibiais',
+    focusArea: 'Membros Inferiores',
+    notes: 'Controlo excêntrico estrito de 3 segundos na descida.',
+    exercises: [
+      {
+        exerciseId: 'ex-agachamento-livre',
+        exerciseName: 'Agachamento Livre com Barra',
+        muscleGroup: 'Quadríceps & Glúteos',
+        videoUrl: 'https://www.youtube.com/watch?v=bEv6CCg2BC8',
+        imageUrl: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=600&q=80',
+        sets: [
+          { setNumber: 1, reps: '10', targetWeightKg: 80, restSeconds: 120, completed: false },
+          { setNumber: 2, reps: '8', targetWeightKg: 90, restSeconds: 120, completed: false },
+          { setNumber: 3, reps: '6-8', targetWeightKg: 100, restSeconds: 150, completed: false }
+        ]
+      },
+      {
+        exerciseId: 'ex-leg-press',
+        exerciseName: 'Leg Press 45º Linear',
+        muscleGroup: 'Quadríceps',
+        videoUrl: 'https://www.youtube.com/watch?v=IZxyjW7MPJQ',
+        imageUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80',
+        sets: [
+          { setNumber: 1, reps: '12', targetWeightKg: 160, restSeconds: 90, completed: false },
+          { setNumber: 2, reps: '10', targetWeightKg: 180, restSeconds: 90, completed: false },
+          { setNumber: 3, reps: '10', targetWeightKg: 200, restSeconds: 120, completed: false }
+        ]
+      }
+    ],
+    createdAt: '2026-09-03'
+  },
+  {
+    id: 'daily-treino-d-ombros-core',
+    coachId: 'coach-sergio-cunha',
+    name: 'Treino D - Ombros, Trapézio & Abdómen',
+    focusArea: 'Deltoides & Core',
+    notes: 'Tensão contínua sem descanso no topo dos movimentos.',
+    exercises: [
+      {
+        exerciseId: 'ex-elevacao-lateral',
+        exerciseName: 'Elevação Lateral com Halteres',
+        muscleGroup: 'Deltoide Lateral',
+        videoUrl: 'https://www.youtube.com/watch?v=3VcKaXpzqRo',
+        imageUrl: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=600&q=80',
+        sets: [
+          { setNumber: 1, reps: '15', targetWeightKg: 10, restSeconds: 60, completed: false },
+          { setNumber: 2, reps: '12', targetWeightKg: 12, restSeconds: 60, completed: false },
+          { setNumber: 3, reps: '12', targetWeightKg: 12, restSeconds: 60, completed: false }
+        ]
+      },
+      {
+        exerciseId: 'ex-prancha-isometrica',
+        exerciseName: 'Prancha Frontal Isométrica',
+        muscleGroup: 'Core / Transverso',
+        videoUrl: 'https://www.youtube.com/watch?v=ASdvN_XEl_c',
+        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=600&q=80',
+        sets: [
+          { setNumber: 1, reps: '60s', restSeconds: 45, completed: false },
+          { setNumber: 2, reps: '60s', restSeconds: 45, completed: false },
+          { setNumber: 3, reps: '45s', restSeconds: 45, completed: false }
+        ]
+      }
+    ],
+    createdAt: '2026-09-04'
+  }
+];
+
+export const INITIAL_WEEKLY_WORKOUT_TEMPLATES: WeeklyWorkoutTemplate[] = [
+  {
+    id: 'weekly-hipertrofia-4dias',
+    coachId: 'coach-sergio-cunha',
+    name: 'Mesociclo de Hipertrofia & Força (4 Dias A/B/C/D)',
+    description: 'Divisão clássica com descanso ativo a meio da semana e foco na progressão de cargas.',
+    days: [
+      {
+        dayOfWeek: 'Segunda-feira',
+        dayIndex: 0,
+        dailyWorkoutId: 'daily-treino-a-peito-triceps',
+        dailyWorkoutName: 'Treino A - Peito, Deltoide Anterior & Tríceps',
+        isRestDay: false,
+        exercises: INITIAL_DAILY_WORKOUT_TEMPLATES[0].exercises
+      },
+      {
+        dayOfWeek: 'Terça-feira',
+        dayIndex: 1,
+        dailyWorkoutId: 'daily-treino-b-costas-biceps',
+        dailyWorkoutName: 'Treino B - Costas, Deltoide Posterior & Bíceps',
+        isRestDay: false,
+        exercises: INITIAL_DAILY_WORKOUT_TEMPLATES[1].exercises
+      },
+      {
+        dayOfWeek: 'Quarta-feira',
+        dayIndex: 2,
+        isRestDay: true,
+        exercises: []
+      },
+      {
+        dayOfWeek: 'Quinta-feira',
+        dayIndex: 3,
+        dailyWorkoutId: 'daily-treino-c-pernas-completo',
+        dailyWorkoutName: 'Treino C - Pernas, Glúteos & Isquiotibiais',
+        isRestDay: false,
+        exercises: INITIAL_DAILY_WORKOUT_TEMPLATES[2].exercises
+      },
+      {
+        dayOfWeek: 'Sexta-feira',
+        dayIndex: 4,
+        dailyWorkoutId: 'daily-treino-d-ombros-core',
+        dailyWorkoutName: 'Treino D - Ombros, Trapézio & Abdómen',
+        isRestDay: false,
+        exercises: INITIAL_DAILY_WORKOUT_TEMPLATES[3].exercises
+      },
+      {
+        dayOfWeek: 'Sábado',
+        dayIndex: 5,
+        isRestDay: true,
+        exercises: []
+      },
+      {
+        dayOfWeek: 'Domingo',
+        dayIndex: 6,
+        isRestDay: true,
+        exercises: []
+      }
+    ],
+    createdAt: '2026-09-01'
+  },
+  {
+    id: 'weekly-fullbody-3dias',
+    coachId: 'coach-sergio-cunha',
+    name: 'Rotina Full Body 3x por Semana',
+    description: 'Ideal para alunos com horários apertados ou em fase de retorno.',
+    days: [
+      {
+        dayOfWeek: 'Segunda-feira',
+        dayIndex: 0,
+        dailyWorkoutId: 'daily-treino-a-peito-triceps',
+        dailyWorkoutName: 'Full Body A - Ênfase Empurrar & Pernas',
+        isRestDay: false,
+        exercises: INITIAL_DAILY_WORKOUT_TEMPLATES[0].exercises
+      },
+      {
+        dayOfWeek: 'Terça-feira',
+        dayIndex: 1,
+        isRestDay: true,
+        exercises: []
+      },
+      {
+        dayOfWeek: 'Quarta-feira',
+        dayIndex: 2,
+        dailyWorkoutId: 'daily-treino-b-costas-biceps',
+        dailyWorkoutName: 'Full Body B - Ênfase Puxar & Posterior',
+        isRestDay: false,
+        exercises: INITIAL_DAILY_WORKOUT_TEMPLATES[1].exercises
+      },
+      {
+        dayOfWeek: 'Quinta-feira',
+        dayIndex: 3,
+        isRestDay: true,
+        exercises: []
+      },
+      {
+        dayOfWeek: 'Sexta-feira',
+        dayIndex: 4,
+        dailyWorkoutId: 'daily-treino-c-pernas-completo',
+        dailyWorkoutName: 'Full Body C - Pernas & Core',
+        isRestDay: false,
+        exercises: INITIAL_DAILY_WORKOUT_TEMPLATES[2].exercises
+      },
+      {
+        dayOfWeek: 'Sábado',
+        dayIndex: 5,
+        isRestDay: true,
+        exercises: []
+      },
+      {
+        dayOfWeek: 'Domingo',
+        dayIndex: 6,
+        isRestDay: true,
+        exercises: []
+      }
+    ],
+    createdAt: '2026-09-05'
+  }
+];
+
+export const INITIAL_DAILY_MEAL_TEMPLATES: DailyMealTemplate[] = [
+  {
+    id: 'daily-meal-hipertrofia-2400',
+    coachId: 'coach-sergio-cunha',
+    name: 'Ementa Hipertrofia Limpa - 2400 kcal (160g Prot)',
+    meals: INITIAL_MEAL_LIBRARY.slice(0, 4),
+    totalCalories: 2380,
+    totalProtein: 165,
+    totalCarbs: 260,
+    totalFat: 68,
+    notes: 'Beber 3L de água e espaçar as refeições a cada 3 a 4 horas.',
+    createdAt: '2026-09-01'
+  },
+  {
+    id: 'daily-meal-definicao-1900',
+    coachId: 'coach-sergio-cunha',
+    name: 'Ementa Definição & Défice - 1900 kcal (155g Prot)',
+    meals: [INITIAL_MEAL_LIBRARY[0], INITIAL_MEAL_LIBRARY[2], INITIAL_MEAL_LIBRARY[5]],
+    totalCalories: 1910,
+    totalProtein: 155,
+    totalCarbs: 170,
+    totalFat: 55,
+    notes: 'Priorizar vegetais folhosos verdes no almoço e jantar para saciedade.',
+    createdAt: '2026-09-02'
+  }
+];
+
+export const INITIAL_WEEKLY_MEAL_TEMPLATES: WeeklyMealTemplate[] = [
+  {
+    id: 'weekly-nutri-hipertrofia',
+    coachId: 'coach-sergio-cunha',
+    name: 'Plano Semanal Hipertrofia & Rendimento (2400 kcal)',
+    description: 'Plano padrão balanceado de alta densidade nutricional para ganho de massa limpa.',
+    days: [
+      {
+        dayOfWeek: 'Segunda-feira',
+        dayIndex: 0,
+        dailyMealId: 'daily-meal-hipertrofia-2400',
+        dailyMealName: 'Ementa Hipertrofia Limpa - 2400 kcal',
+        meals: INITIAL_DAILY_MEAL_TEMPLATES[0].meals,
+        totalCalories: 2380
+      },
+      {
+        dayOfWeek: 'Terça-feira',
+        dayIndex: 1,
+        dailyMealId: 'daily-meal-hipertrofia-2400',
+        dailyMealName: 'Ementa Hipertrofia Limpa - 2400 kcal',
+        meals: INITIAL_DAILY_MEAL_TEMPLATES[0].meals,
+        totalCalories: 2380
+      },
+      {
+        dayOfWeek: 'Quarta-feira',
+        dayIndex: 2,
+        dailyMealId: 'daily-meal-hipertrofia-2400',
+        dailyMealName: 'Ementa Hipertrofia Limpa - 2400 kcal',
+        meals: INITIAL_DAILY_MEAL_TEMPLATES[0].meals,
+        totalCalories: 2380
+      },
+      {
+        dayOfWeek: 'Quinta-feira',
+        dayIndex: 3,
+        dailyMealId: 'daily-meal-hipertrofia-2400',
+        dailyMealName: 'Ementa Hipertrofia Limpa - 2400 kcal',
+        meals: INITIAL_DAILY_MEAL_TEMPLATES[0].meals,
+        totalCalories: 2380
+      },
+      {
+        dayOfWeek: 'Sexta-feira',
+        dayIndex: 4,
+        dailyMealId: 'daily-meal-hipertrofia-2400',
+        dailyMealName: 'Ementa Hipertrofia Limpa - 2400 kcal',
+        meals: INITIAL_DAILY_MEAL_TEMPLATES[0].meals,
+        totalCalories: 2380
+      },
+      {
+        dayOfWeek: 'Sábado',
+        dayIndex: 5,
+        dailyMealId: 'daily-meal-hipertrofia-2400',
+        dailyMealName: 'Ementa Hipertrofia Limpa - 2400 kcal',
+        meals: INITIAL_DAILY_MEAL_TEMPLATES[0].meals,
+        totalCalories: 2380
+      },
+      {
+        dayOfWeek: 'Domingo',
+        dayIndex: 6,
+        dailyMealId: 'daily-meal-definicao-1900',
+        dailyMealName: 'Ementa Dia de Descanso - 1900 kcal',
+        meals: INITIAL_DAILY_MEAL_TEMPLATES[1].meals,
+        totalCalories: 1910
+      }
+    ],
+    createdAt: '2026-09-01'
   }
 ];
 

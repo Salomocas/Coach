@@ -102,22 +102,22 @@ export const ClientProgressView: React.FC = () => {
     <div className="space-y-6">
       
       {/* Header and Add Evaluation Button */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-neutral-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-neutral-800">
         <div>
           <span className="text-xs font-semibold text-amber-500 uppercase tracking-wider">
             Acompanhamento Antropométrico & Visual
           </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
             Evolução Física & Avaliações
           </h1>
-          <p className="text-xs sm:text-sm text-neutral-400 mt-1">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-400 mt-1">
             Histórico de pesagens, perímetros corporais e fotos periódicas de controlo.
           </p>
         </div>
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition shrink-0"
+          className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Nova Avaliação / Pesagem</span>
@@ -127,23 +127,23 @@ export const ClientProgressView: React.FC = () => {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-          <div className="flex items-center justify-between text-neutral-400 text-xs">
+        <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-xs">
             <span>Peso Atual</span>
             <Scale className="w-4 h-4 text-amber-500" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl font-black text-white">{latestLog?.weightKg || 80}</span>
-            <span className="text-xs text-neutral-400">kg</span>
+            <span className="text-3xl font-black text-slate-900 dark:text-white">{latestLog?.weightKg || 80}</span>
+            <span className="text-xs text-slate-500 dark:text-neutral-400">kg</span>
           </div>
           <div className="mt-2 flex items-center gap-1.5 text-xs font-medium">
             {parseFloat(weightDelta) <= 0 ? (
-              <span className="text-emerald-400 flex items-center gap-0.5">
+              <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
                 <ArrowDown className="w-3.5 h-3.5" />
                 {Math.abs(parseFloat(weightDelta))} kg desde o início
               </span>
             ) : (
-              <span className="text-amber-400 flex items-center gap-0.5">
+              <span className="text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
                 <ArrowUp className="w-3.5 h-3.5" />
                 +{weightDelta} kg desde o início
               </span>
@@ -151,45 +151,45 @@ export const ClientProgressView: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-          <div className="flex items-center justify-between text-neutral-400 text-xs">
+        <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-xs">
             <span>Gordura Corporal</span>
             <Sparkles className="w-4 h-4 text-amber-500" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl font-black text-white">{latestLog?.bodyFatPercent || 16.5}</span>
-            <span className="text-xs text-neutral-400">%</span>
+            <span className="text-3xl font-black text-slate-900 dark:text-white">{latestLog?.bodyFatPercent || 16.5}</span>
+            <span className="text-xs text-slate-500 dark:text-neutral-400">%</span>
           </div>
-          <div className="mt-2 text-xs text-emerald-400 flex items-center gap-1">
+          <div className="mt-2 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
             <span>Redução consistente do % MG</span>
           </div>
         </div>
 
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-          <div className="flex items-center justify-between text-neutral-400 text-xs">
+        <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-xs">
             <span>Perímetro Cintura</span>
             <Ruler className="w-4 h-4 text-amber-500" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl font-black text-white">{latestLog?.waistCm || 84.5}</span>
-            <span className="text-xs text-neutral-400">cm</span>
+            <span className="text-3xl font-black text-slate-900 dark:text-white">{latestLog?.waistCm || 84.5}</span>
+            <span className="text-xs text-slate-500 dark:text-neutral-400">cm</span>
           </div>
-          <div className="mt-2 text-xs text-emerald-400 flex items-center gap-1">
+          <div className="mt-2 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
             <ArrowDown className="w-3.5 h-3.5" />
             <span>{Math.abs(parseFloat(waistDelta))} cm de cintura eliminados</span>
           </div>
         </div>
 
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-          <div className="flex items-center justify-between text-neutral-400 text-xs">
+        <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-xs">
             <span>Braço Relaxado / Contraído</span>
             <TrendingUp className="w-4 h-4 text-amber-500" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl font-black text-white">{latestLog?.armCm || 38.8}</span>
-            <span className="text-xs text-neutral-400">cm</span>
+            <span className="text-3xl font-black text-slate-900 dark:text-white">{latestLog?.armCm || 38.8}</span>
+            <span className="text-xs text-slate-500 dark:text-neutral-400">cm</span>
           </div>
-          <div className="mt-2 text-xs text-amber-400 flex items-center gap-1">
+          <div className="mt-2 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
             <ArrowUp className="w-3.5 h-3.5" />
             <span>+1.8 cm de massa muscular no braço</span>
           </div>
@@ -198,13 +198,13 @@ export const ClientProgressView: React.FC = () => {
       </div>
 
       {/* Graphical Weight Progression Chart */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 shadow-xl">
+      <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="font-bold text-base text-white">Evolução do Peso Corporal (kg)</h3>
-            <p className="text-xs text-neutral-400">Registo contínuo ao longo das semanas de treino</p>
+            <h3 className="font-bold text-base text-slate-900 dark:text-white">Evolução do Peso Corporal (kg)</h3>
+            <p className="text-xs text-slate-500 dark:text-neutral-400">Registo contínuo ao longo das semanas de treino</p>
           </div>
-          <span className="text-xs font-mono text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
+          <span className="text-xs font-mono text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
             {sortedLogs.length} medições registadas
           </span>
         </div>
@@ -230,7 +230,8 @@ export const ClientProgressView: React.FC = () => {
                     y1={y}
                     x2={chartWidth}
                     y2={y}
-                    stroke="#262626"
+                    stroke="currentColor"
+                    className="text-slate-200 dark:text-neutral-800"
                     strokeDasharray="4 4"
                   />
                 );
@@ -258,19 +259,19 @@ export const ClientProgressView: React.FC = () => {
                     cx={pt.x}
                     cy={pt.y}
                     r="5"
-                    fill="#0a0a0a"
-                    stroke="#f59e0b"
-                    strokeWidth="3"
+                    fill="#f59e0b"
+                    stroke="#ffffff"
+                    strokeWidth="2"
                     className="hover:r-7 transition-all cursor-pointer"
                   />
                   <text
                     x={pt.x}
                     y={pt.y - 12}
                     textAnchor="middle"
-                    fill="#ffffff"
+                    fill="currentColor"
                     fontSize="10"
                     fontWeight="bold"
-                    className="font-mono"
+                    className="font-mono text-slate-800 dark:text-white"
                   >
                     {pt.log.weightKg}kg
                   </text>
@@ -278,9 +279,9 @@ export const ClientProgressView: React.FC = () => {
                     x={pt.x}
                     y={chartHeight - 4}
                     textAnchor="middle"
-                    fill="#737373"
+                    fill="currentColor"
                     fontSize="9"
-                    className="font-mono"
+                    className="font-mono text-slate-400 dark:text-neutral-500"
                   >
                     {pt.log.date.slice(5)}
                   </text>
@@ -295,35 +296,35 @@ export const ClientProgressView: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Evolution Photos Gallery */}
-        <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6">
+        <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-bold text-base text-white">Registo Fotográfico Periódico</h3>
-              <p className="text-xs text-neutral-400">Fotos de controlo partilhadas com o treinador</p>
+              <h3 className="font-bold text-base text-slate-900 dark:text-white">Registo Fotográfico Periódico</h3>
+              <p className="text-xs text-slate-500 dark:text-neutral-400">Fotos de controlo partilhadas com o treinador</p>
             </div>
             
             {/* View Angle selector */}
-            <div className="flex items-center bg-neutral-950 p-1 rounded-xl border border-neutral-800 text-xs">
+            <div className="flex items-center bg-slate-100 dark:bg-neutral-950 p-1 rounded-xl border border-slate-200 dark:border-neutral-800 text-xs">
               <button
                 onClick={() => setSelectedPhotoTab('front')}
-                className={`px-3 py-1 rounded-lg font-medium transition ${
-                  selectedPhotoTab === 'front' ? 'bg-amber-500 text-black font-bold' : 'text-neutral-400'
+                className={`px-3 py-1 rounded-lg font-medium transition cursor-pointer ${
+                  selectedPhotoTab === 'front' ? 'bg-amber-500 text-black font-bold' : 'text-slate-600 dark:text-neutral-400'
                 }`}
               >
                 Frente
               </button>
               <button
                 onClick={() => setSelectedPhotoTab('side')}
-                className={`px-3 py-1 rounded-lg font-medium transition ${
-                  selectedPhotoTab === 'side' ? 'bg-amber-500 text-black font-bold' : 'text-neutral-400'
+                className={`px-3 py-1 rounded-lg font-medium transition cursor-pointer ${
+                  selectedPhotoTab === 'side' ? 'bg-amber-500 text-black font-bold' : 'text-slate-600 dark:text-neutral-400'
                 }`}
               >
                 Perfil
               </button>
               <button
                 onClick={() => setSelectedPhotoTab('back')}
-                className={`px-3 py-1 rounded-lg font-medium transition ${
-                  selectedPhotoTab === 'back' ? 'bg-amber-500 text-black font-bold' : 'text-neutral-400'
+                className={`px-3 py-1 rounded-lg font-medium transition cursor-pointer ${
+                  selectedPhotoTab === 'back' ? 'bg-amber-500 text-black font-bold' : 'text-slate-600 dark:text-neutral-400'
                 }`}
               >
                 Costas
@@ -332,7 +333,7 @@ export const ClientProgressView: React.FC = () => {
           </div>
 
           {/* Photo display */}
-          <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-neutral-950 border border-neutral-800 flex items-center justify-center">
+          <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 flex items-center justify-center">
             {latestLog && (
               <img
                 src={
@@ -346,22 +347,22 @@ export const ClientProgressView: React.FC = () => {
                 className="w-full h-full object-cover"
               />
             )}
-            <div className="absolute bottom-3 left-3 bg-neutral-950/80 backdrop-blur-md px-3 py-1 rounded-lg border border-neutral-800 text-xs text-white font-mono">
+            <div className="absolute bottom-3 left-3 bg-white/90 dark:bg-neutral-950/80 backdrop-blur-md px-3 py-1 rounded-lg border border-slate-200 dark:border-neutral-800 text-xs text-slate-900 dark:text-white font-mono shadow-sm">
               Avaliação de: {latestLog?.date}
             </div>
           </div>
 
-          <p className="text-xs text-neutral-400 mt-3 italic text-center">
+          <p className="text-xs text-slate-500 dark:text-neutral-400 mt-3 italic text-center">
             "{latestLog?.notes || 'Evolução consistente na tonificação e linha da cintura.'}"
           </p>
         </div>
 
         {/* Measurements Evolution Table */}
-        <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 flex flex-col">
+        <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl p-6 flex flex-col shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-bold text-base text-white">Histórico de Perímetros (cm)</h3>
-              <p className="text-xs text-neutral-400">Comparação das últimas medições</p>
+              <h3 className="font-bold text-base text-slate-900 dark:text-white">Histórico de Perímetros (cm)</h3>
+              <p className="text-xs text-slate-500 dark:text-neutral-400">Comparação das últimas medições</p>
             </div>
             <Ruler className="w-5 h-5 text-amber-500" />
           </div>
@@ -369,7 +370,7 @@ export const ClientProgressView: React.FC = () => {
           <div className="overflow-x-auto flex-1">
             <table className="w-full text-xs text-left">
               <thead>
-                <tr className="border-b border-neutral-800 text-neutral-400 uppercase tracking-wider font-semibold text-[10px]">
+                <tr className="border-b border-slate-200 dark:border-neutral-800 text-slate-400 dark:text-neutral-400 uppercase tracking-wider font-semibold text-[10px]">
                   <th className="py-2.5">Data</th>
                   <th className="py-2.5">Peso</th>
                   <th className="py-2.5">Peito</th>
@@ -378,22 +379,22 @@ export const ClientProgressView: React.FC = () => {
                   <th className="py-2.5">Perna</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-800/80">
+              <tbody className="divide-y divide-slate-100 dark:divide-neutral-800/80">
                 {sortedLogs.slice().reverse().map((log) => (
-                  <tr key={log.id} className="hover:bg-neutral-800/40 transition">
-                    <td className="py-3 font-mono font-medium text-white">{log.date}</td>
-                    <td className="py-3 font-mono text-amber-400 font-bold">{log.weightKg} kg</td>
-                    <td className="py-3 font-mono text-neutral-300">{log.chestCm || '-'} cm</td>
-                    <td className="py-3 font-mono text-neutral-300">{log.waistCm || '-'} cm</td>
-                    <td className="py-3 font-mono text-neutral-300">{log.armCm || '-'} cm</td>
-                    <td className="py-3 font-mono text-neutral-300">{log.thighCm || '-'} cm</td>
+                  <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-neutral-800/40 transition">
+                    <td className="py-3 font-mono font-medium text-slate-900 dark:text-white">{log.date}</td>
+                    <td className="py-3 font-mono text-amber-600 dark:text-amber-400 font-bold">{log.weightKg} kg</td>
+                    <td className="py-3 font-mono text-slate-700 dark:text-neutral-300">{log.chestCm || '-'} cm</td>
+                    <td className="py-3 font-mono text-slate-700 dark:text-neutral-300">{log.waistCm || '-'} cm</td>
+                    <td className="py-3 font-mono text-slate-700 dark:text-neutral-300">{log.armCm || '-'} cm</td>
+                    <td className="py-3 font-mono text-slate-700 dark:text-neutral-300">{log.thighCm || '-'} cm</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-neutral-800 text-[11px] text-neutral-500 flex items-center justify-between">
+          <div className="mt-4 pt-3 border-t border-slate-200 dark:border-neutral-800 text-[11px] text-slate-500 dark:text-neutral-500 flex items-center justify-between">
             <span>Medições padronizadas em jejum</span>
             <span className="text-amber-500 font-semibold">Validado por Sérgio Cunha</span>
           </div>
@@ -404,16 +405,16 @@ export const ClientProgressView: React.FC = () => {
       {/* Modal: New Physical Assessment Entry */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             
-            <div className="flex items-center justify-between pb-4 border-b border-neutral-800">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-neutral-800">
               <div>
-                <h3 className="font-bold text-lg text-white">Registar Nova Avaliação Física</h3>
-                <p className="text-xs text-neutral-400">Aponta o teu peso e perímetros desta semana</p>
+                <h3 className="font-bold text-lg text-slate-900 dark:text-white">Registar Nova Avaliação Física</h3>
+                <p className="text-xs text-slate-500 dark:text-neutral-400">Aponta o teu peso e perímetros desta semana</p>
               </div>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="p-2 rounded-xl bg-neutral-800 text-neutral-400 hover:text-white"
+                className="p-2 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -423,7 +424,7 @@ export const ClientProgressView: React.FC = () => {
               
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-neutral-300 block mb-1">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-neutral-300 block mb-1">
                     Peso Corporal (kg) *
                   </label>
                   <input
@@ -433,11 +434,11 @@ export const ClientProgressView: React.FC = () => {
                     value={newWeight}
                     onChange={(e) => setNewWeight(e.target.value)}
                     placeholder="ex: 79.5"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-xs text-white font-mono focus:border-amber-500 focus:outline-none"
+                    className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white font-mono focus:border-amber-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-neutral-300 block mb-1">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-neutral-300 block mb-1">
                     % Massa Gorda (opcional)
                   </label>
                   <input
@@ -446,14 +447,14 @@ export const ClientProgressView: React.FC = () => {
                     value={newFat}
                     onChange={(e) => setNewFat(e.target.value)}
                     placeholder="ex: 16.0"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-xs text-white font-mono focus:border-amber-500 focus:outline-none"
+                    className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white font-mono focus:border-amber-500 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
+                  <label className="text-[11px] font-semibold text-slate-700 dark:text-neutral-300 block mb-1">
                     Peito (cm)
                   </label>
                   <input
@@ -462,11 +463,11 @@ export const ClientProgressView: React.FC = () => {
                     value={newChest}
                     onChange={(e) => setNewChest(e.target.value)}
                     placeholder="105"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-xs text-white font-mono focus:border-amber-500 focus:outline-none"
+                    className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white font-mono focus:border-amber-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
+                  <label className="text-[11px] font-semibold text-slate-700 dark:text-neutral-300 block mb-1">
                     Cintura (cm)
                   </label>
                   <input
@@ -475,11 +476,11 @@ export const ClientProgressView: React.FC = () => {
                     value={newWaist}
                     onChange={(e) => setNewWaist(e.target.value)}
                     placeholder="84"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-xs text-white font-mono focus:border-amber-500 focus:outline-none"
+                    className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white font-mono focus:border-amber-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
+                  <label className="text-[11px] font-semibold text-slate-700 dark:text-neutral-300 block mb-1">
                     Anca (cm)
                   </label>
                   <input
@@ -488,14 +489,14 @@ export const ClientProgressView: React.FC = () => {
                     value={newHips}
                     onChange={(e) => setNewHips(e.target.value)}
                     placeholder="96"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-xs text-white font-mono focus:border-amber-500 focus:outline-none"
+                    className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white font-mono focus:border-amber-500 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
+                  <label className="text-[11px] font-semibold text-slate-700 dark:text-neutral-300 block mb-1">
                     Braço (cm)
                   </label>
                   <input
@@ -504,11 +505,11 @@ export const ClientProgressView: React.FC = () => {
                     value={newArm}
                     onChange={(e) => setNewArm(e.target.value)}
                     placeholder="38.5"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-xs text-white font-mono focus:border-amber-500 focus:outline-none"
+                    className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white font-mono focus:border-amber-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
+                  <label className="text-[11px] font-semibold text-slate-700 dark:text-neutral-300 block mb-1">
                     Coxa / Perna (cm)
                   </label>
                   <input
@@ -517,13 +518,13 @@ export const ClientProgressView: React.FC = () => {
                     value={newThigh}
                     onChange={(e) => setNewThigh(e.target.value)}
                     placeholder="61"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-xs text-white font-mono focus:border-amber-500 focus:outline-none"
+                    className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white font-mono focus:border-amber-500 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-neutral-300 block mb-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-neutral-300 block mb-1">
                   Notas ou Sensações
                 </label>
                 <textarea
@@ -531,7 +532,7 @@ export const ClientProgressView: React.FC = () => {
                   value={newNotes}
                   onChange={(e) => setNewNotes(e.target.value)}
                   placeholder="ex: Boa energia nos treinos, sensação de maior definição na cintura."
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-xs text-white focus:border-amber-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none"
                 />
               </div>
 
@@ -539,13 +540,13 @@ export const ClientProgressView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-neutral-800 text-neutral-300 hover:text-white text-xs font-semibold"
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 hover:text-slate-900 dark:hover:text-white text-xs font-semibold transition cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold shadow-lg shadow-amber-500/20"
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold shadow-lg shadow-amber-500/20 cursor-pointer"
                 >
                   Guardar Avaliação
                 </button>

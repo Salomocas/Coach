@@ -2,19 +2,22 @@ import React, { useState } from 'react';
 import { 
   Users, 
   Search, 
-  Filter, 
   TrendingUp, 
-  Calendar, 
-  Utensils, 
+  Dumbbell, 
+  UtensilsCrossed, 
   MessageSquare, 
-  CreditCard, 
   X, 
-  Scale, 
-  Ruler, 
   CheckCircle2, 
   AlertCircle,
-  Clock,
-  Sparkles
+  Sparkles,
+  Lock,
+  Unlock,
+  ShieldCheck,
+  ShieldAlert,
+  ArrowRight,
+  Scale,
+  Ruler,
+  Target
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -25,454 +28,316 @@ interface CoachAthletesViewProps {
 }
 
 export const CoachAthletesView: React.FC<CoachAthletesViewProps> = ({ onNavigateTab }) => {
-  const { allClients, updateClientSubscription } = useAuth();
-  const { 
-    workoutPlans, 
-    nutritionPlans, 
-    progressLogs, 
-    selectedAthleteId, 
-    setSelectedAthleteId 
-  } = useData();
+  const { allClients, toggleStudentManualAccess } = useAuth();
+  const { setSelectedAthleteId } = useData();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expired'>('all');
-  const [selectedClientModal, setSelectedClientModal] = useState<UserProfile | null>(null);
-  const [comparisonAngle, setComparisonAngle] = useState<'front' | 'side' | 'back'>('front');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'blocked'>('all');
+  const [actionFeedback, setActionFeedback] = useState<string | null>(null);
+
+  const activeCount = allClients.filter(c => c.subscriptionStatus === 'active' || c.isManuallyUnlocked).length;
+  const blockedCount = allClients.length - activeCount;
 
   const filteredClients = allClients.filter(c => {
+    const isClientActive = c.subscriptionStatus === 'active' || c.isManuallyUnlocked;
     const matchesSearch = c.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           c.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || 
-                          (statusFilter === 'active' && c.subscriptionStatus === 'active') ||
-                          (statusFilter === 'expired' && c.subscriptionStatus !== 'active');
+                          (statusFilter === 'active' && isClientActive) ||
+                          (statusFilter === 'blocked' && !isClientActive);
     return matchesSearch && matchesStatus;
   });
 
-  const openAthleteModal = (client: UserProfile) => {
-    setSelectedAthleteId(client.uid);
-    setSelectedClientModal(client);
+  const handleToggleAccess = async (client: UserProfile) => {
+    const isCurrentlyActive = client.subscriptionStatus === 'active' || client.isManuallyUnlocked;
+    const newUnlock = !isCurrentlyActive;
+    await toggleStudentManualAccess(client.uid, newUnlock);
+    
+    setActionFeedback(newUnlock
+      ? `Acesso desbloqueado com sucesso para ${client.displayName}! O aluno está agora ativo.`
+      : `Acesso bloqueado para ${client.displayName}. O aluno está impedido de aceder às rotinas.`
+    );
+    setTimeout(() => setActionFeedback(null), 4000);
+  };
+
+  const handleGoToReports = (clientId: string) => {
+    setSelectedAthleteId(clientId);
+    onNavigateTab('reports');
+  };
+
+  const handleGoToWorkouts = (clientId: string) => {
+    setSelectedAthleteId(clientId);
+    onNavigateTab('workouts');
+  };
+
+  const handleGoToDiet = (clientId: string) => {
+    setSelectedAthleteId(clientId);
+    onNavigateTab('diet');
+  };
+
+  const handleGoToChat = (clientId: string) => {
+    setSelectedAthleteId(clientId);
+    onNavigateTab('chat');
   };
 
   return (
     <div className="space-y-6">
       
+      {/* Toast feedback */}
+      {actionFeedback && (
+        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-medium flex items-center justify-between shadow-sm animate-fade-in">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+            <span>{actionFeedback}</span>
+          </div>
+          <button 
+            onClick={() => setActionFeedback(null)}
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-neutral-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-neutral-800">
         <div>
           <span className="text-xs font-semibold text-amber-500 uppercase tracking-wider">
-            Gestão & Controlo de Alunos
+            Painel do Treinador
           </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-            Diretório de Atletas
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+            Gestão de Atletas
           </h1>
-          <p className="text-xs sm:text-sm text-neutral-400 mt-1">
-            Visualiza todos os clientes, histórico de evolução, cargas e estado das subscrições.
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-neutral-400 mt-1">
+            Verificação rápida de estado (ativo ou bloqueado), resumo de objetivos, peso e altura atual.
           </p>
         </div>
 
-        <span className="text-xs font-mono text-neutral-400 bg-neutral-900 border border-neutral-800 px-3 py-1.5 rounded-xl shrink-0">
-          Total: <strong className="text-white">{allClients.length} atletas</strong>
-        </span>
+        {/* Quick summary badges */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-mono text-slate-600 dark:text-neutral-300 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 px-3 py-1.5 rounded-xl shadow-sm">
+            Total: <strong className="text-slate-900 dark:text-white">{allClients.length}</strong>
+          </span>
+          <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-xl shadow-sm">
+            Ativos: <strong>{activeCount}</strong>
+          </span>
+          <span className="text-xs font-mono text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/30 px-3 py-1.5 rounded-xl shadow-sm">
+            Bloqueados: <strong>{blockedCount}</strong>
+          </span>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-neutral-900 border border-neutral-800 rounded-2xl p-3">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-3 shadow-sm">
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-neutral-500 absolute left-3.5 top-3" />
+          <Search className="w-4 h-4 text-slate-400 dark:text-neutral-500 absolute left-3.5 top-3" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Pesquisar por nome ou email..."
-            className="w-full bg-neutral-950 border border-neutral-800 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-neutral-500 focus:border-amber-500 focus:outline-none"
+            className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-neutral-500 focus:border-amber-500 focus:outline-none"
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-xs text-neutral-400 hidden sm:inline">Filtrar:</span>
+        <div className="flex items-center gap-1.5 self-stretch sm:self-auto overflow-x-auto">
           <button
             onClick={() => setStatusFilter('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-              statusFilter === 'all' ? 'bg-amber-500 text-black font-bold' : 'bg-neutral-950 text-neutral-400 hover:text-white'
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+              statusFilter === 'all'
+                ? 'bg-amber-500 text-black shadow-sm'
+                : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             Todos ({allClients.length})
           </button>
           <button
             onClick={() => setStatusFilter('active')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-              statusFilter === 'active' ? 'bg-emerald-500 text-black font-bold' : 'bg-neutral-950 text-neutral-400 hover:text-white'
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap flex items-center gap-1.5 ${
+              statusFilter === 'active'
+                ? 'bg-emerald-500 text-white shadow-sm'
+                : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400 hover:text-emerald-500'
             }`}
           >
-            Ativos ({allClients.filter(c => c.subscriptionStatus === 'active').length})
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            Ativos ({activeCount})
           </button>
           <button
-            onClick={() => setStatusFilter('expired')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-              statusFilter === 'expired' ? 'bg-red-500 text-white font-bold' : 'bg-neutral-950 text-neutral-400 hover:text-white'
+            onClick={() => setStatusFilter('blocked')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap flex items-center gap-1.5 ${
+              statusFilter === 'blocked'
+                ? 'bg-red-500 text-white shadow-sm'
+                : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400 hover:text-red-500'
             }`}
           >
-            Pendentes ({allClients.filter(c => c.subscriptionStatus !== 'active').length})
+            <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+            Bloqueados ({blockedCount})
           </button>
         </div>
       </div>
 
-      {/* Athletes Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredClients.map((client) => {
-          const isActive = client.subscriptionStatus === 'active';
-          const clientWorkout = workoutPlans.find(p => p.clientId === client.uid && p.status === 'active');
-          const clientNutrition = nutritionPlans.find(p => p.clientId === client.uid);
+      {/* Athletes List */}
+      <div className="grid grid-cols-1 gap-4">
+        {filteredClients.length === 0 ? (
+          <div className="p-12 text-center bg-white dark:bg-neutral-900 rounded-3xl border border-slate-200 dark:border-neutral-800 shadow-sm">
+            <Users className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+            <p className="text-sm font-bold text-slate-700 dark:text-neutral-300">Nenhum atleta encontrado.</p>
+            <p className="text-xs text-slate-400 dark:text-neutral-500 mt-1">Experimenta alterar o termo de pesquisa ou os filtros de estado.</p>
+          </div>
+        ) : (
+          filteredClients.map((client) => {
+            const isActive = client.subscriptionStatus === 'active' || client.isManuallyUnlocked;
+            const weight = client.currentWeightKg || client.initialWeightKg || 75;
+            const height = client.heightCm || 175;
+            const bmi = (weight / ((height / 100) * (height / 100))).toFixed(1);
 
-          return (
-            <div
-              key={client.uid}
-              onClick={() => openAthleteModal(client)}
-              className="bg-neutral-900 border border-neutral-800 hover:border-amber-500/50 rounded-3xl p-5 cursor-pointer transition-all shadow-lg hover:shadow-amber-500/5 group flex flex-col justify-between"
-            >
-              <div>
-                {/* Client Card Top */}
-                <div className="flex items-start justify-between gap-3 mb-4">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={client.photoURL || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80'}
-                      alt={client.displayName}
-                      className="w-13 h-13 rounded-2xl object-cover ring-2 ring-neutral-700 group-hover:ring-amber-500 transition"
-                    />
-                    <div>
-                      <h3 className="font-bold text-base text-white group-hover:text-amber-400 transition">
-                        {client.displayName}
-                      </h3>
-                      <p className="text-xs text-neutral-400">{client.email}</p>
-                    </div>
-                  </div>
-
-                  <span className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full ${
-                    isActive 
-                      ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' 
-                      : 'bg-red-500/15 text-red-400 border border-red-500/30'
-                  }`}>
-                    {isActive ? 'Ativo' : 'Expirado'}
-                  </span>
-                </div>
-
-                {/* Goals */}
-                <div className="bg-neutral-950/70 rounded-xl p-3 border border-neutral-800/80 mb-4">
-                  <span className="text-[10px] font-bold uppercase text-neutral-500 block mb-0.5">
-                    Objetivo Principal
-                  </span>
-                  <p className="text-xs text-neutral-300 line-clamp-2 leading-relaxed">
-                    {client.goals || 'Hipertrofia muscular e melhoria de performance.'}
-                  </p>
-                </div>
-
-                {/* Measurements Quick Preview */}
-                <div className="grid grid-cols-2 gap-2 text-xs mb-4">
-                  <div className="p-2 rounded-lg bg-neutral-950 border border-neutral-800">
-                    <span className="text-[10px] text-neutral-500 block">Peso Atual</span>
-                    <span className="font-mono font-bold text-white">
-                      {client.currentWeightKg || client.initialWeightKg} kg
-                    </span>
-                  </div>
-                  <div className="p-2 rounded-lg bg-neutral-950 border border-neutral-800">
-                    <span className="text-[10px] text-neutral-500 block">Altura</span>
-                    <span className="font-mono font-bold text-white">{client.heightCm || 178} cm</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action hints */}
-              <div className="pt-3 border-t border-neutral-800/80 flex items-center justify-between text-xs text-neutral-400">
-                <span className="text-amber-400 font-semibold text-[11px]">Ver Ficha & Avaliações</span>
-                <span className="text-[10px] text-neutral-500">{client.subscriptionPlan}</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Detailed Athlete Modal */}
-      {selectedClientModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            
-            {/* Modal Header */}
-            <div className="flex items-start justify-between pb-4 border-b border-neutral-800">
-              <div className="flex items-center gap-4">
-                <img
-                  src={selectedClientModal.photoURL || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80'}
-                  alt={selectedClientModal.displayName}
-                  className="w-16 h-16 rounded-2xl object-cover ring-2 ring-amber-500"
-                />
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-xl sm:text-2xl font-bold text-white">
-                      {selectedClientModal.displayName}
-                    </h2>
-                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
-                      selectedClientModal.subscriptionStatus === 'active'
-                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                        : 'bg-red-500/15 text-red-400 border border-red-500/30'
-                    }`}>
-                      {selectedClientModal.subscriptionStatus === 'active' ? 'Mensalidade Ativa (100€)' : 'Expirada'}
-                    </span>
-
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const newStatus = selectedClientModal.subscriptionStatus === 'active' ? 'expired' : 'active';
-                        await updateClientSubscription(selectedClientModal.uid, newStatus);
-                        setSelectedClientModal(prev => prev ? { ...prev, subscriptionStatus: newStatus } : null);
-                      }}
-                      className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white border border-neutral-700 transition"
-                      title="Alternar estado de pagamento"
-                    >
-                      {selectedClientModal.subscriptionStatus === 'active' ? 'Marcar Pendente' : 'Validar Mensalidade (100€)'}
-                    </button>
-                  </div>
-                  <p className="text-xs text-neutral-400 mt-0.5">
-                    {selectedClientModal.email} • {selectedClientModal.phone}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setSelectedClientModal(null)}
-                className="p-2 rounded-xl bg-neutral-800 text-neutral-400 hover:text-white"
+            return (
+              <div 
+                key={client.uid}
+                className={`bg-white dark:bg-neutral-900 border rounded-2xl p-5 shadow-sm transition-all hover:shadow-md ${
+                  isActive 
+                    ? 'border-slate-200 dark:border-neutral-800' 
+                    : 'border-red-300 dark:border-red-900/60 bg-red-500/[0.02]'
+                }`}
               >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                  
+                  {/* Left: Athlete Identity & Status */}
+                  <div className="flex items-start gap-4 min-w-0 lg:w-1/3">
+                    <img
+                      src={client.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'}
+                      alt={client.displayName}
+                      className="w-14 h-14 rounded-2xl object-cover ring-2 ring-slate-200 dark:ring-neutral-700 shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-extrabold text-base text-slate-900 dark:text-white truncate">
+                          {client.displayName}
+                        </h3>
+                        {/* Status Badge */}
+                        <span className={`inline-flex items-center gap-1 text-[11px] font-extrabold px-2 py-0.5 rounded-full ${
+                          isActive
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                            : 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                          {isActive ? 'Ativo' : 'Bloqueado'}
+                        </span>
+                      </div>
 
-            {/* Modal Body */}
-            <div className="py-6 space-y-6">
-              
-              {/* Objective Banner */}
-              <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-500 block mb-1">
-                  Metas Estabelecidas com o Coach Sérgio Cunha
-                </span>
-                <p className="text-sm text-neutral-200 leading-relaxed">
-                  {selectedClientModal.goals}
-                </p>
-              </div>
+                      <p className="text-xs text-slate-500 dark:text-neutral-400 truncate mt-0.5">
+                        {client.email}
+                      </p>
 
-              {/* Quick Actions */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <button
-                  onClick={() => {
-                    setSelectedClientModal(null);
-                    onNavigateTab('builder-workout');
-                  }}
-                  className="p-3.5 rounded-2xl bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 text-left transition"
-                >
-                  <Calendar className="w-4 h-4 text-amber-500 mb-1.5" />
-                  <div className="text-xs font-bold text-white">Editar Treino Semanal</div>
-                  <div className="text-[10px] text-neutral-400">Atribuir séries e exercícios</div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setSelectedClientModal(null);
-                    onNavigateTab('builder-nutrition');
-                  }}
-                  className="p-3.5 rounded-2xl bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 text-left transition"
-                >
-                  <Utensils className="w-4 h-4 text-emerald-500 mb-1.5" />
-                  <div className="text-xs font-bold text-white">Prescrever Nutrição</div>
-                  <div className="text-[10px] text-neutral-400">Ementa e cálculo de macros</div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setSelectedClientModal(null);
-                    onNavigateTab('chat');
-                  }}
-                  className="p-3.5 rounded-2xl bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 text-left transition"
-                >
-                  <MessageSquare className="w-4 h-4 text-sky-500 mb-1.5" />
-                  <div className="text-xs font-bold text-white">Conversar no Chat</div>
-                  <div className="text-[10px] text-neutral-400">Tirar dúvidas em tempo real</div>
-                </button>
-              </div>
-
-              {/* Progress and Measurements History */}
-              <div className="bg-neutral-950 p-5 rounded-2xl border border-neutral-800">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-bold text-sm text-white flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-amber-500" />
-                    Histórico de Avaliações Físicas
-                  </h4>
-                  <span className="text-xs text-neutral-400 font-mono">
-                    Peso Inicial: {selectedClientModal.initialWeightKg} kg
-                  </span>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs text-left">
-                    <thead>
-                      <tr className="border-b border-neutral-800 text-neutral-400 uppercase text-[10px]">
-                        <th className="py-2">Data</th>
-                        <th className="py-2">Peso</th>
-                        <th className="py-2">% Gordura</th>
-                        <th className="py-2">Cintura</th>
-                        <th className="py-2">Braço</th>
-                        <th className="py-2">Notas</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-neutral-900">
-                      {progressLogs.slice().reverse().map((log) => (
-                        <tr key={log.id}>
-                          <td className="py-2.5 font-mono text-white">{log.date}</td>
-                          <td className="py-2.5 font-mono font-bold text-amber-400">{log.weightKg} kg</td>
-                          <td className="py-2.5 font-mono text-neutral-300">{log.bodyFatPercent || '-'} %</td>
-                          <td className="py-2.5 font-mono text-neutral-300">{log.waistCm || '-'} cm</td>
-                          <td className="py-2.5 font-mono text-neutral-300">{log.armCm || '-'} cm</td>
-                          <td className="py-2.5 text-neutral-400 italic text-[11px] max-w-[150px] truncate">{log.notes}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* ANTES VS DEPOIS COMPARISON GALLERY */}
-              {progressLogs.length >= 2 && (
-                <div className="bg-neutral-950 p-5 rounded-2xl border border-neutral-800 space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <h4 className="font-bold text-sm text-white flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-amber-500" />
-                        <span>Comparação Visual: Antes vs Depois</span>
-                      </h4>
-                      <p className="text-xs text-neutral-400">
-                        Evolução fotográfica lado a lado de {selectedClientModal.displayName}
+                      <p className="text-[11px] text-slate-400 dark:text-neutral-500 mt-1">
+                        Plano: <span className="font-medium text-slate-700 dark:text-neutral-300">{client.subscriptionPlan || 'Acompanhamento Regular'}</span>
                       </p>
                     </div>
+                  </div>
 
-                    {/* Angle pills */}
-                    <div className="flex items-center gap-1.5 bg-neutral-900 p-1 rounded-xl border border-neutral-800 text-xs">
+                  {/* Center: Weight, Height & Goals */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:w-5/12 border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-neutral-800/80 pt-4 lg:pt-0 lg:pl-6">
+                    {/* Measurements */}
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-neutral-500 flex items-center gap-1">
+                        <Scale className="w-3 h-3 text-amber-500" />
+                        Medidas do Perfil
+                      </span>
+                      <div className="flex items-center gap-3">
+                        <div className="bg-slate-50 dark:bg-neutral-950 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-neutral-800">
+                          <span className="text-[10px] text-slate-400 dark:text-neutral-500 block">Peso Atual</span>
+                          <span className="text-xs font-bold text-slate-900 dark:text-white font-mono">{weight} kg</span>
+                        </div>
+                        <div className="bg-slate-50 dark:bg-neutral-950 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-neutral-800">
+                          <span className="text-[10px] text-slate-400 dark:text-neutral-500 block">Altura</span>
+                          <span className="text-xs font-bold text-slate-900 dark:text-white font-mono">{height} cm</span>
+                        </div>
+                        <div className="bg-slate-50 dark:bg-neutral-950 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-neutral-800">
+                          <span className="text-[10px] text-slate-400 dark:text-neutral-500 block">IMC</span>
+                          <span className="text-xs font-bold text-amber-500 font-mono">{bmi}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Goal summary */}
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-neutral-500 flex items-center gap-1">
+                        <Target className="w-3 h-3 text-amber-500" />
+                        Objetivo Principal
+                      </span>
+                      <p className="text-xs text-slate-700 dark:text-neutral-300 font-medium bg-slate-50 dark:bg-neutral-950 p-2 rounded-xl border border-slate-200 dark:border-neutral-800 line-clamp-2">
+                        {client.goals || 'Recomposição corporal e aumento de tónus muscular.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Right: Quick Actions & Status Toggle */}
+                  <div className="flex flex-wrap lg:flex-nowrap items-center gap-2 lg:w-1/4 justify-start lg:justify-end border-t lg:border-t-0 border-slate-100 dark:border-neutral-800/80 pt-4 lg:pt-0">
+                    {/* View Reports Button */}
+                    <button
+                      onClick={() => handleGoToReports(client.uid)}
+                      className="px-3.5 py-2 rounded-xl bg-amber-500 text-black font-extrabold text-xs hover:bg-amber-400 transition flex items-center gap-1.5 shadow-sm shadow-amber-500/10 cursor-pointer"
+                      title="Ver relatórios de evolução e registos deste atleta"
+                    >
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      <span>Relatório</span>
+                    </button>
+
+                    {/* Direct Toggle Active/Blocked Button */}
+                    <button
+                      onClick={() => handleToggleAccess(client)}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                        isActive
+                          ? 'bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 border border-red-500/20'
+                          : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20'
+                      }`}
+                      title={isActive ? 'Bloquear acesso do atleta' : 'Ativar e desbloquear acesso do atleta'}
+                    >
+                      {isActive ? (
+                        <>
+                          <Lock className="w-3.5 h-3.5" />
+                          <span>Bloquear</span>
+                        </>
+                      ) : (
+                        <>
+                          <Unlock className="w-3.5 h-3.5" />
+                          <span>Ativar</span>
+                        </>
+                      )}
+                    </button>
+
+                    {/* Quick navigation icons */}
+                    <div className="flex items-center gap-1 ml-auto lg:ml-0">
                       <button
-                        type="button"
-                        onClick={() => setComparisonAngle('front')}
-                        className={`px-3 py-1 rounded-lg font-medium transition ${
-                          comparisonAngle === 'front' ? 'bg-amber-500 text-black font-bold' : 'text-neutral-400'
-                        }`}
+                        onClick={() => handleGoToWorkouts(client.uid)}
+                        className="p-2 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-neutral-700 transition"
+                        title="Ver/atribuir treinos"
                       >
-                        Frente
+                        <Dumbbell className="w-4 h-4" />
                       </button>
                       <button
-                        type="button"
-                        onClick={() => setComparisonAngle('side')}
-                        className={`px-3 py-1 rounded-lg font-medium transition ${
-                          comparisonAngle === 'side' ? 'bg-amber-500 text-black font-bold' : 'text-neutral-400'
-                        }`}
+                        onClick={() => handleGoToDiet(client.uid)}
+                        className="p-2 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-neutral-700 transition"
+                        title="Ver/atribuir plano alimentar"
                       >
-                        Perfil
+                        <UtensilsCrossed className="w-4 h-4" />
                       </button>
                       <button
-                        type="button"
-                        onClick={() => setComparisonAngle('back')}
-                        className={`px-3 py-1 rounded-lg font-medium transition ${
-                          comparisonAngle === 'back' ? 'bg-amber-500 text-black font-bold' : 'text-neutral-400'
-                        }`}
+                        onClick={() => handleGoToChat(client.uid)}
+                        className="p-2 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-neutral-700 transition"
+                        title="Abrir chat com o aluno"
                       >
-                        Costas
+                        <MessageSquare className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
 
-                  {/* Side-by-side photo comparison */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Before Card */}
-                    <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-3 relative overflow-hidden">
-                      <span className="absolute top-5 left-5 z-10 px-2.5 py-0.5 rounded-full bg-neutral-950/80 backdrop-blur-md border border-neutral-800 text-[10px] font-bold text-neutral-300">
-                        INÍCIO ({progressLogs[0].date})
-                      </span>
-                      <div className="aspect-[4/5] rounded-xl overflow-hidden bg-neutral-950 mb-3">
-                        <img
-                          src={
-                            comparisonAngle === 'front' ? progressLogs[0].photoFront :
-                            comparisonAngle === 'side' ? progressLogs[0].photoSide :
-                            progressLogs[0].photoBack
-                          }
-                          alt="Antes"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="flex items-center justify-between text-xs px-1">
-                        <span className="text-neutral-400">Peso Inicial:</span>
-                        <span className="font-mono font-bold text-white">{progressLogs[0].weightKg} kg</span>
-                      </div>
-                    </div>
-
-                    {/* After Card */}
-                    <div className="bg-neutral-900 border border-amber-500/40 rounded-2xl p-3 relative overflow-hidden">
-                      <span className="absolute top-5 left-5 z-10 px-2.5 py-0.5 rounded-full bg-amber-500 text-black text-[10px] font-extrabold shadow-md">
-                        ATUAL ({progressLogs[progressLogs.length - 1].date})
-                      </span>
-                      <div className="aspect-[4/5] rounded-xl overflow-hidden bg-neutral-950 mb-3">
-                        <img
-                          src={
-                            comparisonAngle === 'front' ? progressLogs[progressLogs.length - 1].photoFront :
-                            comparisonAngle === 'side' ? progressLogs[progressLogs.length - 1].photoSide :
-                            progressLogs[progressLogs.length - 1].photoBack
-                          }
-                          alt="Depois"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="flex items-center justify-between text-xs px-1">
-                        <span className="text-neutral-400">Peso Atual:</span>
-                        <span className="font-mono font-bold text-amber-400">
-                          {progressLogs[progressLogs.length - 1].weightKg} kg
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Summary Delta Banner */}
-                  <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-around text-center text-xs">
-                    <div>
-                      <span className="text-[10px] text-neutral-500 block">Diferença de Peso</span>
-                      <span className="font-mono font-bold text-emerald-400 text-sm">
-                        {(progressLogs[progressLogs.length - 1].weightKg - progressLogs[0].weightKg).toFixed(1)} kg
-                      </span>
-                    </div>
-                    {progressLogs[0].waistCm && progressLogs[progressLogs.length - 1].waistCm && (
-                      <div>
-                        <span className="text-[10px] text-neutral-500 block">Perímetro Cintura</span>
-                        <span className="font-mono font-bold text-emerald-400 text-sm">
-                          {(progressLogs[progressLogs.length - 1].waistCm! - progressLogs[0].waistCm!).toFixed(1)} cm
-                        </span>
-                      </div>
-                    )}
-                    {progressLogs[0].armCm && progressLogs[progressLogs.length - 1].armCm && (
-                      <div>
-                        <span className="text-[10px] text-neutral-500 block">Perímetro Braço</span>
-                        <span className="font-mono font-bold text-amber-400 text-sm">
-                          +{(progressLogs[progressLogs.length - 1].armCm! - progressLogs[0].armCm!).toFixed(1)} cm
-                        </span>
-                      </div>
-                    )}
-                  </div>
                 </div>
-              )}
-
-            </div>
-
-            <div className="pt-4 border-t border-neutral-800 flex justify-end gap-3">
-              <button
-                onClick={() => setSelectedClientModal(null)}
-                className="px-5 py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold"
-              >
-                Fechar Ficha
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
+              </div>
+            );
+          })
+        )}
+      </div>
 
     </div>
   );

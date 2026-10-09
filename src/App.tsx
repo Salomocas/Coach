@@ -4,12 +4,17 @@
  */
 
 import React, { useState } from 'react';
+import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
+import { LogoProvider } from './context/LogoContext';
 import { Navbar } from './components/Navbar';
 import { ClientSidebar } from './components/ClientSidebar';
 import { CoachSidebar } from './components/CoachSidebar';
 import { SubscriptionGate } from './components/SubscriptionGate';
+import { EmailVerificationBanner } from './components/EmailVerificationBanner';
+import { CoachCunhaLogo } from './components/CoachCunhaLogo';
+import { AuthPortalView } from './views/auth/AuthPortalView';
 
 // Client Views
 import { ClientCalendarView } from './views/client/ClientCalendarView';
@@ -19,28 +24,32 @@ import { ClientProgressView } from './views/client/ClientProgressView';
 import { ClientSubscriptionView } from './views/client/ClientSubscriptionView';
 
 // Coach Views
-import { CoachDashboard } from './views/coach/CoachDashboard';
 import { CoachAthletesView } from './views/coach/CoachAthletesView';
-import { CoachExercisesView } from './views/coach/CoachExercisesView';
-import { CoachWorkoutBuilderView } from './views/coach/CoachWorkoutBuilderView';
-import { CoachNutritionBuilderView } from './views/coach/CoachNutritionBuilderView';
+import { CoachReportsView } from './views/coach/CoachReportsView';
+import { CoachWorkoutsView } from './views/coach/CoachWorkoutsView';
+import { CoachDietView } from './views/coach/CoachDietView';
+import { CoachLibraryView } from './views/coach/CoachLibraryView';
 import { CoachChatView } from './views/coach/CoachChatView';
+import { CoachAssetsView } from './views/coach/CoachAssetsView';
 
 const MainLayout: React.FC = () => {
-  const { currentUser, isCoach, isSubscriptionActive } = useAuth();
+  const { isCoach, isSubscriptionActive } = useAuth();
   
-  // Tab states
+  // Tab states - Coach defaults straight to athlete management (athletes)
   const [clientTab, setClientTab] = useState<string>('calendar');
-  const [coachTab, setCoachTab] = useState<string>('dashboard');
+  const [coachTab, setCoachTab] = useState<string>('athletes');
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans selection:bg-amber-500 selection:text-black">
+    <div className="min-h-screen bg-slate-50 dark:bg-neutral-950 text-slate-900 dark:text-neutral-100 flex flex-col font-sans selection:bg-amber-500 selection:text-black transition-colors duration-150">
       
       {/* Top Navigation */}
       <Navbar 
         onNavigateClient={(tab) => setClientTab(tab)} 
         onNavigateCoach={(tab) => setCoachTab(tab)} 
       />
+
+      {/* Email Verification Alert Banner for newly registered students */}
+      <EmailVerificationBanner />
 
       {/* Main Body */}
       <div className="flex-1 flex max-w-[1600px] w-full mx-auto">
@@ -62,25 +71,28 @@ const MainLayout: React.FC = () => {
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto max-w-7xl pb-24 md:pb-8">
           
           {isCoach ? (
-            // COACH VIEWS
+            // COACH & ADMIN VIEWS
             <>
-              {coachTab === 'dashboard' && (
-                <CoachDashboard onNavigateTab={(tab) => setCoachTab(tab)} />
-              )}
               {coachTab === 'athletes' && (
                 <CoachAthletesView onNavigateTab={(tab) => setCoachTab(tab)} />
               )}
-              {coachTab === 'exercises' && (
-                <CoachExercisesView />
+              {coachTab === 'reports' && (
+                <CoachReportsView />
               )}
-              {coachTab === 'builder-workout' && (
-                <CoachWorkoutBuilderView />
+              {(coachTab === 'workouts' || coachTab === 'builder-workout') && (
+                <CoachWorkoutsView />
               )}
-              {coachTab === 'builder-nutrition' && (
-                <CoachNutritionBuilderView />
+              {(coachTab === 'diet' || coachTab === 'builder-nutrition') && (
+                <CoachDietView />
+              )}
+              {(coachTab === 'library' || coachTab === 'exercises') && (
+                <CoachLibraryView />
               )}
               {coachTab === 'chat' && (
                 <CoachChatView />
+              )}
+              {coachTab === 'assets' && (
+                <CoachAssetsView />
               )}
             </>
           ) : (
@@ -108,12 +120,39 @@ const MainLayout: React.FC = () => {
   );
 };
 
+const AppContent: React.FC = () => {
+  const { currentUser, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center p-6 text-neutral-100 select-none">
+        <CoachCunhaLogo size="hero" />
+        <div className="flex items-center gap-2.5 mt-8 text-amber-400 font-extrabold text-xs tracking-widest uppercase">
+          <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+          <span>A carregar Coach Cunha Project...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // If no user is authenticated, show the full-page dedicated Authentication Portal
+  if (!currentUser) {
+    return <AuthPortalView />;
+  }
+
+  return <MainLayout />;
+};
+
 export default function App() {
   return (
-    <AuthProvider>
-      <DataProvider>
-        <MainLayout />
-      </DataProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <LogoProvider>
+        <AuthProvider>
+          <DataProvider>
+            <AppContent />
+          </DataProvider>
+        </AuthProvider>
+      </LogoProvider>
+    </ThemeProvider>
   );
 }

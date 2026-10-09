@@ -1,4 +1,4 @@
-export type UserRole = 'client' | 'coach';
+export type UserRole = 'client' | 'coach' | 'admin';
 export type SubscriptionStatus = 'active' | 'pending' | 'expired' | 'trial';
 
 export interface UserProfile {
@@ -10,6 +10,9 @@ export interface UserProfile {
   subscriptionStatus: SubscriptionStatus;
   subscriptionPlan?: string;
   subscriptionValidUntil?: string;
+  isManuallyUnlocked?: boolean;
+  manualUnlockNote?: string;
+  emailVerified?: boolean;
   coachId?: string;
   phone?: string;
   goals?: string;
@@ -30,6 +33,67 @@ export interface Exercise {
   imageUrl?: string;
   instructions: string;
   equipment?: string;
+  setsCount?: number;
+  reps?: string;
+  isToFailure?: boolean;
+  targetWeightKg?: number;
+  durationSeconds?: number;
+  restSeconds?: number;
+  createdAt: string;
+}
+
+export interface DailyWorkoutTemplate {
+  id: string;
+  coachId: string;
+  name: string;
+  focusArea?: string;
+  exercises: DayExercise[];
+  notes?: string;
+  createdAt: string;
+}
+
+export interface WeeklyWorkoutTemplate {
+  id: string;
+  coachId: string;
+  name: string;
+  description?: string;
+  days: {
+    dayOfWeek: 'Segunda-feira' | 'Terça-feira' | 'Quarta-feira' | 'Quinta-feira' | 'Sexta-feira' | 'Sábado' | 'Domingo';
+    dayIndex: number;
+    dailyWorkoutId?: string;
+    dailyWorkoutName?: string;
+    isRestDay: boolean;
+    exercises: DayExercise[];
+  }[];
+  createdAt: string;
+}
+
+export interface DailyMealTemplate {
+  id: string;
+  coachId: string;
+  name: string;
+  meals: Meal[];
+  totalCalories: number;
+  totalProtein: number;
+  totalCarbs: number;
+  totalFat: number;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface WeeklyMealTemplate {
+  id: string;
+  coachId: string;
+  name: string;
+  description?: string;
+  days: {
+    dayOfWeek: 'Segunda-feira' | 'Terça-feira' | 'Quarta-feira' | 'Quinta-feira' | 'Sexta-feira' | 'Sábado' | 'Domingo';
+    dayIndex: number;
+    dailyMealId?: string;
+    dailyMealName?: string;
+    meals: Meal[];
+    totalCalories: number;
+  }[];
   createdAt: string;
 }
 
@@ -166,6 +230,8 @@ export interface ProgressLog {
   date: string;
   weightKg: number;
   bodyFatPercent?: number;
+  muscleMassKg?: number;
+  visceralFat?: number;
   chestCm?: number;
   waistCm?: number;
   hipsCm?: number;

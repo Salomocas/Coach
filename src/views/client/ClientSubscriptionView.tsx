@@ -135,56 +135,70 @@ export const ClientSubscriptionView: React.FC = () => {
         <span className="text-xs font-semibold text-amber-500 uppercase tracking-wider">
           Gestão de Assinatura & Faturação
         </span>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
           Minha Subscrição com o Coach
         </h1>
-        <p className="text-xs sm:text-sm text-neutral-400 mt-1">
+        <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-400 mt-1">
           Acesso continuado aos serviços de treino, planeamento nutricional e acompanhamento direto do Coach Sérgio Cunha.
         </p>
       </div>
 
       {successNotice && (
-        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-2">
+        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>Mensalidade de {FIXED_MONTHLY_FEE},00 € regularizada com sucesso! A tua assinatura está ativa até ao próximo mês.</span>
         </div>
       )}
 
       {/* Main Status Card */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 sm:p-8 relative overflow-hidden">
+      <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-sm transition-colors">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <span className={`w-3 h-3 rounded-full ${isActive ? 'bg-emerald-500 shadow-md shadow-emerald-500/50' : 'bg-red-500 animate-pulse'}`} />
-              <span className="text-xs uppercase font-extrabold tracking-wider text-neutral-400">
+              <span className="text-xs uppercase font-extrabold tracking-wider text-slate-400 dark:text-neutral-400">
                 Estado da Assinatura:
               </span>
-              <span className={`text-xs font-extrabold px-2 py-0.5 rounded-full ${
-                isActive ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'
-              }`}>
-                {isActive ? 'Ativa & Regularizada' : 'Pendente de Pagamento'}
-              </span>
+              {currentUser?.isManuallyUnlocked ? (
+                <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" />
+                  Acesso Livre Concedido pelo Coach
+                </span>
+              ) : isActive ? (
+                <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                  Ativa & Regularizada
+                </span>
+              ) : (
+                <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30">
+                  Pendente de Pagamento
+                </span>
+              )}
             </div>
 
-            <h2 className="text-xl sm:text-2xl font-bold text-white mt-3">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-3">
               {currentUser?.subscriptionPlan || 'Acompanhamento VIP Mensal'}
             </h2>
-            <p className="text-xs text-neutral-400 mt-1">
-              Validade atual: <strong className="text-white font-mono">{currentUser?.subscriptionValidUntil || '2026-11-06'}</strong>
+            <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1">
+              Validade atual: <strong className="text-slate-900 dark:text-white font-mono">{currentUser?.subscriptionValidUntil || '2026-11-06'}</strong>
             </p>
+            {currentUser?.isManuallyUnlocked && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
+                O Coach Sérgio Cunha concedeu-lhe acesso total ilimitado à plataforma.
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col sm:items-end gap-3">
             <div className="text-left sm:text-right">
-              <div className="text-3xl sm:text-4xl font-black text-white font-mono">
+              <div className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white font-mono">
                 {FIXED_MONTHLY_FEE},00 €
               </div>
-              <span className="text-xs text-neutral-400">mensalidade fixa</span>
+              <span className="text-xs text-slate-400 dark:text-neutral-400">mensalidade fixa</span>
             </div>
 
             <button
               onClick={handleOpenRenew}
-              className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold flex items-center gap-2 shadow-lg shadow-amber-500/20 transition cursor-pointer"
+              className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold flex items-center gap-2 shadow-md shadow-amber-500/20 transition cursor-pointer"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span>{isActive ? 'Renovar Mensalidade' : 'Regularizar Agora'}</span>
@@ -192,16 +206,16 @@ export const ClientSubscriptionView: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-6 pt-6 border-t border-neutral-800 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-          <div className="flex items-center gap-2 text-neutral-300">
+        <div className="mt-6 pt-6 border-t border-slate-200 dark:border-neutral-800 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+          <div className="flex items-center gap-2 text-slate-700 dark:text-neutral-300">
             <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
             <span>Treinos e cargas semanais revistos</span>
           </div>
-          <div className="flex items-center gap-2 text-neutral-300">
+          <div className="flex items-center gap-2 text-slate-700 dark:text-neutral-300">
             <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
             <span>Ementa nutricional e cálculo de macros</span>
           </div>
-          <div className="flex items-center gap-2 text-neutral-300">
+          <div className="flex items-center gap-2 text-slate-700 dark:text-neutral-300">
             <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
             <span>Canal direto no chat com o Sérgio</span>
           </div>
@@ -209,62 +223,62 @@ export const ClientSubscriptionView: React.FC = () => {
       </div>
 
       {/* Payment Method on file */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6">
+      <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-bold text-base text-white">Métodos de Pagamento Oficiais</h3>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+              <h3 className="font-bold text-base text-slate-900 dark:text-white">Métodos de Pagamento Oficiais</h3>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
                 Processado via Stripe
               </span>
             </div>
-            <p className="text-xs text-neutral-400">Cartão de Crédito/Débito, MB WAY, Multibanco e Apple/Google Pay</p>
+            <p className="text-xs text-slate-500 dark:text-neutral-400">Cartão de Crédito/Débito, MB WAY, Multibanco e Apple/Google Pay</p>
           </div>
-          <ShieldCheck className="w-5 h-5 text-indigo-400" />
+          <ShieldCheck className="w-5 h-5 text-indigo-500" />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="flex items-center justify-between p-4 rounded-2xl bg-neutral-950 border border-neutral-800">
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold shrink-0">
                 <CreditCard className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-xs font-bold text-white">Cartão (Stripe)</div>
-                <div className="text-[11px] font-mono text-neutral-400">Visa, Mastercard, Amex</div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white">Cartão (Stripe)</div>
+                <div className="text-[11px] font-mono text-slate-500 dark:text-neutral-400">Visa, Mastercard, Amex</div>
               </div>
             </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               Ativo
             </span>
           </div>
 
-          <div className="flex items-center justify-between p-4 rounded-2xl bg-neutral-950 border border-neutral-800">
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold shrink-0">
                 <Smartphone className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-xs font-bold text-white">MB WAY via Stripe</div>
-                <div className="text-[11px] font-mono text-neutral-400">Aprovação imediata</div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white">MB WAY via Stripe</div>
+                <div className="text-[11px] font-mono text-slate-500 dark:text-neutral-400">Aprovação imediata</div>
               </div>
             </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               Ativo
             </span>
           </div>
 
-          <div className="flex items-center justify-between p-4 rounded-2xl bg-neutral-950 border border-neutral-800">
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold shrink-0">
                 <Building2 className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-xs font-bold text-white">Multibanco Stripe</div>
-                <div className="text-[11px] font-mono text-neutral-400">Entidade & Referência</div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white">Multibanco Stripe</div>
+                <div className="text-[11px] font-mono text-slate-500 dark:text-neutral-400">Entidade & Referência</div>
               </div>
             </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               Ativo
             </span>
           </div>
@@ -272,37 +286,37 @@ export const ClientSubscriptionView: React.FC = () => {
       </div>
 
       {/* Invoice History */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6">
+      <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="font-bold text-base text-white">Recibos & Faturas de Mensalidade</h3>
-            <p className="text-xs text-neutral-400">Histórico de mensalidades (100,00 € fixos via Stripe)</p>
+            <h3 className="font-bold text-base text-slate-900 dark:text-white">Recibos & Faturas de Mensalidade</h3>
+            <p className="text-xs text-slate-500 dark:text-neutral-400">Histórico de mensalidades (100,00 € fixos via Stripe)</p>
           </div>
-          <Receipt className="w-5 h-5 text-indigo-400" />
+          <Receipt className="w-5 h-5 text-indigo-500" />
         </div>
 
-        <div className="divide-y divide-neutral-800/80">
+        <div className="divide-y divide-slate-100 dark:divide-neutral-800/80">
           {invoices.map((inv) => (
             <div key={inv.id} className="py-3 flex items-center justify-between text-xs">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-neutral-950 text-neutral-400">
+                <div className="p-2 rounded-lg bg-slate-100 dark:bg-neutral-950 text-slate-600 dark:text-neutral-400">
                   <Receipt className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="font-bold text-white">{inv.id}</div>
-                  <div className="text-[11px] text-neutral-500">{inv.date} via {inv.method}</div>
+                  <div className="font-bold text-slate-900 dark:text-white">{inv.id}</div>
+                  <div className="text-[11px] text-slate-500 dark:text-neutral-500">{inv.date} via {inv.method}</div>
                 </div>
               </div>
 
               <div className="flex items-center gap-4">
-                <span className="font-mono font-bold text-white">{inv.amount}</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">
+                <span className="font-mono font-bold text-slate-900 dark:text-white">{inv.amount}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
                   {inv.status}
                 </span>
                 <button
                   type="button"
                   title="Descarregar Recibo"
-                  className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition"
+                  className="p-1.5 rounded-lg bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 text-slate-600 dark:text-neutral-300 transition cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" />
                 </button>
@@ -315,24 +329,24 @@ export const ClientSubscriptionView: React.FC = () => {
       {/* RENEW / CHECKOUT MODAL VIA STRIPE */}
       {showRenewModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative">
-            <div className="flex items-center justify-between pb-4 border-b border-neutral-800">
+          <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-neutral-800">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
                   <Lock className="w-4 h-4" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-base text-white">Pagamento da Mensalidade (100 €)</h3>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400">Stripe</span>
+                    <h3 className="font-bold text-base text-slate-900 dark:text-white">Pagamento da Mensalidade (100 €)</h3>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-600 dark:text-indigo-400">Stripe</span>
                   </div>
-                  <p className="text-xs text-neutral-400">Coach Sérgio Cunha • Acompanhamento VIP</p>
+                  <p className="text-xs text-slate-500 dark:text-neutral-400">Coach Sérgio Cunha • Acompanhamento VIP</p>
                 </div>
               </div>
 
               <button
                 onClick={() => setShowRenewModal(false)}
-                className="p-1.5 rounded-xl bg-neutral-800 text-neutral-400 hover:text-white"
+                className="p-1.5 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -350,7 +364,7 @@ export const ClientSubscriptionView: React.FC = () => {
                   className={`py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition cursor-pointer ${
                     renewMethod === 'card' 
                       ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30' 
-                      : 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:text-white'
+                      : 'bg-slate-50 dark:bg-neutral-950 text-slate-600 dark:text-neutral-400 border-slate-200 dark:border-neutral-800 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   <CreditCard className="w-3.5 h-3.5" />
@@ -367,7 +381,7 @@ export const ClientSubscriptionView: React.FC = () => {
                   className={`py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition cursor-pointer ${
                     renewMethod === 'mbway' 
                       ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30' 
-                      : 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:text-white'
+                      : 'bg-slate-50 dark:bg-neutral-950 text-slate-600 dark:text-neutral-400 border-slate-200 dark:border-neutral-800 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   <Smartphone className="w-3.5 h-3.5" />
@@ -383,7 +397,7 @@ export const ClientSubscriptionView: React.FC = () => {
                   className={`py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition cursor-pointer ${
                     renewMethod === 'multibanco' 
                       ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30' 
-                      : 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:text-white'
+                      : 'bg-slate-50 dark:bg-neutral-950 text-slate-600 dark:text-neutral-400 border-slate-200 dark:border-neutral-800 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   <Building2 className="w-3.5 h-3.5" />
@@ -394,20 +408,20 @@ export const ClientSubscriptionView: React.FC = () => {
               {/* CARD VIA STRIPE */}
               {renewMethod === 'card' && (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-neutral-950 border border-neutral-800 text-xs">
-                    <span className="text-neutral-400">Sandbox Stripe ativo:</span>
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 text-xs">
+                    <span className="text-slate-500 dark:text-neutral-400">Sandbox Stripe ativo:</span>
                     <button
                       type="button"
                       onClick={handleFillTestCard}
-                      className="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 font-bold text-[11px] border border-indigo-500/30 transition flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300 font-bold text-[11px] border border-indigo-500/30 transition flex items-center gap-1 cursor-pointer"
                     >
-                      <Sparkles className="w-3 h-3 text-indigo-400" />
+                      <Sparkles className="w-3 h-3 text-indigo-500" />
                       <span>Preencher Teste (4242...)</span>
                     </button>
                   </div>
 
                   <div>
-                    <label className="text-xs text-neutral-300 block mb-1">
+                    <label className="text-xs text-slate-700 dark:text-neutral-300 block mb-1">
                       Número do Cartão *
                     </label>
                     <div className="relative">
@@ -417,9 +431,9 @@ export const ClientSubscriptionView: React.FC = () => {
                         value={cardNumber}
                         onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
                         placeholder="4242 4242 4242 4242"
-                        className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white font-mono text-sm focus:border-indigo-500 focus:outline-none"
+                        className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono text-sm focus:border-indigo-500 focus:outline-none"
                       />
-                      <div className="absolute right-3 top-2 text-xs font-bold uppercase text-neutral-400 font-mono">
+                      <div className="absolute right-3 top-2 text-xs font-bold uppercase text-slate-400 dark:text-neutral-400 font-mono">
                         {cardBrand !== 'generic' ? cardBrand : 'CARTÃO'}
                       </div>
                     </div>
@@ -427,7 +441,7 @@ export const ClientSubscriptionView: React.FC = () => {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs text-neutral-300 block mb-1">
+                      <label className="text-xs text-slate-700 dark:text-neutral-300 block mb-1">
                         Validade (MM/AA) *
                       </label>
                       <input
@@ -436,12 +450,12 @@ export const ClientSubscriptionView: React.FC = () => {
                         value={expiry}
                         onChange={(e) => setExpiry(formatExpiry(e.target.value))}
                         placeholder="12/28"
-                        className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white font-mono text-sm focus:border-indigo-500 focus:outline-none"
+                        className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono text-sm focus:border-indigo-500 focus:outline-none"
                       />
                     </div>
 
                     <div>
-                      <label className="text-xs text-neutral-300 block mb-1">
+                      <label className="text-xs text-slate-700 dark:text-neutral-300 block mb-1">
                         CVC *
                       </label>
                       <input
@@ -450,13 +464,13 @@ export const ClientSubscriptionView: React.FC = () => {
                         value={cvc}
                         onChange={(e) => setCvc(e.target.value.replace(/\D/g, ''))}
                         placeholder="123"
-                        className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white font-mono text-sm focus:border-indigo-500 focus:outline-none"
+                        className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono text-sm focus:border-indigo-500 focus:outline-none"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-xs text-neutral-300 block mb-1">
+                    <label className="text-xs text-slate-700 dark:text-neutral-300 block mb-1">
                       Nome no Cartão
                     </label>
                     <input
@@ -464,12 +478,12 @@ export const ClientSubscriptionView: React.FC = () => {
                       value={cardHolder}
                       onChange={(e) => setCardHolder(e.target.value)}
                       placeholder="Nome completo do titular"
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white text-xs focus:border-indigo-500 focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white text-xs focus:border-indigo-500 focus:outline-none"
                     />
                   </div>
 
                   {errorMessage && (
-                    <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 text-xs">
+                    <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-600 dark:text-red-400 text-xs">
                       {errorMessage}
                     </div>
                   )}
@@ -490,7 +504,7 @@ export const ClientSubscriptionView: React.FC = () => {
               {renewMethod === 'mbway' && (
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs text-neutral-300 block mb-1">
+                    <label className="text-xs text-slate-700 dark:text-neutral-300 block mb-1">
                       Telemóvel MB WAY
                     </label>
                     <input
@@ -498,7 +512,7 @@ export const ClientSubscriptionView: React.FC = () => {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="9xx xxx xxx"
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white font-mono text-sm focus:border-indigo-500 focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono text-sm focus:border-indigo-500 focus:outline-none"
                     />
                     <button
                       type="button"
@@ -516,30 +530,30 @@ export const ClientSubscriptionView: React.FC = () => {
               {/* Multibanco Content via Stripe */}
               {renewMethod === 'multibanco' && mbData && (
                 <div className="space-y-3">
-                  <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800 space-y-2.5 text-xs">
+                  <div className="bg-slate-50 dark:bg-neutral-950 p-4 rounded-2xl border border-slate-200 dark:border-neutral-800 space-y-2.5 text-xs">
                     <div className="flex items-center justify-between">
-                      <span className="text-neutral-500 font-bold">Entidade:</span>
+                      <span className="text-slate-500 dark:text-neutral-500 font-bold">Entidade:</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-extrabold text-white">{mbData.entity}</span>
-                        <button onClick={() => handleCopy(mbData.entity, 'entity')} className="text-neutral-400 hover:text-white">
-                          {copiedField === 'entity' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span className="font-mono font-extrabold text-slate-900 dark:text-white">{mbData.entity}</span>
+                        <button onClick={() => handleCopy(mbData.entity, 'entity')} className="text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer">
+                          {copiedField === 'entity' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                         </button>
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className="text-neutral-500 font-bold">Referência:</span>
+                      <span className="text-slate-500 dark:text-neutral-500 font-bold">Referência:</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-extrabold text-indigo-400">{mbData.reference}</span>
-                        <button onClick={() => handleCopy(mbData.reference.replace(/\s/g, ''), 'reference')} className="text-neutral-400 hover:text-white">
-                          {copiedField === 'reference' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span className="font-mono font-extrabold text-indigo-600 dark:text-indigo-400">{mbData.reference}</span>
+                        <button onClick={() => handleCopy(mbData.reference.replace(/\s/g, ''), 'reference')} className="text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer">
+                          {copiedField === 'reference' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                         </button>
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className="text-neutral-500 font-bold">Montante:</span>
-                      <span className="font-mono font-extrabold text-white">100,00 €</span>
+                      <span className="text-slate-500 dark:text-neutral-500 font-bold">Montante:</span>
+                      <span className="font-mono font-extrabold text-slate-900 dark:text-white">100,00 €</span>
                     </div>
                   </div>
 
