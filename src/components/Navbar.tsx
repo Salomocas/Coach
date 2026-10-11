@@ -21,6 +21,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLogo } from '../context/LogoContext';
 import { EditProfileModal } from './EditProfileModal';
 import { ChangePasswordModal } from './ChangePasswordModal';
 import { SettingsModal } from './SettingsModal';
@@ -47,6 +48,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateClient, onNavigateCoac
 
   const { notifications, unreadCount, markNotificationAsRead } = useData();
   const { theme, isDark, toggleTheme } = useTheme();
+  const { logoUrl } = useLogo();
   
   const [showNotifs, setShowNotifs] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -82,6 +84,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateClient, onNavigateCoac
           
           {/* Brand */}
           <div className="flex items-center gap-2.5 sm:gap-3.5">
+            <img 
+              src={logoUrl} 
+              alt="Coach Cunha Logo" 
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl object-contain ring-1 ring-slate-200 dark:ring-neutral-800 shrink-0 bg-white dark:bg-neutral-900 p-0.5" 
+            />
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-black text-base sm:text-lg tracking-tight text-slate-900 dark:text-white uppercase leading-none">
@@ -310,7 +317,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateClient, onNavigateCoac
                     {/* Botão Configurações da Aplicação */}
                     <button
                       onClick={() => {
-                        setSettingsTab('theme');
+                        setSettingsTab((isCoach || isAdmin) ? 'logo' : 'theme');
                         setIsSettingsOpen(true);
                         setShowUserMenu(false);
                       }}
@@ -433,26 +440,26 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateClient, onNavigateCoac
 
           </div>
         </div>
-
-        {/* Edit Profile Modal */}
-        <EditProfileModal 
-          isOpen={isEditProfileOpen} 
-          onClose={() => setIsEditProfileOpen(false)} 
-        />
-
-        {/* Change Password Modal */}
-        <ChangePasswordModal
-          isOpen={isChangePasswordOpen}
-          onClose={() => setIsChangePasswordOpen(false)}
-        />
-
-        {/* Application Settings Modal (Appearance, Logo Dropper, Security, Profile) */}
-        <SettingsModal
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-          defaultTab={settingsTab}
-        />
       </header>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal 
+        isOpen={isEditProfileOpen} 
+        onClose={() => setIsEditProfileOpen(false)} 
+      />
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
+      />
+
+      {/* Application Settings Modal (Appearance, Logo Dropper, Security, Profile) */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        defaultTab={settingsTab}
+      />
     </>
   );
 };

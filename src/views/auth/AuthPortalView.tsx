@@ -31,8 +31,6 @@ export const AuthPortalView: React.FC = () => {
     switchPersona 
   } = useAuth();
   const { isDark, toggleTheme } = useTheme();
-  const { updateLogo, isCustomLogo } = useLogo();
-
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -42,35 +40,6 @@ export const AuthPortalView: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  // Logo dropzone state directly on the authentication view
-  const [isDraggingLogo, setIsDraggingLogo] = useState(false);
-  const logoInputRef = useRef<HTMLInputElement>(null);
-
-  const handleLogoFile = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      setError('Por favor carrega um ficheiro de imagem válido (ex: Logo.jpeg ou PNG).');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      if (dataUrl) {
-        updateLogo(dataUrl, file.name, file.size);
-        setSuccessMessage(`Logótipo oficial "${file.name}" atualizado e centralizado com sucesso!`);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleLogoDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingLogo(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleLogoFile(e.dataTransfer.files[0]);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,55 +153,17 @@ export const AuthPortalView: React.FC = () => {
       {/* Main Central Authentication Card */}
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-6 max-w-md w-full mx-auto">
         
-        {/* Central Official App Logo & Quick Dropzone */}
-        <div 
-          onDragOver={(e) => { e.preventDefault(); setIsDraggingLogo(true); }}
-          onDragLeave={() => setIsDraggingLogo(false)}
-          onDrop={handleLogoDrop}
-          className={`mb-5 flex flex-col items-center animate-fade-in transition-all duration-300 p-3 rounded-3xl ${
-            isDraggingLogo 
-              ? 'ring-2 ring-amber-500 bg-amber-500/10 scale-105' 
-              : 'hover:bg-neutral-900/30'
-          }`}
-        >
-          <div className="relative group cursor-pointer" onClick={() => logoInputRef.current?.click()}>
-            <CoachCunhaLogo size="hero" />
-            
-            {/* Quick hover badge to change/drop logo */}
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 rounded-3xl transition flex flex-col items-center justify-center text-amber-400 p-2 text-center">
-              <Upload className="w-6 h-6 mb-1 animate-bounce" />
-              <span className="text-[11px] font-bold">Larga ou Clica aqui</span>
-              <span className="text-[9px] text-neutral-300">para colocar Logo.jpeg</span>
-            </div>
-          </div>
+        {/* Central Official App Logo */}
+        <div className="mb-6 flex flex-col items-center animate-fade-in p-2">
+          <CoachCunhaLogo size="hero" />
 
-          <div className="mt-2 text-center">
+          <div className="mt-3 text-center">
             <span className="text-[11px] font-extrabold tracking-[0.25em] text-amber-400 uppercase drop-shadow-md">
               Acompanhamento de Elite & Alta Performance
             </span>
             <p className="text-xs text-neutral-400 mt-0.5">
               Portal Central de Autenticação
             </p>
-          </div>
-
-          {/* Direct Button to drop or upload Logo.jpeg */}
-          <div className="mt-1.5 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => logoInputRef.current?.click()}
-              className="text-[10px] text-amber-400 hover:text-amber-300 flex items-center gap-1 font-semibold transition hover:underline cursor-pointer"
-              title="Carregar ou substituir o logótipo oficial da aplicação"
-            >
-              <Upload className="w-3 h-3" />
-              <span>{isCustomLogo ? 'Alterar Logótipo Oficial' : 'Carregar / Dropar Imagem Oficial (Logo.jpeg)'}</span>
-            </button>
-            <input 
-              type="file" 
-              ref={logoInputRef} 
-              onChange={(e) => e.target.files?.[0] && handleLogoFile(e.target.files[0])} 
-              accept="image/*" 
-              className="hidden" 
-            />
           </div>
         </div>
 

@@ -27,6 +27,52 @@ interface LogoContextType {
 
 const DEFAULT_LOGO = '/logo.svg';
 
+/**
+ * Optimizes logo images using canvas to prevent exceeding localStorage quota (~5MB)
+ * and ensure lightning-fast loading across all devices. Preserves PNG alpha transparency.
+ */
+export const compressImageForLogo = (dataUrl: string, maxWidth = 512, maxHeight = 512): Promise<string> => {
+  return new Promise((resolve) => {
+    if (dataUrl.startsWith('data:image/svg+xml') || dataUrl.endsWith('.svg')) {
+      resolve(dataUrl);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth || height > maxHeight) {
+        if (width > height) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        } else {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(dataUrl);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      try {
+        const compressed = canvas.toDataURL('image/png');
+        resolve(compressed);
+      } catch (e) {
+        resolve(dataUrl);
+      }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+};
+
 const LogoContext = createContext<LogoContextType | undefined>(undefined);
 
 export const LogoProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -72,10 +118,12 @@ export const LogoProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const fetchRemoteBranding = async () => {
       try {
-        const docRef = doc(db, 'system_settings', 'branding');
-        const snap = await getDoc(docRef);
-        if (snap.exists()) {
-          const data = snap.data();
+        let docSnap = await getDoc(doc(db, 'app_settings', 'branding')).catch(() => null);
+        if (!docSnap || !docSnap.exists()) {
+          docSnap = await getDoc(doc(db, 'system_settings', 'branding')).catch(() => null);
+        }
+        if (docSnap && docSnap.exists()) {
+          const data = docSnap.data();
           if (data?.logoUrl) {
             setLogoUrl(data.logoUrl);
             try {
@@ -84,6 +132,9 @@ export const LogoProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
           if (data?.logoDetails) {
             setLogoDetails(data.logoDetails);
+            try {
+              localStorage.setItem('coach_cunha_logo_details', JSON.stringify(data.logoDetails));
+            } catch (e) {}
           }
         }
       } catch (err) {
@@ -93,47 +144,53 @@ export const LogoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetchRemoteBranding();
   }, []);
 
-  const updateLogo = async (dataUrl: string, fileName: string = 'Logo.jpeg', sizeBytes?: number) => {
-    setLogoUrl(dataUrl);
+  const updateLogo = async (rawDataUrl: string, fileName: string = 'Logo.png', sizeBytes?: number) => {
+    const optimizedUrl = await compressImageForLogo(rawDataUrl);
+    setLogoUrl(optimizedUrl);
+
     const details = {
       fileName,
       updatedAt: new Date().toISOString(),
-      fileSizeKb: sizeBytes ? Math.round(sizeBytes / 1024) : Math.round(dataUrl.length / 1370)
+      fileSizeKb: Math.round(optimizedUrl.length / 1370)
     };
     setLogoDetails(details);
 
     try {
-      localStorage.setItem('coach_cunha_custom_logo', dataUrl);
+      localStorage.setItem('coach_cunha_custom_logo', optimizedUrl);
       localStorage.setItem('coach_cunha_logo_details', JSON.stringify(details));
     } catch (e) {
       console.warn('Could not save logo to localStorage:', e);
     }
 
-    // Add to assets gallery as well
+    // Add to assets gallery
     const newAsset: AssetImage = {
       id: 'logo-' + Date.now(),
       name: fileName,
-      url: dataUrl,
+      url: optimizedUrl,
       sizeBytes,
       uploadedAt: new Date().toISOString(),
       category: 'logo'
     };
-    const updatedAssets = [newAsset, ...assets.filter(a => a.id !== newAsset.id)];
-    setAssets(updatedAssets);
-    try {
-      localStorage.setItem('coach_cunha_assets_gallery', JSON.stringify(updatedAssets));
-    } catch (e) {}
+    setAssets(prev => {
+      const updated = [newAsset, ...prev.filter(a => a.name !== fileName)];
+      try {
+        localStorage.setItem('coach_cunha_assets_gallery', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
 
-    // Firestore sync
+    // Firestore sync to both app_settings and system_settings
+    const brandingPayload = {
+      logoUrl: optimizedUrl,
+      logoDetails: details,
+      updatedAt: new Date().toISOString()
+    };
     try {
-      await setDoc(doc(db, 'system_settings', 'branding'), {
-        logoUrl: dataUrl,
-        logoDetails: details,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-    } catch (e) {
-      console.warn('Could not sync logo to Firestore branding:', e);
-    }
+      await setDoc(doc(db, 'app_settings', 'branding'), brandingPayload, { merge: true });
+    } catch (e) {}
+    try {
+      await setDoc(doc(db, 'system_settings', 'branding'), brandingPayload, { merge: true });
+    } catch (e) {}
   };
 
   const resetToDefaultLogo = async () => {
@@ -145,6 +202,11 @@ export const LogoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {}
 
     try {
+      await setDoc(doc(db, 'app_settings', 'branding'), {
+        logoUrl: DEFAULT_LOGO,
+        logoDetails: null,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
       await setDoc(doc(db, 'system_settings', 'branding'), {
         logoUrl: DEFAULT_LOGO,
         logoDetails: null,
@@ -183,7 +245,7 @@ export const LogoProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateLogo,
       resetToDefaultLogo,
       addAsset,
-      removeAsset
+      removeAsset,
     }}>
       {children}
     </LogoContext.Provider>

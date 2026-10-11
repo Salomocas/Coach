@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   X, 
   Settings, 
@@ -11,10 +11,11 @@ import {
   AlertCircle, 
   KeyRound, 
   User, 
-  ShieldCheck,
   Check,
-  Sliders,
-  Sparkles
+  Sparkles,
+  Smartphone,
+  Layout,
+  Lock
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -33,7 +34,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   defaultTab = 'theme'
 }) => {
   const { currentUser, isCoach, isAdmin, changePassword } = useAuth();
-  const { theme, setTheme, isDark, toggleTheme } = useTheme();
+  const { theme, setTheme, isDark } = useTheme();
   const { 
     logoUrl, 
     isCustomLogo, 
@@ -44,9 +45,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const [activeTab, setActiveTab] = useState<'theme' | 'logo' | 'security' | 'profile'>(defaultTab);
 
+  // Sync tab when modal opens or defaultTab changes
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab(defaultTab);
+    }
+  }, [defaultTab, isOpen]);
+
   // Logo uploader state
   const [dragActive, setDragActive] = useState<boolean>(false);
   const [logoFeedback, setLogoFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [isSavingLogo, setIsSavingLogo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Password change state
@@ -68,30 +77,43 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
-  const processFile = (file: File) => {
+  const processFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       setLogoFeedback({
         type: 'error',
-        message: 'Por favor carrega um ficheiro de imagem válido (JPEG, PNG, WEBP, SVG).'
+        message: 'Por favor carrega um ficheiro de imagem válido (PNG, JPEG, WEBP ou SVG).'
       });
       return;
     }
 
+    setIsSavingLogo(true);
+    setLogoFeedback(null);
+
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const dataUrl = e.target?.result as string;
       if (dataUrl) {
-        updateLogo(dataUrl, file.name, file.size);
-        setLogoFeedback({
-          type: 'success',
-          message: `Logótipo "${file.name}" atualizado com sucesso! Foi aplicado e centralizado em toda a aplicação.`
-        });
+        try {
+          await updateLogo(dataUrl, file.name, file.size);
+          setLogoFeedback({
+            type: 'success',
+            message: `Logótipo "${file.name}" gravado com sucesso! Aplicado imediatamente no ecrã de login, cabeçalho e toda a plataforma.`
+          });
+        } catch (err: any) {
+          setLogoFeedback({
+            type: 'error',
+            message: 'Erro ao gravar o logótipo. Tenta novamente com outra imagem.'
+          });
+        } finally {
+          setIsSavingLogo(false);
+        }
       }
     };
     reader.onerror = () => {
+      setIsSavingLogo(false);
       setLogoFeedback({
         type: 'error',
-        message: 'Não foi possível ler o ficheiro de imagem. Tenta novamente.'
+        message: 'Não foi possível ler o ficheiro de imagem.'
       });
     };
     reader.readAsDataURL(file);
@@ -114,11 +136,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   const handleResetLogo = async () => {
-    await resetToDefaultLogo();
-    setLogoFeedback({
-      type: 'success',
-      message: 'Logótipo original do Coach Cunha reposto com sucesso.'
-    });
+    setIsSavingLogo(true);
+    try {
+      await resetToDefaultLogo();
+      setLogoFeedback({
+        type: 'success',
+        message: 'Logótipo padrão do Coach Cunha reposto com sucesso.'
+      });
+    } catch (e) {
+      setLogoFeedback({
+        type: 'error',
+        message: 'Não foi possível repor o logótipo original.'
+      });
+    } finally {
+      setIsSavingLogo(false);
+    }
   };
 
   const handleChangePasswordSubmit = async (e: React.FormEvent) => {
@@ -153,68 +185,72 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto"
+      onClick={onClose}
+    >
       <div 
-        className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-colors"
+        className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh] transition-colors"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-5 border-b border-slate-200 dark:border-neutral-800 flex items-center justify-between bg-slate-50/50 dark:bg-neutral-900/50">
+        <div className="p-5 sm:p-6 border-b border-slate-200 dark:border-neutral-800 flex items-center justify-between bg-slate-50/70 dark:bg-neutral-950/70">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center">
               <Settings className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                Configurações da Aplicação
+              <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                Configurações da Plataforma
               </h2>
               <p className="text-xs text-slate-500 dark:text-neutral-400">
-                Aparência, logótipo da app, segurança e preferências
+                Logótipo oficial, aparência visual, segurança e conta
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-neutral-800 transition"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+            title="Fechar configurações"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-slate-200 dark:border-neutral-800 px-5 pt-2 gap-2 bg-slate-50/30 dark:bg-neutral-950/40 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('theme')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition whitespace-nowrap ${
-              activeTab === 'theme'
-                ? 'border-amber-500 text-amber-500'
-                : 'border-transparent text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            {isDark ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
-            <span>Modo Luz / Escuro</span>
-          </button>
-
+        <div className="flex border-b border-slate-200 dark:border-neutral-800 px-4 sm:px-6 pt-2 gap-1.5 sm:gap-2 bg-slate-50/40 dark:bg-neutral-950/40 overflow-x-auto scrollbar-none">
           {(isCoach || isAdmin) && (
             <button
               onClick={() => setActiveTab('logo')}
-              className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition whitespace-nowrap ${
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold border-b-2 transition whitespace-nowrap cursor-pointer ${
                 activeTab === 'logo'
                   ? 'border-amber-500 text-amber-500'
                   : 'border-transparent text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <ImageIcon className="w-3.5 h-3.5" />
-              <span>Imagens & Logótipo</span>
+              <span>Logótipo & Marca</span>
               {isCustomLogo && (
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="w-2 h-2 rounded-full bg-emerald-500" title="Logótipo personalizado ativo" />
               )}
             </button>
           )}
 
           <button
+            onClick={() => setActiveTab('theme')}
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold border-b-2 transition whitespace-nowrap cursor-pointer ${
+              activeTab === 'theme'
+                ? 'border-amber-500 text-amber-500'
+                : 'border-transparent text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            {isDark ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
+            <span>Tema Visual</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('security')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition whitespace-nowrap ${
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold border-b-2 transition whitespace-nowrap cursor-pointer ${
               activeTab === 'security'
                 ? 'border-amber-500 text-amber-500'
                 : 'border-transparent text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
@@ -226,124 +262,49 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           <button
             onClick={() => setActiveTab('profile')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition whitespace-nowrap ${
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold border-b-2 transition whitespace-nowrap cursor-pointer ${
               activeTab === 'profile'
                 ? 'border-amber-500 text-amber-500'
                 : 'border-transparent text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <User className="w-3.5 h-3.5" />
-            <span>Dados de Conta</span>
+            <span>Dados da Conta</span>
           </button>
         </div>
 
         {/* Tab Content */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1">
+        <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
 
-          {/* TAB 1: THEME TOGGLE */}
-          {activeTab === 'theme' && (
-            <div className="space-y-5">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Aparência Visual & Tema
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-                  Escolhe o modo que melhor se adapta à tua visão e ambiente de trabalho.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Light Mode Card */}
-                <button
-                  onClick={() => setTheme('light')}
-                  className={`p-4 rounded-2xl border text-left transition relative cursor-pointer ${
-                    !isDark
-                      ? 'border-amber-500 bg-amber-500/5 ring-2 ring-amber-500/20 shadow-md'
-                      : 'border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 bg-slate-50 dark:bg-neutral-950'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
-                      <Sun className="w-5 h-5" />
-                    </div>
-                    {!isDark && (
-                      <span className="flex items-center gap-1 text-[11px] font-extrabold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
-                        <Check className="w-3 h-3" /> Ativo
-                      </span>
-                    )}
-                  </div>
-                  <h4 className="font-bold text-slate-900 dark:text-white text-sm">Modo Claro (Light)</h4>
-                  <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1">
-                    Fundo branco limpo, ideal para locais iluminados e leitura diurna.
-                  </p>
-                </button>
-
-                {/* Dark Mode Card */}
-                <button
-                  onClick={() => setTheme('dark')}
-                  className={`p-4 rounded-2xl border text-left transition relative cursor-pointer ${
-                    isDark
-                      ? 'border-amber-500 bg-amber-500/5 ring-2 ring-amber-500/20 shadow-md'
-                      : 'border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 bg-slate-50 dark:bg-neutral-950'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="w-9 h-9 rounded-xl bg-neutral-800 text-amber-400 flex items-center justify-center">
-                      <Moon className="w-5 h-5" />
-                    </div>
-                    {isDark && (
-                      <span className="flex items-center gap-1 text-[11px] font-extrabold text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded-full">
-                        <Check className="w-3 h-3" /> Ativo
-                      </span>
-                    )}
-                  </div>
-                  <h4 className="font-bold text-slate-900 dark:text-white text-sm">Modo Escuro (Dark)</h4>
-                  <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1">
-                    Interface escura de alta fidelidade e contraste, suave para a vista.
-                  </p>
-                </button>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-neutral-800/60 border border-slate-200 dark:border-neutral-700/60 text-xs text-slate-600 dark:text-neutral-300 flex items-center justify-between">
-                <span>Tema atualmente selecionado: <strong className="text-amber-500 uppercase font-mono">{theme}</strong></span>
-                <button 
-                  onClick={toggleTheme}
-                  className="px-3 py-1.5 rounded-lg bg-amber-500 text-black font-bold text-xs hover:bg-amber-400 transition"
-                >
-                  Alternar Agora
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 2: LOGO & IMAGES */}
+          {/* TAB 1: LOGO & BRANDING (Only Coach / Admin) */}
           {activeTab === 'logo' && (isCoach || isAdmin) && (
             <div className="space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
                     <ImageIcon className="w-4 h-4 text-amber-500" />
                     Logótipo Oficial da Aplicação
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-                    Carrega a tua imagem (ex: Logo.jpeg) para ser centralizada em todo o sistema.
+                    Este logótipo é aplicado em todo o sistema: no <strong>ecrã de login (autenticação)</strong>, no <strong>cabeçalho</strong> e nas áreas dos alunos.
                   </p>
                 </div>
 
                 {isCustomLogo && (
                   <button
                     onClick={handleResetLogo}
-                    className="inline-flex items-center gap-1.5 text-xs text-red-500 hover:text-red-600 dark:hover:text-red-400 font-bold px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 transition self-start"
+                    disabled={isSavingLogo}
+                    className="inline-flex items-center gap-1.5 text-xs text-red-500 hover:text-red-600 dark:hover:text-red-400 font-bold px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 transition self-start cursor-pointer disabled:opacity-50"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
-                    Repor Padrão
+                    Repor Original
                   </button>
                 )}
               </div>
 
               {/* Feedback toast */}
               {logoFeedback && (
-                <div className={`p-3.5 rounded-2xl text-xs font-medium flex items-center gap-2.5 ${
+                <div className={`p-3.5 rounded-2xl text-xs font-medium flex items-center gap-2.5 animate-fade-in ${
                   logoFeedback.type === 'success'
                     ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
                     : 'bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300'
@@ -354,38 +315,57 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
                   )}
                   <span className="flex-1">{logoFeedback.message}</span>
-                  <button onClick={() => setLogoFeedback(null)} className="p-0.5">
+                  <button onClick={() => setLogoFeedback(null)} className="p-0.5 cursor-pointer">
                     <X className="w-3.5 h-3.5 opacity-60 hover:opacity-100" />
                   </button>
                 </div>
               )}
 
-              {/* Live Preview Card */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 flex flex-col sm:flex-row items-center gap-4">
-                <div className="w-20 h-20 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 p-2 flex items-center justify-center shrink-0 shadow-sm">
-                  <CoachCunhaLogo size="md" showText={false} />
-                </div>
-                <div className="flex-1 text-center sm:text-left min-w-0">
-                  <div className="flex items-center justify-center sm:justify-start gap-2">
-                    <h4 className="font-bold text-sm text-slate-900 dark:text-white">
-                      {isCustomLogo ? (logoDetails?.fileName || 'Logótipo Personalizado') : 'Logótipo Padrão Coach Cunha'}
-                    </h4>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      isCustomLogo
-                        ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                        : 'bg-slate-200 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400'
-                    }`}>
-                      {isCustomLogo ? 'Personalizado ✅' : 'Padrão'}
-                    </span>
+              {/* Live Preview Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {/* Preview 1: Authentication Screen */}
+                <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800 text-center flex flex-col items-center justify-center relative overflow-hidden">
+                  <span className="text-[10px] uppercase font-bold text-amber-500 tracking-wider mb-2 flex items-center gap-1">
+                    <Lock className="w-3 h-3" />
+                    Pré-visualização: Ecrã de Login
+                  </span>
+                  <div className="w-24 h-28 my-1 flex items-center justify-center">
+                    <img 
+                      src={logoUrl} 
+                      alt="Logo Oficial" 
+                      className="max-w-full max-h-full object-contain filter drop-shadow-[0_8px_16px_rgba(245,158,11,0.3)]" 
+                    />
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1">
-                    Exibido no ecrã de autenticação, cabeçalho e menus de atletas.
-                  </p>
-                  {logoDetails?.updatedAt && (
-                    <p className="text-[11px] text-slate-400 dark:text-neutral-500 font-mono mt-1">
-                      Última atualização: {new Date(logoDetails.updatedAt).toLocaleString('pt-PT')}
-                    </p>
-                  )}
+                  <span className="text-[10px] text-neutral-400 font-mono mt-1">
+                    {isCustomLogo ? (logoDetails?.fileName || 'Personalizado') : 'Logo Oficial'}
+                  </span>
+                </div>
+
+                {/* Preview 2: Navbar / Headers */}
+                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 flex flex-col justify-between">
+                  <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-neutral-400 tracking-wider mb-2 flex items-center gap-1">
+                    <Layout className="w-3 h-3 text-amber-500" />
+                    Pré-visualização: Cabeçalho da App
+                  </span>
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 flex items-center gap-2.5 shadow-sm my-auto">
+                    <img 
+                      src={logoUrl} 
+                      alt="Logo Icon" 
+                      className="w-8 h-8 rounded-lg object-contain shrink-0" 
+                    />
+                    <div>
+                      <span className="font-extrabold text-xs text-slate-900 dark:text-white block uppercase">
+                        Coach Cunha <span className="text-amber-500">Project</span>
+                      </span>
+                      <span className="text-[9px] text-slate-400 dark:text-neutral-500 block">
+                        Acompanhamento de Elite
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-neutral-400 pt-2">
+                    <span>Estado:</span>
+                    <span className="font-bold text-emerald-500">{isCustomLogo ? 'Ativo & Gravado' : 'Padrão'}</span>
+                  </div>
                 </div>
               </div>
 
@@ -405,7 +385,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
                   onChange={handleFileSelect}
                   className="hidden"
                 />
@@ -413,16 +393,84 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <Upload className="w-6 h-6" />
                 </div>
                 <h4 className="font-bold text-sm text-slate-900 dark:text-white">
-                  Arrasta a imagem ou clica para selecionar
+                  {isSavingLogo ? 'A processar e otimizar logótipo...' : 'Clica aqui ou arrasta a imagem para atualizar'}
                 </h4>
                 <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1 max-w-sm mx-auto">
-                  Formatos suportados: JPEG, PNG, WEBP, SVG. Recomendado formato quadrado ou proporcional.
+                  Formatos suportados: PNG (com fundo transparente), JPEG, WEBP ou SVG. A imagem é otimizada e guardada permanentemente.
                 </p>
-                <div className="mt-3">
-                  <span className="inline-block px-3 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-bold shadow-sm">
-                    Escolher Ficheiro
+                <div className="mt-3.5">
+                  <span className="inline-block px-4 py-2 rounded-xl bg-amber-500 text-black text-xs font-extrabold shadow-sm hover:bg-amber-400 transition">
+                    Carregar Ficheiro de Logótipo
                   </span>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: THEME (Light vs Dark) - Clean, direct, zero redundancy */}
+          {activeTab === 'theme' && (
+            <div className="space-y-5">
+              <div>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                  Aparência Visual & Tema
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
+                  Clica no modo pretendido para alternar instantaneamente entre o modo claro e escuro.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Light Mode Card */}
+                <button
+                  type="button"
+                  onClick={() => setTheme('light')}
+                  className={`p-5 rounded-2xl border text-left transition relative cursor-pointer ${
+                    !isDark
+                      ? 'border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/30 shadow-lg scale-[1.01]'
+                      : 'border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 bg-slate-50 dark:bg-neutral-950 opacity-80 hover:opacity-100'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
+                      <Sun className="w-5 h-5" />
+                    </div>
+                    {!isDark && (
+                      <span className="flex items-center gap-1 text-xs font-black text-amber-700 dark:text-amber-400 bg-amber-200/60 dark:bg-amber-500/20 px-2.5 py-0.5 rounded-full">
+                        <Check className="w-3.5 h-3.5" /> Ativo
+                      </span>
+                    )}
+                  </div>
+                  <h4 className="font-bold text-slate-900 dark:text-white text-sm">Modo Claro (Light)</h4>
+                  <p className="text-xs text-slate-600 dark:text-neutral-400 mt-1 leading-relaxed">
+                    Fundo branco limpo com contrastes nítidos, ideal para ambientes bem iluminados e leitura diurna.
+                  </p>
+                </button>
+
+                {/* Dark Mode Card */}
+                <button
+                  type="button"
+                  onClick={() => setTheme('dark')}
+                  className={`p-5 rounded-2xl border text-left transition relative cursor-pointer ${
+                    isDark
+                      ? 'border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/30 shadow-lg scale-[1.01]'
+                      : 'border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 bg-slate-50 dark:bg-neutral-950 opacity-80 hover:opacity-100'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-neutral-800 text-amber-400 flex items-center justify-center">
+                      <Moon className="w-5 h-5" />
+                    </div>
+                    {isDark && (
+                      <span className="flex items-center gap-1 text-xs font-black text-amber-400 bg-amber-500/20 px-2.5 py-0.5 rounded-full">
+                        <Check className="w-3.5 h-3.5" /> Ativo
+                      </span>
+                    )}
+                  </div>
+                  <h4 className="font-bold text-slate-900 dark:text-white text-sm">Modo Escuro (Dark)</h4>
+                  <p className="text-xs text-slate-600 dark:text-neutral-400 mt-1 leading-relaxed">
+                    Interface escura de alta fidelidade e contraste suave, reduzindo a fadiga visual.
+                  </p>
+                </button>
               </div>
             </div>
           )}
@@ -431,16 +479,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {activeTab === 'security' && (
             <form onSubmit={handleChangePasswordSubmit} className="space-y-4">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                <h3 className="text-sm font-black text-slate-900 dark:text-white">
                   Alteração de Palavra-passe
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-                  Atualiza as tuas credenciais de acesso para manter a conta segura.
+                  Atualiza as tuas credenciais de acesso para manter a conta protegida.
                 </p>
               </div>
 
               {passwordStatus.type && (
-                <div className={`p-3.5 rounded-2xl text-xs font-medium flex items-center gap-2.5 ${
+                <div className={`p-3.5 rounded-2xl text-xs font-medium flex items-center gap-2.5 animate-fade-in ${
                   passwordStatus.type === 'success'
                     ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
                     : 'bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300'
@@ -454,20 +502,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
               )}
 
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300 mb-1">
-                    Palavra-passe Atual
-                  </label>
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300 mb-1">
+                  Palavra-passe Atual
+                </label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Introduz a palavra-passe atual..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-950 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300 mb-1">
                     Nova Palavra-passe
@@ -476,12 +524,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder="Mínimo 6 caracteres..."
                     required
-                    className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-950 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
                   />
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300 mb-1">
                     Confirmar Nova Palavra-passe
@@ -490,9 +537,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repita a nova palavra-passe"
+                    placeholder="Repete a nova palavra-passe..."
                     required
-                    className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-950 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
                   />
                 </div>
               </div>
@@ -513,11 +560,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {activeTab === 'profile' && (
             <div className="space-y-4">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                <h3 className="text-sm font-black text-slate-900 dark:text-white">
                   Informação do Utilizador
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-                  Dados associados à sessão e perfil atual.
+                  Dados associados à sessão e perfil ativo no sistema.
                 </p>
               </div>
 
@@ -559,7 +606,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <div className="p-4 border-t border-slate-200 dark:border-neutral-800 flex justify-end bg-slate-50/50 dark:bg-neutral-900/50">
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-slate-200 dark:bg-neutral-800 text-slate-800 dark:text-neutral-200 text-xs font-bold hover:bg-slate-300 dark:hover:bg-neutral-700 transition"
+            className="px-5 py-2 rounded-xl bg-slate-200 dark:bg-neutral-800 text-slate-800 dark:text-neutral-200 text-xs font-bold hover:bg-slate-300 dark:hover:bg-neutral-700 transition cursor-pointer"
           >
             Fechar
           </button>

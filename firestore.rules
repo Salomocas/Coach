@@ -112,8 +112,12 @@ service cloud.firestore {
       allow update, delete: if isSignedIn() && (resource.data.clientId == request.auth.uid || isCoach());
     }
 
-    // App Settings & Assets Gallery
+    // App Settings, System Settings & Assets Gallery
     match /app_settings/{docId} {
+      allow read: if true;
+      allow write: if isCoach();
+    }
+    match /system_settings/{docId} {
       allow read: if true;
       allow write: if isCoach();
     }
