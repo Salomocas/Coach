@@ -91,14 +91,14 @@ export const ClientCalendarView: React.FC = () => {
       <div className="p-8 text-center bg-neutral-900 border border-neutral-800 rounded-3xl">
         <Dumbbell className="w-12 h-12 text-amber-500 mx-auto mb-3 opacity-60" />
         <h3 className="text-lg font-bold text-white">Nenhum Plano de Treino Ativo</h3>
-        <p className="text-sm text-neutral-400 mt-1">O Coach Sérgio Cunha irá atribuir a tua rotina semanal em breve.</p>
+        <p className="text-sm text-neutral-400 mt-1">A tua rotina semanal será atribuída em breve.</p>
       </div>
     );
   }
 
   const currentDayWorkout: DayWorkout | undefined = displayedPlan.days.find(
     d => d.dayIndex === selectedDayIndex
-  ) || displayedPlan.days[0];
+  );
 
   const handleSetToggle = (exercise: DayExercise, set: WorkoutSet, index: number, loggedWeight?: number) => {
     const isCompleted = !set.completed;
@@ -108,7 +108,7 @@ export const ClientCalendarView: React.FC = () => {
       workoutPlanId: displayedPlan.id,
       exerciseId: exercise.exerciseId,
       exerciseName: exercise.exerciseName,
-      dayOfWeek: currentDayWorkout.dayOfWeek,
+      dayOfWeek: currentDayWorkout?.dayOfWeek || daysOfWeek[selectedDayIndex]?.full || 'Segunda-feira',
       date: new Date().toISOString().split('T')[0],
       setNumber: set.setNumber,
       reps: set.loggedReps || set.reps,
@@ -192,16 +192,6 @@ export const ClientCalendarView: React.FC = () => {
               {displayedPlan.notes}
             </p>
           </div>
-
-          <div className="bg-slate-50 dark:bg-neutral-950/80 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4 shrink-0 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-bold">
-              <Flame className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="text-xs text-slate-500 dark:text-neutral-400">Prescrito por</div>
-              <div className="text-sm font-bold text-slate-900 dark:text-white">Coach Sérgio Cunha</div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -220,7 +210,7 @@ export const ClientCalendarView: React.FC = () => {
                 </span>
               </div>
               <p className="text-neutral-300 mt-0.5 leading-relaxed">
-                Ainda não acabaste o teu último treino? Fica tranquilo: todas as séries continuam ativas para poderes registar as cargas até ao final do dia. A nova semana só será exibida após o Coach Sérgio Cunha confirmar o reset de domingo.
+                Ainda não acabaste o teu último treino? Fica tranquilo: todas as séries continuam ativas para poderes registar as cargas até ao final do dia. A nova semana só será exibida após confirmação do reset de domingo.
               </p>
             </div>
           </div>
@@ -235,7 +225,7 @@ export const ClientCalendarView: React.FC = () => {
           <div className="flex items-center gap-2.5">
             <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>
-              <strong>Semana {displayedPlan.weekNumber} Ativa!</strong> As tuas séries foram reiniciadas pelo Coach Sérgio Cunha com novo ciclo de cargas.
+              <strong>Semana {displayedPlan.weekNumber} Ativa!</strong> As tuas séries foram reiniciadas com novo ciclo de cargas.
             </span>
           </div>
           <span className="text-[10px] font-mono font-bold bg-emerald-500/20 px-2 py-0.5 rounded text-emerald-200">
@@ -249,7 +239,7 @@ export const ClientCalendarView: React.FC = () => {
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>
-              <strong>Sessão Concluída com Sucesso! 🔥</strong> Treino registado. O Coach Sérgio Cunha está a avaliar as tuas cargas para o próximo ciclo de domingo.
+              <strong>Sessão Concluída com Sucesso! 🔥</strong> Treino registado. Podes acompanhar as tuas cargas para o próximo ciclo de domingo.
             </span>
           </div>
         </div>
@@ -296,7 +286,7 @@ export const ClientCalendarView: React.FC = () => {
       </div>
 
       {/* Selected Day Workout Container */}
-      {currentDayWorkout?.isRestDay ? (
+      {!currentDayWorkout || currentDayWorkout.isRestDay ? (
         <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl p-10 text-center max-w-xl mx-auto my-8 shadow-sm">
           <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto mb-4">
             <Clock className="w-8 h-8" />
@@ -307,7 +297,9 @@ export const ClientCalendarView: React.FC = () => {
               Treino de Hoje
             </div>
           )}
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white">{currentDayWorkout.name}</h3>
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+            {currentDayWorkout?.name || 'Dia de Descanso & Recuperação'}
+          </h3>
           <p className="text-sm text-slate-600 dark:text-neutral-400 mt-2 leading-relaxed">
             Dia programado pelo Coach para recuperação neuromuscular, síntese proteica e hidratação. Aproveita para caminhar 30 a 45 minutos (Zona 2) ou fazer mobilidade articular suave.
           </p>
@@ -599,7 +591,7 @@ export const ClientCalendarView: React.FC = () => {
               <div className="bg-slate-50 dark:bg-neutral-950 p-4 rounded-2xl border border-slate-200 dark:border-neutral-800">
                 <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-2 flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-amber-500" />
-                  Instruções & Dicas Posturais do Coach Sérgio Cunha
+                  Instruções & Dicas Posturais
                 </h4>
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-300 leading-relaxed">
                   {selectedExerciseForModal.notes || 'Executa o movimento com cadência controlada (3 segundos na fase excêntrica). Mantém a estabilidade articular e evita compensações com a lombar.'}

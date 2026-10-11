@@ -224,6 +224,29 @@ export interface NutritionTemplate {
   createdAt: string;
 }
 
+export interface CustomMetricDefinition {
+  id: string;
+  clientId: string;
+  name: string;
+  unit: string;
+  color: string;
+  description?: string;
+  createdAt?: string;
+}
+
+export interface MealAdherenceLog {
+  id: string;
+  clientId: string;
+  dayIndex: number;
+  dayOfWeek: string;
+  mealId: string;
+  mealName: string;
+  time: string;
+  status: 'completed' | 'missed';
+  missedReason?: string;
+  date?: string;
+}
+
 export interface ProgressLog {
   id: string;
   clientId: string;
@@ -237,6 +260,7 @@ export interface ProgressLog {
   hipsCm?: number;
   armCm?: number;
   thighCm?: number;
+  customValues?: Record<string, number>;
   photoFront?: string;
   photoSide?: string;
   photoBack?: string;

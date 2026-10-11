@@ -28,7 +28,9 @@ import {
   DailyWorkoutTemplate,
   WeeklyWorkoutTemplate,
   DailyMealTemplate,
-  WeeklyMealTemplate 
+  WeeklyMealTemplate,
+  CustomMetricDefinition,
+  MealAdherenceLog
 } from '../types';
 import { 
   INITIAL_EXERCISES, 
@@ -43,7 +45,9 @@ import {
   INITIAL_DAILY_WORKOUT_TEMPLATES,
   INITIAL_WEEKLY_WORKOUT_TEMPLATES,
   INITIAL_DAILY_MEAL_TEMPLATES,
-  INITIAL_WEEKLY_MEAL_TEMPLATES
+  INITIAL_WEEKLY_MEAL_TEMPLATES,
+  INITIAL_CUSTOM_METRICS,
+  INITIAL_MEAL_ADHERENCE_LOGS
 } from '../initialData';
 import { useAuth } from './AuthContext';
 
@@ -79,9 +83,17 @@ interface DataContextType {
   mealLibrary: Meal[];
   addMealToLibrary: (meal: Meal) => Promise<void>;
 
+  mealAdherenceLogs: MealAdherenceLog[];
+  toggleMealAdherence: (clientId: string, dayIndex: number, mealId: string, status: 'completed' | 'missed', missedReason?: string, mealName?: string, time?: string) => Promise<void>;
+
   progressLogs: ProgressLog[];
   addProgressLog: (log: Omit<ProgressLog, 'id' | 'createdAt'>) => Promise<void>;
+  updateProgressLog: (id: string, updated: Partial<ProgressLog>) => Promise<void>;
   deleteProgressLog: (id: string) => Promise<void>;
+
+  customMetrics: CustomMetricDefinition[];
+  addCustomMetric: (metric: Omit<CustomMetricDefinition, 'id' | 'createdAt'>) => Promise<void>;
+  deleteCustomMetric: (metricId: string) => Promise<void>;
 
   messages: Message[];
   sendMessage: (text: string, recipientClientId?: string) => Promise<void>;
@@ -137,6 +149,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [nutritionPlans, setNutritionPlans] = useState<NutritionPlan[]>(ALL_INITIAL_NUTRITION_PLANS);
   const [nutritionTemplates, setNutritionTemplates] = useState<NutritionTemplate[]>(INITIAL_NUTRITION_TEMPLATES);
   const [mealLibrary, setMealLibrary] = useState<Meal[]>(INITIAL_MEAL_LIBRARY);
+  const [mealAdherenceLogs, setMealAdherenceLogs] = useState<MealAdherenceLog[]>(() => {
+    try {
+      const saved = localStorage.getItem('coach_cunha_meal_adherence_logs');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_MEAL_ADHERENCE_LOGS;
+  });
   const [progressLogs, setProgressLogs] = useState<ProgressLog[]>(INITIAL_PROGRESS_LOGS);
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [notifications, setNotifications] = useState<AppNotification[]>([
@@ -167,6 +189,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [weeklyWorkoutTemplates, setWeeklyWorkoutTemplates] = useState<WeeklyWorkoutTemplate[]>(INITIAL_WEEKLY_WORKOUT_TEMPLATES);
   const [dailyMealTemplates, setDailyMealTemplates] = useState<DailyMealTemplate[]>(INITIAL_DAILY_MEAL_TEMPLATES);
   const [weeklyMealTemplates, setWeeklyMealTemplates] = useState<WeeklyMealTemplate[]>(INITIAL_WEEKLY_MEAL_TEMPLATES);
+  const [customMetrics, setCustomMetrics] = useState<CustomMetricDefinition[]>(INITIAL_CUSTOM_METRICS);
 
   // Client ID currently targeted: if athlete is logged in, their own UID; if coach, the selected athlete
   const targetClientId = isCoach ? selectedAthleteId : (currentUser?.uid || 'client-ricardo-silva');
@@ -621,6 +644,64 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setNotifications(prev => [notifRicardo, notifMarta, ...prev]);
   };
 
+  // Meal Adherence Tracking
+  const toggleMealAdherence = async (
+    clientId: string, 
+    dayIndex: number, 
+    mealId: string, 
+    status: 'completed' | 'missed', 
+    missedReason?: string,
+    mealName?: string,
+    time?: string
+  ) => {
+    const norm = (s?: string) => s ? s.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '') : '';
+
+    setMealAdherenceLogs(prev => {
+      const idx = prev.findIndex(p => 
+        p.clientId === clientId && 
+        p.dayIndex === dayIndex && 
+        (p.mealId === mealId || (mealName && norm(p.mealName) === norm(mealName)))
+      );
+      let updated: MealAdherenceLog[];
+      if (idx >= 0) {
+        updated = [...prev];
+        updated[idx] = { 
+          ...updated[idx], 
+          status, 
+          missedReason: status === 'completed' ? undefined : (missedReason !== undefined ? missedReason : updated[idx].missedReason),
+          ...(mealName ? { mealName } : {}),
+          ...(time ? { time } : {})
+        };
+      } else {
+        const days = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'];
+        const newLog: MealAdherenceLog = {
+          id: 'adh-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+          clientId,
+          dayIndex,
+          dayOfWeek: days[dayIndex] || 'Segunda-feira',
+          mealId,
+          mealName: mealName || 'Refeição',
+          time: time || '12:00',
+          status,
+          missedReason: status === 'completed' ? undefined : missedReason,
+          date: new Date().toISOString().split('T')[0]
+        };
+        updated = [...prev, newLog];
+      }
+
+      try {
+        localStorage.setItem('coach_cunha_meal_adherence_logs', JSON.stringify(updated));
+      } catch (e) {}
+
+      const recordToSync = idx >= 0 ? updated[idx] : updated[updated.length - 1];
+      if (recordToSync?.id) {
+        setDoc(doc(db, 'meal_adherence_logs', recordToSync.id), recordToSync).catch(() => {});
+      }
+
+      return updated;
+    });
+  };
+
   // Progress logs
   const addProgressLog = async (logData: Omit<ProgressLog, 'id' | 'createdAt'>) => {
     const newLog: ProgressLog = {
@@ -636,12 +717,45 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateProgressLog = async (id: string, updated: Partial<ProgressLog>) => {
+    setProgressLogs(prev => prev.map(p => p.id === id ? { ...p, ...updated } : p));
+    try {
+      await updateDoc(doc(db, 'progress_logs', id), updated);
+    } catch (e) {
+      console.warn('Update progress log in Firestore:', e);
+    }
+  };
+
   const deleteProgressLog = async (id: string) => {
     setProgressLogs(prev => prev.filter(p => p.id !== id));
     try {
       await deleteDoc(doc(db, 'progress_logs', id));
     } catch (e) {
       console.warn('Delete progress log from Firestore:', e);
+    }
+  };
+
+  // Custom metrics management
+  const addCustomMetric = async (metricData: Omit<CustomMetricDefinition, 'id' | 'createdAt'>) => {
+    const newMetric: CustomMetricDefinition = {
+      ...metricData,
+      id: 'metric-' + Date.now(),
+      createdAt: new Date().toISOString()
+    };
+    setCustomMetrics(prev => [...prev, newMetric]);
+    try {
+      await setDoc(doc(db, 'custom_metrics', newMetric.id), newMetric);
+    } catch (e) {
+      console.warn('Save custom metric to Firestore:', e);
+    }
+  };
+
+  const deleteCustomMetric = async (metricId: string) => {
+    setCustomMetrics(prev => prev.filter(m => m.id !== metricId));
+    try {
+      await deleteDoc(doc(db, 'custom_metrics', metricId));
+    } catch (e) {
+      console.warn('Delete custom metric from Firestore:', e);
     }
   };
 
@@ -731,9 +845,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       applyTemplateToClient,
       mealLibrary,
       addMealToLibrary,
+      mealAdherenceLogs,
+      toggleMealAdherence,
       progressLogs: progressLogs.filter(p => isCoach ? (p.clientId === selectedAthleteId) : (p.clientId === (currentUser?.uid || 'client-ricardo-silva'))),
       addProgressLog,
+      updateProgressLog,
       deleteProgressLog,
+      customMetrics: customMetrics.filter(m => m.clientId === 'all' || (isCoach ? (m.clientId === selectedAthleteId) : (m.clientId === (currentUser?.uid || 'client-ricardo-silva')))),
+      addCustomMetric,
+      deleteCustomMetric,
       messages,
       sendMessage,
       markMessagesAsRead,

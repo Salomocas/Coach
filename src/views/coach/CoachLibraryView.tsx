@@ -329,11 +329,11 @@ export const CoachLibraryView: React.FC = () => {
   const handleSaveDaily = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!dailyName.trim()) {
-      alert('Por favor atribui um nome ao treino diário.');
+      triggerNotice('Por favor atribui um nome ao treino diário.');
       return;
     }
     if (dailySelectedExercises.length === 0) {
-      alert('Adiciona pelo menos um treino singular da biblioteca ao teu plano diário.');
+      triggerNotice('Adiciona pelo menos um treino singular da biblioteca ao teu plano diário.');
       return;
     }
 
@@ -405,7 +405,7 @@ export const CoachLibraryView: React.FC = () => {
   const handleSaveWeekly = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!weeklyName.trim()) {
-      alert('Por favor atribui um nome ao treino semanal.');
+      triggerNotice('Por favor atribui um nome ao treino semanal.');
       return;
     }
 
@@ -461,7 +461,7 @@ export const CoachLibraryView: React.FC = () => {
   const handleSaveMeal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mealName.trim()) {
-      alert('Por favor insere o nome da refeição.');
+      triggerNotice('Por favor insere o nome da refeição.');
       return;
     }
 
@@ -531,11 +531,11 @@ export const CoachLibraryView: React.FC = () => {
   const handleSaveDailyMeal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!dailyMealName.trim()) {
-      alert('Por favor insere o nome da ementa diária.');
+      triggerNotice('Por favor insere o nome da ementa diária.');
       return;
     }
     if (dailyMealSelectedMeals.length === 0) {
-      alert('Adiciona pelo menos uma refeição singular à ementa diária.');
+      triggerNotice('Adiciona pelo menos uma refeição singular à ementa diária.');
       return;
     }
 
@@ -615,7 +615,7 @@ export const CoachLibraryView: React.FC = () => {
   const handleSaveWeeklyMeal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!weeklyMealName.trim()) {
-      alert('Por favor insere o nome da ementa semanal.');
+      triggerNotice('Por favor insere o nome da ementa semanal.');
       return;
     }
 

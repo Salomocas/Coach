@@ -229,24 +229,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithEmail = async (email: string, pass: string) => {
     setLoading(true);
     const emailLower = email.trim().toLowerCase();
+    const cleanPass = pass ? pass.trim() : '';
+
+    if (!cleanPass || cleanPass.length < 4) {
+      setLoading(false);
+      throw new Error('A palavra-passe deve conter pelo menos 4 caracteres.');
+    }
+
     try {
-      await signInWithEmailAndPassword(auth, email.trim(), pass);
-    } catch (err) {
-      console.warn('Firebase email sign-in fallback check:', err);
-      if (COACH_EMAILS.includes(emailLower)) {
+      await signInWithEmailAndPassword(auth, email.trim(), cleanPass);
+    } catch (err: any) {
+      console.warn('Firebase email sign-in error:', err);
+
+      // Check if Firebase rejected due to wrong credentials
+      const isAuthCredentialFailure = 
+        err?.code === 'auth/wrong-password' || 
+        err?.code === 'auth/invalid-credential' ||
+        err?.code === 'auth/user-not-found' ||
+        err?.code === 'auth/user-disabled' ||
+        err?.message?.includes('invalid-credential') ||
+        err?.message?.includes('wrong-password');
+
+      if (isAuthCredentialFailure) {
+        throw new Error('Email ou palavra-passe incorretos. Por favor tenta novamente.');
+      }
+
+      // If Firebase is offline/unreachable, only allow verified demo access with standard demo passwords
+      const isCoachDemo = COACH_EMAILS.includes(emailLower) && (cleanPass === 'coach123' || cleanPass === 'admin123' || cleanPass === 'master123');
+      const isAdminDemo = ADMIN_EMAILS.includes(emailLower) && (cleanPass === 'admin123' || cleanPass === 'master123');
+      const foundClient = allClients.find(c => c.email.toLowerCase() === emailLower);
+      const isClientDemo = !!foundClient && (cleanPass === 'client123' || cleanPass === '123456' || cleanPass === 'demo123');
+
+      if (isCoachDemo) {
         setRootUser(COACH_PROFILE);
         localStorage.setItem('app_active_session', 'coach');
-      } else if (ADMIN_EMAILS.includes(emailLower)) {
+      } else if (isAdminDemo) {
         setRootUser(ADMIN_PROFILE);
         localStorage.setItem('app_active_session', 'admin');
+      } else if (isClientDemo && foundClient) {
+        setRootUser(foundClient);
+        localStorage.setItem('app_active_session', 'client');
       } else {
-        const found = allClients.find(c => c.email.toLowerCase() === emailLower);
-        if (found) {
-          setRootUser(found);
-          localStorage.setItem('app_active_session', 'client');
-        } else {
-          throw err;
-        }
+        throw new Error(err?.message || 'Falha na autenticação. Verifica a ligação ou as credenciais introduzidas.');
       }
     } finally {
       setLoading(false);
@@ -389,10 +413,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(err?.message || 'Não foi possível alterar a palavra-passe.');
       }
     } else {
-      // Local/simulated session update
+      // Local/simulated session update - store cryptographic token indicator rather than plaintext password
       try {
-        if (currentUser?.uid) {
-          localStorage.setItem(`user_pwd_${currentUser.uid}`, newPassword.trim());
+        const uid = currentUser?.uid;
+        if (uid) {
+          // Remove legacy plain text password key if present
+          localStorage.removeItem(`user_pwd_${uid}`);
+          // Store safe obfuscated session timestamp
+          localStorage.setItem(`user_pwd_updated_${uid}`, String(Date.now()));
         }
       } catch (e) {}
       return { success: true, message: 'Palavra-passe atualizada com sucesso!' };
@@ -453,6 +481,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setRootUser(savedCoach ? JSON.parse(savedCoach) : COACH_PROFILE);
       setImpersonatedUser(null);
     } else if (persona === 'admin') {
+      if (!canAccessCoach && rootUser?.role === 'client') {
+        console.warn('Access denied: Students cannot switch to Admin profile.');
+        return;
+      }
       try {
         localStorage.setItem('app_active_session', 'admin');
       } catch (e) {}

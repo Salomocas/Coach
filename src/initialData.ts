@@ -10,7 +10,9 @@ import {
   DailyWorkoutTemplate,
   WeeklyWorkoutTemplate,
   DailyMealTemplate,
-  WeeklyMealTemplate
+  WeeklyMealTemplate,
+  CustomMetricDefinition,
+  MealAdherenceLog
 } from './types';
 
 export const COACH_PROFILE: UserProfile = {
@@ -410,7 +412,7 @@ export const INITIAL_NUTRITION_PLAN: NutritionPlan = {
       notes: 'Dia de treino de Peito. Consumir hidratos 2 horas antes da sessão.',
       meals: [
         {
-          id: 'meal-1',
+          id: 'meal-d0-1',
           name: 'Pequeno-Almoço',
           time: '08:00',
           description: 'Papas de aveia proteicas com fruta e canela',
@@ -427,8 +429,8 @@ export const INITIAL_NUTRITION_PLAN: NutritionPlan = {
           ]
         },
         {
-          id: 'meal-2',
-          name: 'Almoço (Refeição Principal)',
+          id: 'meal-d0-2',
+          name: 'Almoço',
           time: '13:00',
           description: 'Peito de frango grelhado com arroz basmati e vegetais ao vapor',
           calories: 680,
@@ -444,8 +446,8 @@ export const INITIAL_NUTRITION_PLAN: NutritionPlan = {
           ]
         },
         {
-          id: 'meal-3',
-          name: 'Lanche / Pré-Treino',
+          id: 'meal-d0-3',
+          name: 'Lanche',
           time: '17:00',
           description: 'Iogurte grego ligeiro com banana e nozes',
           calories: 410,
@@ -460,7 +462,7 @@ export const INITIAL_NUTRITION_PLAN: NutritionPlan = {
           ]
         },
         {
-          id: 'meal-4',
+          id: 'meal-d0-4',
           name: 'Jantar',
           time: '20:30',
           description: 'Lombo de salmão com batata-doce assada e espargos',
@@ -473,20 +475,6 @@ export const INITIAL_NUTRITION_PLAN: NutritionPlan = {
             { item: 'Batata-doce assada no forno', quantity: '180g' },
             { item: 'Espargos verdes salteados', quantity: '120g' },
             { item: 'Gotas de limão e ervas aromáticas', quantity: 'A gosto' }
-          ]
-        },
-        {
-          id: 'meal-5',
-          name: 'Ceia (Opcional)',
-          time: '22:45',
-          description: 'Infusão calmante com proteína de lenta absorção',
-          calories: 130,
-          proteinG: 15,
-          carbsG: 3,
-          fatG: 2,
-          foods: [
-            { item: 'Caseína Micelar ou Queijo Quark 0%', quantity: '100g' },
-            { item: 'Chá de camomila ou valeriana', quantity: '1 caneca quente' }
           ]
         }
       ]
@@ -502,7 +490,7 @@ export const INITIAL_NUTRITION_PLAN: NutritionPlan = {
       notes: 'Manter a mesma rotina de horários para estabilizar a saciedade e insulina.',
       meals: [
         {
-          id: 'meal-t-1',
+          id: 'meal-d1-1',
           name: 'Pequeno-Almoço',
           time: '08:00',
           description: 'Omelete de claras e ovos inteiros com pão de centeio integral',
@@ -518,7 +506,7 @@ export const INITIAL_NUTRITION_PLAN: NutritionPlan = {
           ]
         },
         {
-          id: 'meal-t-2',
+          id: 'meal-d1-2',
           name: 'Almoço',
           time: '13:00',
           description: 'Carne de vaca magra picada com batata branca e feijão verde',
@@ -534,7 +522,7 @@ export const INITIAL_NUTRITION_PLAN: NutritionPlan = {
           ]
         },
         {
-          id: 'meal-t-3',
+          id: 'meal-d1-3',
           name: 'Lanche',
           time: '17:00',
           description: 'Batido anabólico com aveia e fruta',
@@ -550,7 +538,7 @@ export const INITIAL_NUTRITION_PLAN: NutritionPlan = {
           ]
         },
         {
-          id: 'meal-t-4',
+          id: 'meal-d1-4',
           name: 'Jantar',
           time: '20:30',
           description: 'Filetes de pescada ou robalo no forno com quinoa real',
@@ -569,13 +557,74 @@ export const INITIAL_NUTRITION_PLAN: NutritionPlan = {
     {
       dayOfWeek: 'Quarta-feira',
       dayIndex: 2,
-      totalCalories: 2150,
+      totalCalories: 2350,
       totalProtein: 180,
-      totalCarbs: 180,
+      totalCarbs: 230,
       totalFat: 65,
       waterIntakeLiters: 3.0,
-      notes: 'Dia sem treino intenso: ligeira redução de hidratos para compensar menor gasto calórico.',
-      meals: []
+      notes: 'Dia sem treino intenso: manter hidratação e horários consistentes.',
+      meals: [
+        {
+          id: 'meal-d2-1',
+          name: 'Pequeno-Almoço',
+          time: '08:00',
+          description: 'Papas de aveia proteicas com canela e nozes',
+          calories: 510,
+          proteinG: 40,
+          carbsG: 60,
+          fatG: 12,
+          foods: [
+            { item: 'Flocos de aveia finos', quantity: '70g' },
+            { item: 'Whey Protein Isolado', quantity: '35g' },
+            { item: 'Banana média', quantity: '1 unidade' }
+          ]
+        },
+        {
+          id: 'meal-d2-2',
+          name: 'Almoço',
+          time: '13:00',
+          description: 'Peito de peru grelhado com batata-doce e legumes salteados',
+          calories: 680,
+          proteinG: 55,
+          carbsG: 70,
+          fatG: 16,
+          foods: [
+            { item: 'Bife de peru grelhado', quantity: '180g' },
+            { item: 'Batata-doce assada', quantity: '220g' },
+            { item: 'Curgete e cogumelos frescos', quantity: '150g' }
+          ]
+        },
+        {
+          id: 'meal-d2-3',
+          name: 'Lanche',
+          time: '17:00',
+          description: 'Iogurte natural Skyr com frutos secos e maçã fatiada',
+          calories: 420,
+          proteinG: 32,
+          carbsG: 48,
+          fatG: 11,
+          foods: [
+            { item: 'Iogurte Skyr natural', quantity: '200g' },
+            { item: 'Maçã reineta ou gala', quantity: '1 unidade' },
+            { item: 'Amêndoas torradas sem sal', quantity: '20g' }
+          ]
+        },
+        {
+          id: 'meal-d2-4',
+          name: 'Jantar',
+          time: '20:30',
+          description: 'Salmão fresco com arroz basmati e espinafres ao vapor',
+          calories: 600,
+          proteinG: 48,
+          carbsG: 45,
+          fatG: 22,
+          foods: [
+            { item: 'Posta de salmão grelhado', quantity: '160g' },
+            { item: 'Arroz basmati cozido', quantity: '150g' },
+            { item: 'Espinafres salteados com azeite e alho', quantity: '100g' }
+          ]
+        }
+      ]
     },
     {
       dayOfWeek: 'Quinta-feira',
@@ -586,7 +635,68 @@ export const INITIAL_NUTRITION_PLAN: NutritionPlan = {
       totalFat: 65,
       waterIntakeLiters: 3.5,
       notes: 'Dia de Pernas: refeição pós-treino rica em hidratos de carbono complexos.',
-      meals: []
+      meals: [
+        {
+          id: 'meal-d3-1',
+          name: 'Pequeno-Almoço',
+          time: '08:00',
+          description: 'Omelete de ovos com tosta de centeio e queijo fresco magro',
+          calories: 520,
+          proteinG: 42,
+          carbsG: 45,
+          fatG: 16,
+          foods: [
+            { item: 'Ovos inteiros biológicos', quantity: '2 unidades' },
+            { item: 'Claras de ovo pasteurizadas', quantity: '120ml' },
+            { item: 'Pão de centeio integral', quantity: '2 fatias' }
+          ]
+        },
+        {
+          id: 'meal-d3-2',
+          name: 'Almoço',
+          time: '13:00',
+          description: 'Carne magra picada com arroz integral e feijão preto',
+          calories: 710,
+          proteinG: 56,
+          carbsG: 80,
+          fatG: 18,
+          foods: [
+            { item: 'Carne de novilho magra', quantity: '180g' },
+            { item: 'Arroz integral cozido', quantity: '200g' },
+            { item: 'Feijão preto cozido', quantity: '80g' }
+          ]
+        },
+        {
+          id: 'meal-d3-3',
+          name: 'Lanche',
+          time: '17:00',
+          description: 'Batido de proteína com aveia e morangos',
+          calories: 430,
+          proteinG: 36,
+          carbsG: 55,
+          fatG: 8,
+          foods: [
+            { item: 'Whey Protein isolado', quantity: '35g' },
+            { item: 'Farinha de aveia integral', quantity: '45g' },
+            { item: 'Morangos frescos', quantity: '100g' }
+          ]
+        },
+        {
+          id: 'meal-d3-4',
+          name: 'Jantar',
+          time: '20:30',
+          description: 'Dourada no forno com batata cozida e brócolos',
+          calories: 610,
+          proteinG: 50,
+          carbsG: 48,
+          fatG: 16,
+          foods: [
+            { item: 'Dourada média grelhada', quantity: '220g' },
+            { item: 'Batata branca cozida', quantity: '200g' },
+            { item: 'Brócolos cozidos ao vapor', quantity: '150g' }
+          ]
+        }
+      ]
     },
     {
       dayOfWeek: 'Sexta-feira',
@@ -596,30 +706,211 @@ export const INITIAL_NUTRITION_PLAN: NutritionPlan = {
       totalCarbs: 230,
       totalFat: 65,
       waterIntakeLiters: 3.5,
-      notes: 'Manter disciplina ao jantar.',
-      meals: []
+      notes: 'Manter disciplina ao jantar após o treino de sexta.',
+      meals: [
+        {
+          id: 'meal-d4-1',
+          name: 'Pequeno-Almoço',
+          time: '08:00',
+          description: 'Papas de aveia proteicas com fruta vermelha e café preto',
+          calories: 520,
+          proteinG: 42,
+          carbsG: 65,
+          fatG: 12,
+          foods: [
+            { item: 'Flocos de aveia', quantity: '70g' },
+            { item: 'Whey Protein Isolado', quantity: '35g' },
+            { item: 'Mirtilos frescos', quantity: '80g' }
+          ]
+        },
+        {
+          id: 'meal-d4-2',
+          name: 'Almoço',
+          time: '13:00',
+          description: 'Peito de frango grelhado com massa integral e legumes',
+          calories: 690,
+          proteinG: 54,
+          carbsG: 75,
+          fatG: 18,
+          foods: [
+            { item: 'Peito de frango em tiras', quantity: '180g' },
+            { item: 'Massa espiral 100% integral', quantity: '80g (pesado cru)' },
+            { item: 'Molho de tomate caseiro com manjericão', quantity: '100g' }
+          ]
+        },
+        {
+          id: 'meal-d4-3',
+          name: 'Lanche',
+          time: '17:00',
+          description: 'Iogurte grego magro com banana e canela',
+          calories: 410,
+          proteinG: 30,
+          carbsG: 50,
+          fatG: 10,
+          foods: [
+            { item: 'Iogurte grego 0%', quantity: '200g' },
+            { item: 'Banana média', quantity: '1 unidade' },
+            { item: 'Nozes partidas', quantity: '15g' }
+          ]
+        },
+        {
+          id: 'meal-d4-4',
+          name: 'Jantar',
+          time: '20:30',
+          description: 'Lombo de salmão fresco com batata-doce e espargos',
+          calories: 610,
+          proteinG: 48,
+          carbsG: 40,
+          fatG: 24,
+          foods: [
+            { item: 'Lombo de salmão fresco grelhado', quantity: '160g' },
+            { item: 'Batata-doce assada', quantity: '180g' },
+            { item: 'Espargos verdes salteados', quantity: '120g' }
+          ]
+        }
+      ]
     },
     {
       dayOfWeek: 'Sábado',
       dayIndex: 5,
-      totalCalories: 2300,
+      totalCalories: 2350,
       totalProtein: 175,
       totalCarbs: 220,
       totalFat: 65,
       waterIntakeLiters: 3.0,
-      notes: 'Fim de semana controlado.',
-      meals: []
+      notes: 'Fim de semana controlado: evitar opções calóricas fora da ementa.',
+      meals: [
+        {
+          id: 'meal-d5-1',
+          name: 'Pequeno-Almoço',
+          time: '09:00',
+          description: 'Panquecas proteicas de aveia e clara de ovo',
+          calories: 520,
+          proteinG: 42,
+          carbsG: 55,
+          fatG: 14,
+          foods: [
+            { item: 'Farinha de aveia integral', quantity: '60g' },
+            { item: 'Claras de ovo', quantity: '150ml' },
+            { item: 'Ovo inteiro', quantity: '1 unidade' }
+          ]
+        },
+        {
+          id: 'meal-d5-2',
+          name: 'Almoço',
+          time: '13:30',
+          description: 'Bife de vaca magro grelhado com arroz basmati e salada mista',
+          calories: 680,
+          proteinG: 52,
+          carbsG: 70,
+          fatG: 20,
+          foods: [
+            { item: 'Bife do lombo ou vazia magra', quantity: '180g' },
+            { item: 'Arroz basmati cozido', quantity: '180g' },
+            { item: 'Salada mista com azeite virgem', quantity: '1 prato generoso' }
+          ]
+        },
+        {
+          id: 'meal-d5-3',
+          name: 'Lanche',
+          time: '17:30',
+          description: 'Batido de proteína com fruta e tosta integral',
+          calories: 410,
+          proteinG: 32,
+          carbsG: 50,
+          fatG: 8,
+          foods: [
+            { item: 'Whey Protein isolado', quantity: '35g' },
+            { item: 'Tosta 100% integral com queijo quark', quantity: '2 unidades' }
+          ]
+        },
+        {
+          id: 'meal-d5-4',
+          name: 'Jantar',
+          time: '21:00',
+          description: 'Filetes de pescada cozida com ovo e legumes ao vapor',
+          calories: 590,
+          proteinG: 48,
+          carbsG: 38,
+          fatG: 18,
+          foods: [
+            { item: 'Pescada fresca cozida', quantity: '200g' },
+            { item: 'Ovo cozido', quantity: '1 unidade' },
+            { item: 'Couve-flor e cenoura ao vapor', quantity: '200g' }
+          ]
+        }
+      ]
     },
     {
       dayOfWeek: 'Domingo',
       dayIndex: 6,
-      totalCalories: 2200,
+      totalCalories: 2300,
       totalProtein: 175,
-      totalCarbs: 200,
+      totalCarbs: 210,
       totalFat: 65,
       waterIntakeLiters: 3.0,
-      notes: 'Preparação dos tupperwares para a próxima semana!',
-      meals: []
+      notes: 'Preparação dos tupperwares para a próxima semana e descanso ativo.',
+      meals: [
+        {
+          id: 'meal-d6-1',
+          name: 'Pequeno-Almoço',
+          time: '09:00',
+          description: 'Omelete de ovos inteiros e claras com pão de centeio',
+          calories: 510,
+          proteinG: 40,
+          carbsG: 45,
+          fatG: 16,
+          foods: [
+            { item: 'Ovos inteiros', quantity: '2 unidades' },
+            { item: 'Claras pasteurizadas', quantity: '120ml' },
+            { item: 'Pão de centeio integral', quantity: '2 fatias' }
+          ]
+        },
+        {
+          id: 'meal-d6-2',
+          name: 'Almoço',
+          time: '13:30',
+          description: 'Frango assado sem pele com batata assada e feijão verde',
+          calories: 680,
+          proteinG: 54,
+          carbsG: 70,
+          fatG: 18,
+          foods: [
+            { item: 'Peito de frango assado', quantity: '180g' },
+            { item: 'Batata assada com ervas', quantity: '220g' },
+            { item: 'Feijão verde salteado', quantity: '150g' }
+          ]
+        },
+        {
+          id: 'meal-d6-3',
+          name: 'Lanche',
+          time: '17:00',
+          description: 'Iogurte Skyr com maçã e canela',
+          calories: 390,
+          proteinG: 30,
+          carbsG: 48,
+          fatG: 8,
+          foods: [
+            { item: 'Iogurte Skyr natural', quantity: '200g' },
+            { item: 'Maçã aos cubos', quantity: '1 unidade' }
+          ]
+        },
+        {
+          id: 'meal-d6-4',
+          name: 'Jantar',
+          time: '20:30',
+          description: 'Robalo grelhado com quinoa e salada de tomate',
+          calories: 580,
+          proteinG: 48,
+          carbsG: 40,
+          fatG: 16,
+          foods: [
+            { item: 'Filete de robalo fresco', quantity: '200g' },
+            { item: 'Quinoa cozida', quantity: '150g' },
+            { item: 'Salada de tomate cereja com orégãos', quantity: '1 taça' }
+          ]
+        }
+      ]
     }
   ]
 };
@@ -775,7 +1066,7 @@ export const INITIAL_MARTA_NUTRITION_PLAN: NutritionPlan = {
       notes: 'Dia de glúteos e pernas.',
       meals: [
         {
-          id: 'm-meal-1',
+          id: 'm-meal-d0-1',
           name: 'Pequeno-Almoço',
           time: '08:30',
           category: 'Pequeno-Almoço',
@@ -792,7 +1083,7 @@ export const INITIAL_MARTA_NUTRITION_PLAN: NutritionPlan = {
           ]
         },
         {
-          id: 'm-meal-2',
+          id: 'm-meal-d0-2',
           name: 'Almoço',
           time: '13:00',
           category: 'Almoço',
@@ -809,7 +1100,7 @@ export const INITIAL_MARTA_NUTRITION_PLAN: NutritionPlan = {
           ]
         },
         {
-          id: 'm-meal-3',
+          id: 'm-meal-d0-3',
           name: 'Lanche',
           time: '17:00',
           category: 'Lanche',
@@ -825,7 +1116,7 @@ export const INITIAL_MARTA_NUTRITION_PLAN: NutritionPlan = {
           ]
         },
         {
-          id: 'm-meal-4',
+          id: 'm-meal-d0-4',
           name: 'Jantar',
           time: '20:30',
           category: 'Jantar',
@@ -838,6 +1129,447 @@ export const INITIAL_MARTA_NUTRITION_PLAN: NutritionPlan = {
             { item: 'Salmão fresco', quantity: '140g' },
             { item: 'Batata-doce assada', quantity: '140g' },
             { item: 'Brócolos ao vapor', quantity: '150g' }
+          ]
+        }
+      ]
+    },
+    {
+      dayOfWeek: 'Terça-feira',
+      dayIndex: 1,
+      totalCalories: 1900,
+      totalProtein: 140,
+      totalCarbs: 180,
+      totalFat: 50,
+      waterIntakeLiters: 2.8,
+      notes: 'Dia de costas e ombros.',
+      meals: [
+        {
+          id: 'm-meal-d1-1',
+          name: 'Pequeno-Almoço',
+          time: '08:30',
+          category: 'Pequeno-Almoço',
+          description: 'Omelete de claras com espinafres e pão torrado integral',
+          calories: 410,
+          proteinG: 34,
+          carbsG: 45,
+          fatG: 10,
+          foods: [
+            { item: 'Claras de ovo com 1 gema', quantity: '150ml + 1 ovo' },
+            { item: 'Pão de centeio integral', quantity: '60g' },
+            { item: 'Azeite virgem extra', quantity: '5ml' }
+          ]
+        },
+        {
+          id: 'm-meal-d1-2',
+          name: 'Almoço',
+          time: '13:00',
+          category: 'Almoço',
+          description: 'Bife de peru grelhado com quinoa e cogumelos',
+          calories: 540,
+          proteinG: 46,
+          carbsG: 52,
+          fatG: 13,
+          foods: [
+            { item: 'Peito de peru grelhado', quantity: '160g' },
+            { item: 'Quinoa cozida', quantity: '140g' },
+            { item: 'Cogumelos frescos salteados', quantity: '100g' }
+          ]
+        },
+        {
+          id: 'm-meal-d1-3',
+          name: 'Lanche',
+          time: '17:00',
+          category: 'Lanche',
+          description: 'Batido proteico com fruta e sementes de chia',
+          calories: 330,
+          proteinG: 26,
+          carbsG: 36,
+          fatG: 8,
+          foods: [
+            { item: 'Whey Protein Isolado', quantity: '30g' },
+            { item: 'Bebida de amêndoa sem açúcar', quantity: '200ml' },
+            { item: 'Banana fatiada', quantity: '1 unidade' }
+          ]
+        },
+        {
+          id: 'm-meal-d1-4',
+          name: 'Jantar',
+          time: '20:30',
+          category: 'Jantar',
+          description: 'Dourada grelhada com batata cozida e feijão verde',
+          calories: 500,
+          proteinG: 38,
+          carbsG: 40,
+          fatG: 15,
+          foods: [
+            { item: 'Filete de dourada fresca', quantity: '170g' },
+            { item: 'Batata nova cozida', quantity: '130g' },
+            { item: 'Feijão verde cozido', quantity: '120g' }
+          ]
+        }
+      ]
+    },
+    {
+      dayOfWeek: 'Quarta-feira',
+      dayIndex: 2,
+      totalCalories: 1900,
+      totalProtein: 140,
+      totalCarbs: 180,
+      totalFat: 50,
+      waterIntakeLiters: 2.8,
+      notes: 'Dia de descanso ativo: mobilidade e caminhada.',
+      meals: [
+        {
+          id: 'm-meal-d2-1',
+          name: 'Pequeno-Almoço',
+          time: '08:30',
+          category: 'Pequeno-Almoço',
+          description: 'Papas de aveia proteica com bagas e canela',
+          calories: 420,
+          proteinG: 32,
+          carbsG: 50,
+          fatG: 9,
+          foods: [
+            { item: 'Flocos de aveia finos', quantity: '55g' },
+            { item: 'Whey Protein Baunilha', quantity: '30g' },
+            { item: 'Bagas frescas', quantity: '60g' }
+          ]
+        },
+        {
+          id: 'm-meal-d2-2',
+          name: 'Almoço',
+          time: '13:00',
+          category: 'Almoço',
+          description: 'Salmão grelhado com arroz basmati e salada mista',
+          calories: 560,
+          proteinG: 42,
+          carbsG: 50,
+          fatG: 18,
+          foods: [
+            { item: 'Salmão fresco grelhado', quantity: '150g' },
+            { item: 'Arroz basmati', quantity: '140g' },
+            { item: 'Salada de alface e pepino', quantity: '1 prato' }
+          ]
+        },
+        {
+          id: 'm-meal-d2-3',
+          name: 'Lanche',
+          time: '17:00',
+          category: 'Lanche',
+          description: 'Iogurte Skyr com nozes e frutos secos',
+          calories: 320,
+          proteinG: 24,
+          carbsG: 35,
+          fatG: 8,
+          foods: [
+            { item: 'Iogurte Skyr natural', quantity: '180g' },
+            { item: 'Nozes picadas', quantity: '15g' }
+          ]
+        },
+        {
+          id: 'm-meal-d2-4',
+          name: 'Jantar',
+          time: '20:30',
+          category: 'Jantar',
+          description: 'Peito de frango assado com legumes salteados',
+          calories: 500,
+          proteinG: 42,
+          carbsG: 35,
+          fatG: 14,
+          foods: [
+            { item: 'Peito de frango assado com ervas', quantity: '160g' },
+            { item: 'Curgete e pimentos salteados', quantity: '150g' }
+          ]
+        }
+      ]
+    },
+    {
+      dayOfWeek: 'Quinta-feira',
+      dayIndex: 3,
+      totalCalories: 1900,
+      totalProtein: 140,
+      totalCarbs: 180,
+      totalFat: 50,
+      waterIntakeLiters: 3.0,
+      notes: 'Dia de ênfase em posterior de coxa e glúteo.',
+      meals: [
+        {
+          id: 'm-meal-d3-1',
+          name: 'Pequeno-Almoço',
+          time: '08:30',
+          category: 'Pequeno-Almoço',
+          description: 'Papas de aveia proteica com canela e nozes',
+          calories: 420,
+          proteinG: 32,
+          carbsG: 50,
+          fatG: 9,
+          foods: [
+            { item: 'Flocos de aveia finos', quantity: '55g' },
+            { item: 'Whey Protein Isolado', quantity: '30g' }
+          ]
+        },
+        {
+          id: 'm-meal-d3-2',
+          name: 'Almoço',
+          time: '13:00',
+          category: 'Almoço',
+          description: 'Bife de vaca magro com batata-doce e brócolos',
+          calories: 550,
+          proteinG: 46,
+          carbsG: 52,
+          fatG: 14,
+          foods: [
+            { item: 'Bife da vazia limpo', quantity: '150g' },
+            { item: 'Batata-doce assada', quantity: '150g' },
+            { item: 'Brócolos ao vapor', quantity: '120g' }
+          ]
+        },
+        {
+          id: 'm-meal-d3-3',
+          name: 'Lanche',
+          time: '17:00',
+          category: 'Lanche',
+          description: 'Iogurte Skyr com maçã e canela',
+          calories: 310,
+          proteinG: 24,
+          carbsG: 35,
+          fatG: 7,
+          foods: [
+            { item: 'Skyr natural', quantity: '180g' },
+            { item: 'Maçã aos cubos com canela', quantity: '1 unidade' }
+          ]
+        },
+        {
+          id: 'm-meal-d3-4',
+          name: 'Jantar',
+          time: '20:30',
+          category: 'Jantar',
+          description: 'Lombinho de pescada com arroz e legumes cozidos',
+          calories: 510,
+          proteinG: 38,
+          carbsG: 42,
+          fatG: 13,
+          foods: [
+            { item: 'Filetes de pescada cozida', quantity: '180g' },
+            { item: 'Arroz carolino com azeite', quantity: '130g' }
+          ]
+        }
+      ]
+    },
+    {
+      dayOfWeek: 'Sexta-feira',
+      dayIndex: 4,
+      totalCalories: 1900,
+      totalProtein: 140,
+      totalCarbs: 180,
+      totalFat: 50,
+      waterIntakeLiters: 3.0,
+      notes: 'Dia de corpo inteiro / HIIT moderado.',
+      meals: [
+        {
+          id: 'm-meal-d4-1',
+          name: 'Pequeno-Almoço',
+          time: '08:30',
+          category: 'Pequeno-Almoço',
+          description: 'Panquecas proteicas de aveia e claras com mel',
+          calories: 430,
+          proteinG: 35,
+          carbsG: 52,
+          fatG: 9,
+          foods: [
+            { item: 'Farinha de aveia', quantity: '55g' },
+            { item: 'Claras de ovo', quantity: '160ml' },
+            { item: 'Mirtilos frescos', quantity: '50g' }
+          ]
+        },
+        {
+          id: 'm-meal-d4-2',
+          name: 'Almoço',
+          time: '13:00',
+          category: 'Almoço',
+          description: 'Peito de frango com massa integral e molho de tomate caseiro',
+          calories: 550,
+          proteinG: 45,
+          carbsG: 55,
+          fatG: 12,
+          foods: [
+            { item: 'Peito de frango em tiras', quantity: '160g' },
+            { item: 'Massa integral cozida', quantity: '140g' }
+          ]
+        },
+        {
+          id: 'm-meal-d4-3',
+          name: 'Lanche',
+          time: '17:00',
+          category: 'Lanche',
+          description: 'Iogurte Skyr com amêndoas e mirtilos',
+          calories: 320,
+          proteinG: 24,
+          carbsG: 33,
+          fatG: 9,
+          foods: [
+            { item: 'Skyr natural', quantity: '180g' },
+            { item: 'Amêndoas laminadas', quantity: '15g' }
+          ]
+        },
+        {
+          id: 'm-meal-d4-4',
+          name: 'Jantar',
+          time: '20:30',
+          category: 'Jantar',
+          description: 'Robalo assado com puré de batata-doce e espargos',
+          calories: 500,
+          proteinG: 38,
+          carbsG: 38,
+          fatG: 15,
+          foods: [
+            { item: 'Robalo no forno', quantity: '160g' },
+            { item: 'Batata-doce amassada', quantity: '130g' }
+          ]
+        }
+      ]
+    },
+    {
+      dayOfWeek: 'Sábado',
+      dayIndex: 5,
+      totalCalories: 1900,
+      totalProtein: 140,
+      totalCarbs: 180,
+      totalFat: 50,
+      waterIntakeLiters: 2.8,
+      notes: 'Fim de semana: manter horários de sono e hidratação.',
+      meals: [
+        {
+          id: 'm-meal-d5-1',
+          name: 'Pequeno-Almoço',
+          time: '09:00',
+          category: 'Pequeno-Almoço',
+          description: 'Tostas integrais com ovos mexidos e abacate',
+          calories: 430,
+          proteinG: 28,
+          carbsG: 45,
+          fatG: 15,
+          foods: [
+            { item: 'Pão integral de sementes', quantity: '60g' },
+            { item: 'Ovos inteiros biológicos', quantity: '2 unidades' },
+            { item: 'Abacate fatiado', quantity: '30g' }
+          ]
+        },
+        {
+          id: 'm-meal-d5-2',
+          name: 'Almoço',
+          time: '13:30',
+          category: 'Almoço',
+          description: 'Peito de peru grelhado com arroz e legumes grelhados',
+          calories: 540,
+          proteinG: 44,
+          carbsG: 52,
+          fatG: 12,
+          foods: [
+            { item: 'Peito de peru', quantity: '160g' },
+            { item: 'Arroz basmati', quantity: '140g' }
+          ]
+        },
+        {
+          id: 'm-meal-d5-3',
+          name: 'Lanche',
+          time: '17:30',
+          category: 'Lanche',
+          description: 'Skyr com banana fatiada e canela',
+          calories: 320,
+          proteinG: 24,
+          carbsG: 38,
+          fatG: 6,
+          foods: [
+            { item: 'Skyr natural', quantity: '180g' },
+            { item: 'Banana média', quantity: '1 unidade' }
+          ]
+        },
+        {
+          id: 'm-meal-d5-4',
+          name: 'Jantar',
+          time: '21:00',
+          category: 'Jantar',
+          description: 'Salmão com batata assada e salada verde',
+          calories: 510,
+          proteinG: 38,
+          carbsG: 38,
+          fatG: 17,
+          foods: [
+            { item: 'Salmão fresco grelhado', quantity: '140g' },
+            { item: 'Batata assada com alecrim', quantity: '130g' }
+          ]
+        }
+      ]
+    },
+    {
+      dayOfWeek: 'Domingo',
+      dayIndex: 6,
+      totalCalories: 1900,
+      totalProtein: 140,
+      totalCarbs: 180,
+      totalFat: 50,
+      waterIntakeLiters: 2.8,
+      notes: 'Dia de descanso completo. Preparação das marmitas da semana.',
+      meals: [
+        {
+          id: 'm-meal-d6-1',
+          name: 'Pequeno-Almoço',
+          time: '09:00',
+          category: 'Pequeno-Almoço',
+          description: 'Papas de aveia proteica com frutos vermelhos',
+          calories: 420,
+          proteinG: 32,
+          carbsG: 50,
+          fatG: 9,
+          foods: [
+            { item: 'Flocos de aveia', quantity: '55g' },
+            { item: 'Whey Protein Isolado', quantity: '30g' }
+          ]
+        },
+        {
+          id: 'm-meal-d6-2',
+          name: 'Almoço',
+          time: '13:30',
+          category: 'Almoço',
+          description: 'Peito de frango assado com batata-doce e salada',
+          calories: 550,
+          proteinG: 45,
+          carbsG: 50,
+          fatG: 14,
+          foods: [
+            { item: 'Peito de frango assado', quantity: '160g' },
+            { item: 'Batata-doce assada', quantity: '140g' }
+          ]
+        },
+        {
+          id: 'm-meal-d6-3',
+          name: 'Lanche',
+          time: '17:00',
+          category: 'Lanche',
+          description: 'Iogurte Skyr com nozes',
+          calories: 320,
+          proteinG: 24,
+          carbsG: 35,
+          fatG: 8,
+          foods: [
+            { item: 'Iogurte Skyr natural', quantity: '180g' },
+            { item: 'Miolo de noz', quantity: '12g' }
+          ]
+        },
+        {
+          id: 'm-meal-d6-4',
+          name: 'Jantar',
+          time: '20:30',
+          category: 'Jantar',
+          description: 'Dourada grelhada com legumes e batata cozida',
+          calories: 510,
+          proteinG: 38,
+          carbsG: 40,
+          fatG: 14,
+          foods: [
+            { item: 'Dourada grelhada', quantity: '160g' },
+            { item: 'Batata cozida pequena', quantity: '120g' }
           ]
         }
       ]
@@ -1206,9 +1938,8 @@ export const INITIAL_PROGRESS_LOGS: ProgressLog[] = [
     armCm: 37.0,
     thighCm: 59.5,
     photoFront: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&w=400&q=80',
-    photoSide: 'https://images.unsplash.com/photo-1534367507873-d2d7e24c797f?auto=format&fit=crop&w=400&q=80',
-    photoBack: 'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?auto=format&fit=crop&w=400&q=80',
     notes: 'Avaliação inicial com o Coach Sérgio Cunha. Início do plano de recomposição.',
+    customValues: { 'metric-antebraço': 31.0, 'metric-supino': 85 },
     createdAt: '2026-08-15'
   },
   {
@@ -1225,6 +1956,7 @@ export const INITIAL_PROGRESS_LOGS: ProgressLog[] = [
     photoFront: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&w=400&q=80',
     photoSide: 'https://images.unsplash.com/photo-1534367507873-d2d7e24c797f?auto=format&fit=crop&w=400&q=80',
     photoBack: 'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?auto=format&fit=crop&w=400&q=80',
+    customValues: { 'metric-antebraço': 31.5, 'metric-supino': 90 },
     notes: 'Duas semanas de plano cumpridas a 100%. Redução de 3cm na cintura e aumento de força.',
     createdAt: '2026-09-01'
   },
@@ -1242,6 +1974,7 @@ export const INITIAL_PROGRESS_LOGS: ProgressLog[] = [
     photoFront: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&w=400&q=80',
     photoSide: 'https://images.unsplash.com/photo-1534367507873-d2d7e24c797f?auto=format&fit=crop&w=400&q=80',
     photoBack: 'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?auto=format&fit=crop&w=400&q=80',
+    customValues: { 'metric-antebraço': 32.2, 'metric-supino': 95 },
     notes: 'Excelente resposta muscular aos treinos de ombro e peito.',
     createdAt: '2026-09-15'
   },
@@ -1258,6 +1991,7 @@ export const INITIAL_PROGRESS_LOGS: ProgressLog[] = [
     thighCm: 61.0,
     muscleMassKg: 40.2,
     visceralFat: 4,
+    customValues: { 'metric-antebraço': 33.0, 'metric-supino': 100 },
     notes: 'Meta dos 80kg batida! Definição abdominal nítida e aumento de força geral.',
     createdAt: '2026-10-01'
   },
@@ -1356,6 +2090,36 @@ export const INITIAL_PROGRESS_LOGS: ProgressLog[] = [
     thighCm: 58.8,
     notes: 'Manutenção de peso competitivo e aumento de força isométrica.',
     createdAt: '2026-09-20'
+  }
+];
+
+export const INITIAL_CUSTOM_METRICS: CustomMetricDefinition[] = [
+  {
+    id: 'metric-antebraço',
+    clientId: 'client-ricardo-silva',
+    name: 'Perímetro Antebraço',
+    unit: 'cm',
+    color: '#f97316',
+    description: 'Aferição do maior diâmetro do antebraço em flexão',
+    createdAt: '2026-08-15'
+  },
+  {
+    id: 'metric-supino',
+    clientId: 'client-ricardo-silva',
+    name: 'Carga Máx. Supino',
+    unit: 'kg',
+    color: '#06b6d4',
+    description: '1RM ou carga de treino estimada no supino plano',
+    createdAt: '2026-08-15'
+  },
+  {
+    id: 'metric-gluteo',
+    clientId: 'client-marta-pereira',
+    name: 'Perímetro Glúteo',
+    unit: 'cm',
+    color: '#ec4899',
+    description: 'Maior circunferência da anca/glúteo para tonificação',
+    createdAt: '2026-09-01'
   }
 ];
 
@@ -1943,3 +2707,84 @@ export const INITIAL_WEEKLY_MEAL_TEMPLATES: WeeklyMealTemplate[] = [
   }
 ];
 
+export const INITIAL_MEAL_ADHERENCE_LOGS: MealAdherenceLog[] = [
+  // Ricardo Silva (Segunda-feira) - 4/4 Cumpridas
+  { id: 'adh-r-0-1', clientId: 'client-ricardo-silva', dayIndex: 0, dayOfWeek: 'Segunda-feira', mealId: 'meal-d0-1', mealName: 'Pequeno-Almoço', time: '08:00', status: 'completed', date: '2026-10-05' },
+  { id: 'adh-r-0-2', clientId: 'client-ricardo-silva', dayIndex: 0, dayOfWeek: 'Segunda-feira', mealId: 'meal-d0-2', mealName: 'Almoço', time: '13:00', status: 'completed', date: '2026-10-05' },
+  { id: 'adh-r-0-3', clientId: 'client-ricardo-silva', dayIndex: 0, dayOfWeek: 'Segunda-feira', mealId: 'meal-d0-3', mealName: 'Lanche', time: '17:00', status: 'completed', date: '2026-10-05' },
+  { id: 'adh-r-0-4', clientId: 'client-ricardo-silva', dayIndex: 0, dayOfWeek: 'Segunda-feira', mealId: 'meal-d0-4', mealName: 'Jantar', time: '20:30', status: 'completed', date: '2026-10-05' },
+
+  // Ricardo Silva (Terça-feira) - 4/4 Cumpridas
+  { id: 'adh-r-1-1', clientId: 'client-ricardo-silva', dayIndex: 1, dayOfWeek: 'Terça-feira', mealId: 'meal-d1-1', mealName: 'Pequeno-Almoço', time: '08:00', status: 'completed', date: '2026-10-06' },
+  { id: 'adh-r-1-2', clientId: 'client-ricardo-silva', dayIndex: 1, dayOfWeek: 'Terça-feira', mealId: 'meal-d1-2', mealName: 'Almoço', time: '13:00', status: 'completed', date: '2026-10-06' },
+  { id: 'adh-r-1-3', clientId: 'client-ricardo-silva', dayIndex: 1, dayOfWeek: 'Terça-feira', mealId: 'meal-d1-3', mealName: 'Lanche', time: '17:00', status: 'completed', date: '2026-10-06' },
+  { id: 'adh-r-1-4', clientId: 'client-ricardo-silva', dayIndex: 1, dayOfWeek: 'Terça-feira', mealId: 'meal-d1-4', mealName: 'Jantar', time: '20:30', status: 'completed', date: '2026-10-06' },
+
+  // Ricardo Silva (Quarta-feira) - 3/4 Cumpridas (1 Falta no Lanche)
+  { id: 'adh-r-2-1', clientId: 'client-ricardo-silva', dayIndex: 2, dayOfWeek: 'Quarta-feira', mealId: 'meal-d2-1', mealName: 'Pequeno-Almoço', time: '08:00', status: 'completed', date: '2026-10-07' },
+  { id: 'adh-r-2-2', clientId: 'client-ricardo-silva', dayIndex: 2, dayOfWeek: 'Quarta-feira', mealId: 'meal-d2-2', mealName: 'Almoço', time: '13:00', status: 'completed', date: '2026-10-07' },
+  { id: 'adh-r-2-3', clientId: 'client-ricardo-silva', dayIndex: 2, dayOfWeek: 'Quarta-feira', mealId: 'meal-d2-3', mealName: 'Lanche', time: '17:00', status: 'missed', missedReason: 'Reunião de trabalho urgente às 17h; aluno não conseguiu realizar o lanche e saltou para o jantar.', date: '2026-10-07' },
+  { id: 'adh-r-2-4', clientId: 'client-ricardo-silva', dayIndex: 2, dayOfWeek: 'Quarta-feira', mealId: 'meal-d2-4', mealName: 'Jantar', time: '20:30', status: 'completed', date: '2026-10-07' },
+
+  // Ricardo Silva (Quinta-feira) - 4/4 Cumpridas
+  { id: 'adh-r-3-1', clientId: 'client-ricardo-silva', dayIndex: 3, dayOfWeek: 'Quinta-feira', mealId: 'meal-d3-1', mealName: 'Pequeno-Almoço', time: '08:00', status: 'completed', date: '2026-10-08' },
+  { id: 'adh-r-3-2', clientId: 'client-ricardo-silva', dayIndex: 3, dayOfWeek: 'Quinta-feira', mealId: 'meal-d3-2', mealName: 'Almoço', time: '13:00', status: 'completed', date: '2026-10-08' },
+  { id: 'adh-r-3-3', clientId: 'client-ricardo-silva', dayIndex: 3, dayOfWeek: 'Quinta-feira', mealId: 'meal-d3-3', mealName: 'Lanche', time: '17:00', status: 'completed', date: '2026-10-08' },
+  { id: 'adh-r-3-4', clientId: 'client-ricardo-silva', dayIndex: 3, dayOfWeek: 'Quinta-feira', mealId: 'meal-d3-4', mealName: 'Jantar', time: '20:30', status: 'completed', date: '2026-10-08' },
+
+  // Ricardo Silva (Sexta-feira) - 3/4 Cumpridas (1 Falta no Jantar)
+  { id: 'adh-r-4-1', clientId: 'client-ricardo-silva', dayIndex: 4, dayOfWeek: 'Sexta-feira', mealId: 'meal-d4-1', mealName: 'Pequeno-Almoço', time: '08:00', status: 'completed', date: '2026-10-09' },
+  { id: 'adh-r-4-2', clientId: 'client-ricardo-silva', dayIndex: 4, dayOfWeek: 'Sexta-feira', mealId: 'meal-d4-2', mealName: 'Almoço', time: '13:00', status: 'completed', date: '2026-10-09' },
+  { id: 'adh-r-4-3', clientId: 'client-ricardo-silva', dayIndex: 4, dayOfWeek: 'Sexta-feira', mealId: 'meal-d4-3', mealName: 'Lanche', time: '17:00', status: 'completed', date: '2026-10-09' },
+  { id: 'adh-r-4-4', clientId: 'client-ricardo-silva', dayIndex: 4, dayOfWeek: 'Sexta-feira', mealId: 'meal-d4-4', mealName: 'Jantar', time: '20:30', status: 'missed', missedReason: 'Treino tardio e cansaço extremo; aluno saltou a refeição completa do jantar e foi dormir sem comer.', date: '2026-10-09' },
+
+  // Ricardo Silva (Sábado) - 3/4 Cumpridas (1 Falta no Almoço)
+  { id: 'adh-r-5-1', clientId: 'client-ricardo-silva', dayIndex: 5, dayOfWeek: 'Sábado', mealId: 'meal-d5-1', mealName: 'Pequeno-Almoço', time: '09:00', status: 'completed', date: '2026-10-10' },
+  { id: 'adh-r-5-2', clientId: 'client-ricardo-silva', dayIndex: 5, dayOfWeek: 'Sábado', mealId: 'meal-d5-2', mealName: 'Almoço', time: '13:30', status: 'missed', missedReason: 'Almoço em restaurante com família; não foi possível cumprir o cardápio prescrito (ingeriu opção calórica livre).', date: '2026-10-10' },
+  { id: 'adh-r-5-3', clientId: 'client-ricardo-silva', dayIndex: 5, dayOfWeek: 'Sábado', mealId: 'meal-d5-3', mealName: 'Lanche', time: '17:30', status: 'completed', date: '2026-10-10' },
+  { id: 'adh-r-5-4', clientId: 'client-ricardo-silva', dayIndex: 5, dayOfWeek: 'Sábado', mealId: 'meal-d5-4', mealName: 'Jantar', time: '21:00', status: 'completed', date: '2026-10-10' },
+
+  // Ricardo Silva (Domingo) - 4/4 Cumpridas
+  { id: 'adh-r-6-1', clientId: 'client-ricardo-silva', dayIndex: 6, dayOfWeek: 'Domingo', mealId: 'meal-d6-1', mealName: 'Pequeno-Almoço', time: '09:00', status: 'completed', date: '2026-10-11' },
+  { id: 'adh-r-6-2', clientId: 'client-ricardo-silva', dayIndex: 6, dayOfWeek: 'Domingo', mealId: 'meal-d6-2', mealName: 'Almoço', time: '13:30', status: 'completed', date: '2026-10-11' },
+  { id: 'adh-r-6-3', clientId: 'client-ricardo-silva', dayIndex: 6, dayOfWeek: 'Domingo', mealId: 'meal-d6-3', mealName: 'Lanche', time: '17:00', status: 'completed', date: '2026-10-11' },
+  { id: 'adh-r-6-4', clientId: 'client-ricardo-silva', dayIndex: 6, dayOfWeek: 'Domingo', mealId: 'meal-d6-4', mealName: 'Jantar', time: '20:30', status: 'completed', date: '2026-10-11' },
+
+  // Marta Pereira (Segunda-feira) - 4/4 Cumpridas
+  { id: 'adh-m-0-1', clientId: 'client-marta-pereira', dayIndex: 0, dayOfWeek: 'Segunda-feira', mealId: 'm-meal-d0-1', mealName: 'Pequeno-Almoço', time: '08:30', status: 'completed', date: '2026-10-05' },
+  { id: 'adh-m-0-2', clientId: 'client-marta-pereira', dayIndex: 0, dayOfWeek: 'Segunda-feira', mealId: 'm-meal-d0-2', mealName: 'Almoço', time: '13:00', status: 'completed', date: '2026-10-05' },
+  { id: 'adh-m-0-3', clientId: 'client-marta-pereira', dayIndex: 0, dayOfWeek: 'Segunda-feira', mealId: 'm-meal-d0-3', mealName: 'Lanche', time: '17:00', status: 'completed', date: '2026-10-05' },
+  { id: 'adh-m-0-4', clientId: 'client-marta-pereira', dayIndex: 0, dayOfWeek: 'Segunda-feira', mealId: 'm-meal-d0-4', mealName: 'Jantar', time: '20:30', status: 'completed', date: '2026-10-05' },
+
+  // Marta Pereira (Terça-feira) - 3/4 Cumpridas (1 Falta no Lanche)
+  { id: 'adh-m-1-1', clientId: 'client-marta-pereira', dayIndex: 1, dayOfWeek: 'Terça-feira', mealId: 'm-meal-d1-1', mealName: 'Pequeno-Almoço', time: '08:30', status: 'completed', date: '2026-10-06' },
+  { id: 'adh-m-1-2', clientId: 'client-marta-pereira', dayIndex: 1, dayOfWeek: 'Terça-feira', mealId: 'm-meal-d1-2', mealName: 'Almoço', time: '13:00', status: 'completed', date: '2026-10-06' },
+  { id: 'adh-m-1-3', clientId: 'client-marta-pereira', dayIndex: 1, dayOfWeek: 'Terça-feira', mealId: 'm-meal-d1-3', mealName: 'Lanche', time: '17:00', status: 'missed', missedReason: 'Consulta médica no final da tarde; não teve oportunidade de lanchar.', date: '2026-10-06' },
+  { id: 'adh-m-1-4', clientId: 'client-marta-pereira', dayIndex: 1, dayOfWeek: 'Terça-feira', mealId: 'm-meal-d1-4', mealName: 'Jantar', time: '20:30', status: 'completed', date: '2026-10-06' },
+
+  // Marta Pereira (Quarta a Domingo)
+  { id: 'adh-m-2-1', clientId: 'client-marta-pereira', dayIndex: 2, dayOfWeek: 'Quarta-feira', mealId: 'm-meal-d2-1', mealName: 'Pequeno-Almoço', time: '08:30', status: 'completed', date: '2026-10-07' },
+  { id: 'adh-m-2-2', clientId: 'client-marta-pereira', dayIndex: 2, dayOfWeek: 'Quarta-feira', mealId: 'm-meal-d2-2', mealName: 'Almoço', time: '13:00', status: 'completed', date: '2026-10-07' },
+  { id: 'adh-m-2-3', clientId: 'client-marta-pereira', dayIndex: 2, dayOfWeek: 'Quarta-feira', mealId: 'm-meal-d2-3', mealName: 'Lanche', time: '17:00', status: 'completed', date: '2026-10-07' },
+  { id: 'adh-m-2-4', clientId: 'client-marta-pereira', dayIndex: 2, dayOfWeek: 'Quarta-feira', mealId: 'm-meal-d2-4', mealName: 'Jantar', time: '20:30', status: 'completed', date: '2026-10-07' },
+
+  { id: 'adh-m-3-1', clientId: 'client-marta-pereira', dayIndex: 3, dayOfWeek: 'Quinta-feira', mealId: 'm-meal-d3-1', mealName: 'Pequeno-Almoço', time: '08:30', status: 'completed', date: '2026-10-08' },
+  { id: 'adh-m-3-2', clientId: 'client-marta-pereira', dayIndex: 3, dayOfWeek: 'Quinta-feira', mealId: 'm-meal-d3-2', mealName: 'Almoço', time: '13:00', status: 'completed', date: '2026-10-08' },
+  { id: 'adh-m-3-3', clientId: 'client-marta-pereira', dayIndex: 3, dayOfWeek: 'Quinta-feira', mealId: 'm-meal-d3-3', mealName: 'Lanche', time: '17:00', status: 'completed', date: '2026-10-08' },
+  { id: 'adh-m-3-4', clientId: 'client-marta-pereira', dayIndex: 3, dayOfWeek: 'Quinta-feira', mealId: 'm-meal-d3-4', mealName: 'Jantar', time: '20:30', status: 'completed', date: '2026-10-08' },
+
+  { id: 'adh-m-4-1', clientId: 'client-marta-pereira', dayIndex: 4, dayOfWeek: 'Sexta-feira', mealId: 'm-meal-d4-1', mealName: 'Pequeno-Almoço', time: '08:30', status: 'completed', date: '2026-10-09' },
+  { id: 'adh-m-4-2', clientId: 'client-marta-pereira', dayIndex: 4, dayOfWeek: 'Sexta-feira', mealId: 'm-meal-d4-2', mealName: 'Almoço', time: '13:00', status: 'completed', date: '2026-10-09' },
+  { id: 'adh-m-4-3', clientId: 'client-marta-pereira', dayIndex: 4, dayOfWeek: 'Sexta-feira', mealId: 'm-meal-d4-3', mealName: 'Lanche', time: '17:00', status: 'completed', date: '2026-10-09' },
+  { id: 'adh-m-4-4', clientId: 'client-marta-pereira', dayIndex: 4, dayOfWeek: 'Sexta-feira', mealId: 'm-meal-d4-4', mealName: 'Jantar', time: '20:30', status: 'completed', date: '2026-10-09' },
+
+  { id: 'adh-m-5-1', clientId: 'client-marta-pereira', dayIndex: 5, dayOfWeek: 'Sábado', mealId: 'm-meal-d5-1', mealName: 'Pequeno-Almoço', time: '09:00', status: 'completed', date: '2026-10-10' },
+  { id: 'adh-m-5-2', clientId: 'client-marta-pereira', dayIndex: 5, dayOfWeek: 'Sábado', mealId: 'm-meal-d5-2', mealName: 'Almoço', time: '13:30', status: 'completed', date: '2026-10-10' },
+  { id: 'adh-m-5-3', clientId: 'client-marta-pereira', dayIndex: 5, dayOfWeek: 'Sábado', mealId: 'm-meal-d5-3', mealName: 'Lanche', time: '17:30', status: 'completed', date: '2026-10-10' },
+  { id: 'adh-m-5-4', clientId: 'client-marta-pereira', dayIndex: 5, dayOfWeek: 'Sábado', mealId: 'm-meal-d5-4', mealName: 'Jantar', time: '21:00', status: 'completed', date: '2026-10-10' },
+
+  { id: 'adh-m-6-1', clientId: 'client-marta-pereira', dayIndex: 6, dayOfWeek: 'Domingo', mealId: 'm-meal-d6-1', mealName: 'Pequeno-Almoço', time: '09:00', status: 'completed', date: '2026-10-11' },
+  { id: 'adh-m-6-2', clientId: 'client-marta-pereira', dayIndex: 6, dayOfWeek: 'Domingo', mealId: 'm-meal-d6-2', mealName: 'Almoço', time: '13:30', status: 'completed', date: '2026-10-11' },
+  { id: 'adh-m-6-3', clientId: 'client-marta-pereira', dayIndex: 6, dayOfWeek: 'Domingo', mealId: 'm-meal-d6-3', mealName: 'Lanche', time: '17:00', status: 'completed', date: '2026-10-11' },
+  { id: 'adh-m-6-4', clientId: 'client-marta-pereira', dayIndex: 6, dayOfWeek: 'Domingo', mealId: 'm-meal-d6-4', mealName: 'Jantar', time: '20:30', status: 'completed', date: '2026-10-11' }
+];

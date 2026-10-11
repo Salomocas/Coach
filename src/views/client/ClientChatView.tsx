@@ -17,10 +17,9 @@ export const ClientChatView: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Filter messages for current client
-  const myMessages = messages.filter(
-    m => m.clientId === currentUser?.uid || m.clientId === 'client-ricardo-silva'
-  );
+  // Strictly isolate chat messages for the authenticated client only
+  const myClientId = currentUser?.uid || 'client-ricardo-silva';
+  const myMessages = messages.filter(m => m.clientId === myClientId);
 
   useEffect(() => {
     if (currentUser?.uid) {

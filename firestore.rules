@@ -9,8 +9,10 @@ service cloud.firestore {
     function isCoach() {
       return isSignedIn() && (
         request.auth.token.email == 'sgpmcunha@gmail.com' ||
+        request.auth.token.email == 'admin@coachcunha.pt' ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'coach')
+         (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'coach' ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'))
       );
     }
 
@@ -70,6 +72,50 @@ service cloud.firestore {
       allow list: if isSignedIn() && (resource.data.clientId == request.auth.uid || isCoach());
       allow create: if isSignedIn() && (request.resource.data.clientId == request.auth.uid || isCoach());
       allow update, delete: if isSignedIn() && (resource.data.clientId == request.auth.uid || isCoach());
+    }
+
+    // Meal Adherence Logs (Daily meal compliance and missed reasons)
+    match /meal_adherence_logs/{logId} {
+      allow get, list: if isSignedIn() && (resource.data.clientId == request.auth.uid || isCoach());
+      allow create: if isSignedIn() && (request.resource.data.clientId == request.auth.uid || isCoach());
+      allow update, delete: if isSignedIn() && (resource.data.clientId == request.auth.uid || isCoach());
+    }
+
+    // Meal Library
+    match /meal_library/{mealId} {
+      allow read: if isSignedIn();
+      allow write: if isCoach();
+    }
+
+    // Templates: Workout & Meals
+    match /daily_workout_templates/{templateId} {
+      allow read: if isSignedIn();
+      allow write: if isCoach();
+    }
+    match /weekly_workout_templates/{templateId} {
+      allow read: if isSignedIn();
+      allow write: if isCoach();
+    }
+    match /daily_meal_templates/{templateId} {
+      allow read: if isSignedIn();
+      allow write: if isCoach();
+    }
+    match /weekly_meal_templates/{templateId} {
+      allow read: if isSignedIn();
+      allow write: if isCoach();
+    }
+
+    // Custom Metrics
+    match /custom_metrics/{metricId} {
+      allow get, list: if isSignedIn() && (resource.data.clientId == request.auth.uid || isCoach());
+      allow create: if isSignedIn() && (request.resource.data.clientId == request.auth.uid || isCoach());
+      allow update, delete: if isSignedIn() && (resource.data.clientId == request.auth.uid || isCoach());
+    }
+
+    // App Settings & Assets Gallery
+    match /app_settings/{docId} {
+      allow read: if true;
+      allow write: if isCoach();
     }
 
     // Messages

@@ -338,17 +338,6 @@ export const CoachDietView: React.FC = () => {
               </div>
             </div>
 
-            {/* Atribuir Plano Semanal Predefinido da Biblioteca */}
-            <button
-              onClick={() => setShowWeeklyPickerModal(true)}
-              className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-black hover:bg-slate-800 dark:hover:bg-neutral-200 text-xs font-black transition shadow-md cursor-pointer"
-              title="Preenche todos os 7 dias automaticamente a partir de um plano semanal da biblioteca"
-            >
-              <Sparkles className="w-4 h-4 text-emerald-400" />
-              <span className="hidden sm:inline">Atribuir Plano Semanal da Biblioteca</span>
-              <span className="sm:hidden">Plano Semanal</span>
-            </button>
-
             {/* Final Save / Publish Button */}
             <button
               onClick={handlePublishPlan}
@@ -360,36 +349,33 @@ export const CoachDietView: React.FC = () => {
           </div>
         </div>
 
-        {/* Plan Title & Notes Inline Editor */}
-        <div className="mt-5 pt-4 border-t border-slate-100 dark:border-neutral-800/80 grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
-          <div>
-            <label className="font-bold text-slate-500 dark:text-neutral-400 block mb-1">Título da Ementa</label>
-            <input
-              type="text"
-              value={planTitle}
-              onChange={(e) => setPlanTitle(e.target.value)}
-              className="w-full px-3 py-1.5 bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl font-bold text-slate-900 dark:text-white"
-            />
-          </div>
+        {/* Nutritional Goals & Notes Inline Editor (Sem input de título semanal - título gerido apenas na biblioteca) */}
+        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-neutral-800/80 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs items-center">
+          {planTitle && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 font-medium">
+              <Layers className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <span className="truncate">Ementa Semanal Base: <strong className="text-emerald-500">{planTitle}</strong></span>
+            </div>
+          )}
 
-          <div>
-            <label className="font-bold text-slate-500 dark:text-neutral-400 block mb-1">Meta Calórica Diária (kcal)</label>
+          <div className="flex items-center gap-2">
+            <label className="font-bold text-slate-500 dark:text-neutral-400 shrink-0">Meta Diária (kcal):</label>
             <input
               type="number"
               value={dailyCaloriesTarget}
               onChange={(e) => setDailyCaloriesTarget(Number(e.target.value))}
-              className="w-full px-3 py-1.5 bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl font-bold text-slate-900 dark:text-white"
+              className="w-24 px-3 py-1.5 bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl font-bold text-slate-900 dark:text-white"
             />
           </div>
 
-          <div className="md:col-span-2">
-            <label className="font-bold text-slate-500 dark:text-neutral-400 block mb-1">Notas Nutricionais e Hidratação</label>
+          <div className="flex items-center gap-2">
+            <label className="font-bold text-slate-500 dark:text-neutral-400 shrink-0">Recomendações:</label>
             <input
               type="text"
               value={planNotes}
               onChange={(e) => setPlanNotes(e.target.value)}
               placeholder="Ex: Beber 3.5L de água por dia..."
-              className="w-full px-3 py-1.5 bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl text-slate-900 dark:text-white"
+              className="flex-1 px-3 py-1.5 bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl text-slate-900 dark:text-white"
             />
           </div>
         </div>
@@ -399,16 +385,27 @@ export const CoachDietView: React.FC = () => {
       {/* WEEKLY CALENDAR (SEGUNDA A DOMINGO)                        */}
       {/* ========================================================= */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        {/* Top of Weekly Calendar with Atribuir Dieta Semanal button */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
             <Calendar className="w-4 h-4 text-emerald-500" />
             <h2 className="font-black text-sm uppercase tracking-wider text-slate-900 dark:text-white">
-              Ementa Semanal do Aluno ({days.length} Dias)
+              Ementa Semanal do Aluno
             </h2>
+            <span className="text-xs text-slate-400 hidden lg:inline">
+              (Clica em cada dia para atribuir ementas diárias ou refeições manuais da biblioteca)
+            </span>
           </div>
-          <span className="text-xs text-slate-400">
-            Atribui ementas diárias predefinidas ou adiciona refeições singulares manuais.
-          </span>
+
+          {/* Botão em cima do calendário semanal para atribuir dieta semanal da biblioteca */}
+          <button
+            onClick={() => setShowWeeklyPickerModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black transition shadow-md shadow-emerald-500/10 cursor-pointer self-start sm:self-auto"
+            title="Atribuir plano alimentar semanal da biblioteca (preenche todos os 7 dias automaticamente)"
+          >
+            <Sparkles className="w-4 h-4 text-black" />
+            <span>Atribuir Dieta Semanal</span>
+          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-7 gap-3.5">
