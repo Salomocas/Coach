@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { db, doc, getDoc, setDoc } from '../firebase';
+import { db, doc, getDoc, setDoc, onSnapshot } from '../firebase';
 
 export interface AssetImage {
   id: string;
@@ -13,6 +13,8 @@ export interface AssetImage {
 interface LogoContextType {
   logoUrl: string;
   isCustomLogo: boolean;
+  isLogoRemoved: boolean;
+  showAuthLogo: boolean;
   logoDetails: {
     fileName: string;
     updatedAt: string;
@@ -21,6 +23,8 @@ interface LogoContextType {
   assets: AssetImage[];
   updateLogo: (dataUrl: string, fileName?: string, sizeBytes?: number) => Promise<void>;
   resetToDefaultLogo: () => Promise<void>;
+  removeLogoCompletely: () => Promise<void>;
+  toggleAuthLogo: (show: boolean) => Promise<void>;
   addAsset: (asset: Omit<AssetImage, 'id' | 'uploadedAt'>) => Promise<void>;
   removeAsset: (id: string) => Promise<void>;
 }
@@ -29,9 +33,9 @@ const DEFAULT_LOGO = '/logo.svg';
 
 /**
  * Optimizes logo images using canvas to prevent exceeding localStorage quota (~5MB)
- * and ensure lightning-fast loading across all devices. Preserves PNG alpha transparency.
+ * and ensure lightning-fast loading across all devices. Preserves alpha transparency.
  */
-export const compressImageForLogo = (dataUrl: string, maxWidth = 512, maxHeight = 512): Promise<string> => {
+export const compressImageForLogo = (dataUrl: string, maxWidth = 384, maxHeight = 384): Promise<string> => {
   return new Promise((resolve) => {
     if (dataUrl.startsWith('data:image/svg+xml') || dataUrl.endsWith('.svg')) {
       resolve(dataUrl);
@@ -62,8 +66,12 @@ export const compressImageForLogo = (dataUrl: string, maxWidth = 512, maxHeight 
       }
       ctx.drawImage(img, 0, 0, width, height);
       try {
-        const compressed = canvas.toDataURL('image/png');
-        resolve(compressed);
+        const compressed = canvas.toDataURL('image/webp', 0.88);
+        if (compressed && compressed.length > 20 && compressed.startsWith('data:image/webp')) {
+          resolve(compressed);
+        } else {
+          resolve(canvas.toDataURL('image/png'));
+        }
       } catch (e) {
         resolve(dataUrl);
       }
@@ -76,8 +84,27 @@ export const compressImageForLogo = (dataUrl: string, maxWidth = 512, maxHeight 
 const LogoContext = createContext<LogoContextType | undefined>(undefined);
 
 export const LogoProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isLogoRemoved, setIsLogoRemoved] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('coach_cunha_logo_removed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const [showAuthLogo, setShowAuthLogo] = useState<boolean>(() => {
+    try {
+      if (localStorage.getItem('coach_cunha_logo_removed') === 'true') return false;
+      const val = localStorage.getItem('coach_cunha_show_auth_logo');
+      return val !== 'false';
+    } catch {
+      return true;
+    }
+  });
+
   const [logoUrl, setLogoUrl] = useState<string>(() => {
     try {
+      if (localStorage.getItem('coach_cunha_logo_removed') === 'true') return '';
       const saved = localStorage.getItem('coach_cunha_custom_logo');
       if (saved) return saved;
     } catch (e) {
@@ -114,49 +141,67 @@ export const LogoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ];
   });
 
-  // Sync with Firestore branding config if available
+  // Real-time synchronization with Firestore app_settings/branding
   useEffect(() => {
-    const fetchRemoteBranding = async () => {
-      try {
-        let docSnap = await getDoc(doc(db, 'app_settings', 'branding')).catch(() => null);
-        if (!docSnap || !docSnap.exists()) {
-          docSnap = await getDoc(doc(db, 'system_settings', 'branding')).catch(() => null);
-        }
-        if (docSnap && docSnap.exists()) {
-          const data = docSnap.data();
-          // Only overwrite if remote has a custom logo defined
-          if (data?.logoUrl && data.logoUrl !== DEFAULT_LOGO) {
-            setLogoUrl(data.logoUrl);
+    const unsub = onSnapshot(doc(db, 'app_settings', 'branding'), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data) {
+          const removed = data.isLogoRemoved === true || data.logoUrl === '' || data.logoUrl === null;
+          const showAuth = data.showAuthLogo !== false && !removed;
+          
+          setIsLogoRemoved(removed);
+          setShowAuthLogo(showAuth);
+
+          if (removed) {
+            setLogoUrl('');
+            setLogoDetails(null);
             try {
-              localStorage.setItem('coach_cunha_custom_logo', data.logoUrl);
+              localStorage.setItem('coach_cunha_logo_removed', 'true');
+              localStorage.setItem('coach_cunha_show_auth_logo', 'false');
+              localStorage.removeItem('coach_cunha_custom_logo');
+              localStorage.removeItem('coach_cunha_logo_details');
+            } catch (e) {}
+          } else {
+            const effectiveUrl = data.logoUrl || DEFAULT_LOGO;
+            setLogoUrl(effectiveUrl);
+            setLogoDetails(data.logoDetails || null);
+            try {
+              localStorage.removeItem('coach_cunha_logo_removed');
+              localStorage.setItem('coach_cunha_show_auth_logo', showAuth ? 'true' : 'false');
+              localStorage.setItem('coach_cunha_custom_logo', effectiveUrl);
+              if (data.logoDetails) {
+                localStorage.setItem('coach_cunha_logo_details', JSON.stringify(data.logoDetails));
+              } else {
+                localStorage.removeItem('coach_cunha_logo_details');
+              }
             } catch (e) {}
           }
-          if (data?.logoDetails) {
-            setLogoDetails(data.logoDetails);
-            try {
-              localStorage.setItem('coach_cunha_logo_details', JSON.stringify(data.logoDetails));
-            } catch (e) {}
-          }
         }
-      } catch (err) {
-        console.warn('Could not fetch remote branding doc:', err);
       }
-    };
-    fetchRemoteBranding();
+    }, (error) => {
+      console.warn('Real-time branding subscription warning (using local/cached):', error);
+    });
+
+    return () => unsub();
   }, []);
 
   const updateLogo = async (rawDataUrl: string, fileName: string = 'Logo.png', sizeBytes?: number) => {
     const optimizedUrl = await compressImageForLogo(rawDataUrl);
     setLogoUrl(optimizedUrl);
+    setIsLogoRemoved(false);
+    setShowAuthLogo(true);
 
     const details = {
       fileName,
       updatedAt: new Date().toISOString(),
-      fileSizeKb: Math.round(optimizedUrl.length / 1370)
+      fileSizeKb: Math.max(1, Math.round(optimizedUrl.length / 1370))
     };
     setLogoDetails(details);
 
     try {
+      localStorage.removeItem('coach_cunha_logo_removed');
+      localStorage.setItem('coach_cunha_show_auth_logo', 'true');
       localStorage.setItem('coach_cunha_custom_logo', optimizedUrl);
       localStorage.setItem('coach_cunha_logo_details', JSON.stringify(details));
     } catch (e) {
@@ -183,36 +228,94 @@ export const LogoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Firestore sync to both app_settings and system_settings
     const brandingPayload = {
       logoUrl: optimizedUrl,
+      isLogoRemoved: false,
+      showAuthLogo: true,
       logoDetails: details,
       updatedAt: new Date().toISOString()
     };
     try {
       await setDoc(doc(db, 'app_settings', 'branding'), brandingPayload, { merge: true });
-    } catch (e) {}
+    } catch (e) {
+      console.error('Failed writing branding to Firestore app_settings:', e);
+    }
     try {
       await setDoc(doc(db, 'system_settings', 'branding'), brandingPayload, { merge: true });
     } catch (e) {}
   };
 
-  const resetToDefaultLogo = async () => {
-    setLogoUrl(DEFAULT_LOGO);
+  const removeLogoCompletely = async () => {
+    setLogoUrl('');
+    setIsLogoRemoved(true);
+    setShowAuthLogo(false);
     setLogoDetails(null);
+
     try {
+      localStorage.setItem('coach_cunha_logo_removed', 'true');
+      localStorage.setItem('coach_cunha_show_auth_logo', 'false');
       localStorage.removeItem('coach_cunha_custom_logo');
       localStorage.removeItem('coach_cunha_logo_details');
     } catch (e) {}
 
+    const payload = {
+      logoUrl: '',
+      isLogoRemoved: true,
+      showAuthLogo: false,
+      logoDetails: null,
+      updatedAt: new Date().toISOString()
+    };
     try {
-      await setDoc(doc(db, 'app_settings', 'branding'), {
-        logoUrl: DEFAULT_LOGO,
-        logoDetails: null,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-      await setDoc(doc(db, 'system_settings', 'branding'), {
-        logoUrl: DEFAULT_LOGO,
-        logoDetails: null,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
+      await setDoc(doc(db, 'app_settings', 'branding'), payload, { merge: true });
+    } catch (e) {
+      console.error('Failed to save removeLogo to Firestore app_settings:', e);
+    }
+    try {
+      await setDoc(doc(db, 'system_settings', 'branding'), payload, { merge: true });
+    } catch (e) {}
+  };
+
+  const toggleAuthLogo = async (show: boolean) => {
+    setShowAuthLogo(show);
+    try {
+      localStorage.setItem('coach_cunha_show_auth_logo', show ? 'true' : 'false');
+    } catch (e) {}
+
+    const payload = {
+      showAuthLogo: show,
+      updatedAt: new Date().toISOString()
+    };
+    try {
+      await setDoc(doc(db, 'app_settings', 'branding'), payload, { merge: true });
+    } catch (e) {}
+    try {
+      await setDoc(doc(db, 'system_settings', 'branding'), payload, { merge: true });
+    } catch (e) {}
+  };
+
+  const resetToDefaultLogo = async () => {
+    setLogoUrl(DEFAULT_LOGO);
+    setIsLogoRemoved(false);
+    setShowAuthLogo(true);
+    setLogoDetails(null);
+
+    try {
+      localStorage.removeItem('coach_cunha_logo_removed');
+      localStorage.setItem('coach_cunha_show_auth_logo', 'true');
+      localStorage.removeItem('coach_cunha_custom_logo');
+      localStorage.removeItem('coach_cunha_logo_details');
+    } catch (e) {}
+
+    const payload = {
+      logoUrl: DEFAULT_LOGO,
+      isLogoRemoved: false,
+      showAuthLogo: true,
+      logoDetails: null,
+      updatedAt: new Date().toISOString()
+    };
+    try {
+      await setDoc(doc(db, 'app_settings', 'branding'), payload, { merge: true });
+    } catch (e) {}
+    try {
+      await setDoc(doc(db, 'system_settings', 'branding'), payload, { merge: true });
     } catch (e) {}
   };
 
@@ -240,11 +343,15 @@ export const LogoProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <LogoContext.Provider value={{
       logoUrl,
-      isCustomLogo: logoUrl !== DEFAULT_LOGO,
+      isCustomLogo: !isLogoRemoved && logoUrl !== '' && logoUrl !== DEFAULT_LOGO,
+      isLogoRemoved,
+      showAuthLogo,
       logoDetails,
       assets,
       updateLogo,
       resetToDefaultLogo,
+      removeLogoCompletely,
+      toggleAuthLogo,
       addAsset,
       removeAsset,
     }}>

@@ -12,7 +12,9 @@ import {
   Eye, 
   Layers, 
   FileText,
-  Plus
+  Plus,
+  EyeOff,
+  Shield
 } from 'lucide-react';
 import { useLogo } from '../../context/LogoContext';
 import { CoachCunhaLogo } from '../../components/CoachCunhaLogo';
@@ -21,10 +23,14 @@ export const CoachAssetsView: React.FC = () => {
   const { 
     logoUrl, 
     isCustomLogo, 
+    isLogoRemoved,
+    showAuthLogo,
     logoDetails, 
     assets, 
     updateLogo, 
     resetToDefaultLogo, 
+    removeLogoCompletely,
+    toggleAuthLogo,
     addAsset, 
     removeAsset 
   } = useLogo();
@@ -331,30 +337,102 @@ export const CoachAssetsView: React.FC = () => {
             </div>
 
             <div className="p-4 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 flex flex-col items-center justify-center min-h-[160px]">
-              <img 
-                src={logoUrl} 
-                alt="Full logo view" 
-                className="max-h-32 object-contain filter drop-shadow-xl"
-              />
+              {!isLogoRemoved && logoUrl ? (
+                <img 
+                  src={logoUrl} 
+                  alt="Full logo view" 
+                  className="max-h-32 object-contain filter drop-shadow-xl"
+                />
+              ) : (
+                <div className="py-6 flex flex-col items-center justify-center text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mb-2">
+                    <EyeOff className="w-6 h-6" />
+                  </div>
+                  <span className="font-bold text-xs text-slate-900 dark:text-white uppercase">Logótipo Eliminado / Oculto</span>
+                  <p className="text-[10px] text-slate-500 dark:text-neutral-400 mt-0.5">Sem logótipo ativo no sistema</p>
+                </div>
+              )}
             </div>
           </div>
 
           <div className="space-y-2 mt-4">
-            <a 
-              href={logoUrl} 
-              download={logoDetails?.fileName || 'coach_cunha_logo.png'}
-              className="w-full py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 text-slate-800 dark:text-white font-bold text-xs flex items-center justify-center gap-2 transition"
+            {/* Toggle show on auth */}
+            <button
+              onClick={async () => {
+                await toggleAuthLogo(!showAuthLogo);
+                setFeedback({
+                  type: 'success',
+                  message: showAuthLogo 
+                    ? 'Logótipo ocultado da página inicial (login).' 
+                    : 'Logótipo agora visível na página inicial.'
+                });
+              }}
+              className="w-full py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 text-slate-800 dark:text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>Descarregar Cópia do Ficheiro</span>
-            </a>
+              {showAuthLogo && !isLogoRemoved ? (
+                <>
+                  <EyeOff className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Ocultar no Ecrã de Login</span>
+                </>
+              ) : (
+                <>
+                  <Eye className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Mostrar no Ecrã de Login</span>
+                </>
+              )}
+            </button>
+
+            {/* Eliminate logo permanently */}
+            {!isLogoRemoved && (
+              <button
+                onClick={async () => {
+                  await removeLogoCompletely();
+                  setFeedback({
+                    type: 'success',
+                    message: 'Logótipo eliminado permanentemente da página inicial e do sistema!'
+                  });
+                }}
+                className="w-full py-2.5 px-3 rounded-xl bg-red-500/15 border border-red-500/30 hover:bg-red-500/25 text-red-600 dark:text-red-400 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Eliminar Logótipo Definitivamente</span>
+              </button>
+            )}
+
+            {/* Restore default badge */}
+            {(isCustomLogo || isLogoRemoved) && (
+              <button
+                onClick={async () => {
+                  await resetToDefaultLogo();
+                  setFeedback({
+                    type: 'success',
+                    message: 'Emblema dourado padrão do Coach Cunha reposto com sucesso!'
+                  });
+                }}
+                className="w-full py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 text-slate-800 dark:text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-amber-500" />
+                <span>Repor Emblema Oficial Padrão</span>
+              </button>
+            )}
+
+            {!isLogoRemoved && logoUrl && (
+              <a 
+                href={logoUrl} 
+                download={logoDetails?.fileName || 'coach_cunha_logo.png'}
+                className="w-full py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 text-slate-800 dark:text-white font-bold text-xs flex items-center justify-center gap-2 transition"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Descarregar Cópia do Ficheiro</span>
+              </a>
+            )}
 
             <button
               onClick={() => fileInputRef.current?.click()}
               className="w-full py-2.5 px-3 rounded-xl bg-amber-500/15 border border-amber-500/30 hover:bg-amber-500/25 text-amber-600 dark:text-amber-400 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
             >
               <Upload className="w-3.5 h-3.5" />
-              <span>Substituir por Outra Imagem</span>
+              <span>Carregar Novo Logótipo (Substituir)</span>
             </button>
           </div>
         </div>

@@ -6,22 +6,37 @@ import {
   X, 
   Sparkles, 
   Lock, 
-  Unlock 
+  Unlock,
+  Trash2,
+  Database,
+  AlertTriangle,
+  ExternalLink,
+  CheckCircle2,
+  ShieldAlert,
+  Server
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { UserProfile } from '../../types';
+import { firebaseConfig } from '../../firebase';
 
 interface CoachAthletesViewProps {
   onNavigateTab: (tab: string) => void;
 }
 
 export const CoachAthletesView: React.FC<CoachAthletesViewProps> = ({ onNavigateTab }) => {
-  const { allClients, toggleStudentManualAccess } = useAuth();
+  const { allClients, toggleStudentManualAccess, deleteClientAccount, isAdmin, isCoach } = useAuth();
   const { setSelectedAthleteId } = useData();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
+  
+  // State for athlete deletion confirmation modal
+  const [clientToDelete, setClientToDelete] = useState<UserProfile | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // State for Database Info Modal
+  const [showDatabaseModal, setShowDatabaseModal] = useState(false);
 
   const filteredClients = allClients.filter(c => {
     return c.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -45,19 +60,34 @@ export const CoachAthletesView: React.FC<CoachAthletesViewProps> = ({ onNavigate
     onNavigateTab('reports');
   };
 
+  const handleConfirmDelete = async () => {
+    if (!clientToDelete) return;
+    setIsDeleting(true);
+    try {
+      const res = await deleteClientAccount(clientToDelete.uid);
+      setActionFeedback(`Conta de ${clientToDelete.displayName} (${clientToDelete.email}) foi eliminada com sucesso.`);
+      setClientToDelete(null);
+      setTimeout(() => setActionFeedback(null), 5000);
+    } catch (err: any) {
+      alert(err?.message || 'Erro ao eliminar conta.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-5 max-w-5xl mx-auto">
       
       {/* Feedback Toast */}
       {actionFeedback && (
-        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-medium flex items-center justify-between shadow-sm animate-fade-in">
+        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-medium flex items-center justify-between shadow-sm animate-fade-in">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
             <span>{actionFeedback}</span>
           </div>
           <button 
             onClick={() => setActionFeedback(null)}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -67,25 +97,63 @@ export const CoachAthletesView: React.FC<CoachAthletesViewProps> = ({ onNavigate
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-neutral-800">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-            Gestão de Atletas
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
+            <Users className="w-6 h-6 text-amber-500" />
+            <span>Gestão de Atletas & Contas</span>
           </h1>
           <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-            Estado de ativação e controlo de acesso dos alunos ({allClients.length} registados)
+            Estado de ativação, eliminação e controlo de acesso dos alunos ({allClients.length} registados)
           </p>
         </div>
 
-        {/* Search */}
-        <div className="relative w-full sm:w-64">
-          <Search className="w-4 h-4 text-slate-400 dark:text-neutral-500 absolute left-3 top-2.5" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Pesquisar atleta..."
-            className="w-full bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:border-amber-500 focus:outline-none shadow-sm"
-          />
+        <div className="flex items-center gap-2">
+          {/* Database Guide Button */}
+          <button
+            type="button"
+            onClick={() => setShowDatabaseModal(true)}
+            className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-slate-700 dark:text-neutral-200 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border border-slate-200 dark:border-neutral-700"
+            title="Como aceder à Base de Dados e gerir contas"
+          >
+            <Database className="w-3.5 h-3.5 text-amber-500" />
+            <span>Base de Dados</span>
+          </button>
+
+          {/* Search */}
+          <div className="relative w-full sm:w-56">
+            <Search className="w-4 h-4 text-slate-400 dark:text-neutral-500 absolute left-3 top-2.5" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Pesquisar atleta..."
+              className="w-full bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:border-amber-500 focus:outline-none shadow-sm"
+            />
+          </div>
         </div>
+      </div>
+
+      {/* Database Quick Access Banner */}
+      <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-neutral-900/40 to-neutral-900/60 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-start sm:items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
+            <Server className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="font-bold text-slate-800 dark:text-white block sm:inline">
+              Base de Dados Ativa em Nuvem:
+            </span>{' '}
+            <span className="text-slate-600 dark:text-neutral-300">
+              Google Firestore (Projeto <code className="bg-neutral-800/80 px-1.5 py-0.5 rounded text-amber-400 font-mono text-[11px]">{firebaseConfig.projectId}</code>).
+            </span>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowDatabaseModal(true)}
+          className="text-amber-500 dark:text-amber-400 hover:underline font-bold text-xs flex items-center gap-1 cursor-pointer shrink-0"
+        >
+          <span>Instruções de acesso e eliminação</span>
+          <ExternalLink className="w-3 h-3" />
+        </button>
       </div>
 
       {/* Clean, spacious athlete list with only identity, active/blocked state and switch */}
@@ -111,17 +179,24 @@ export const CoachAthletesView: React.FC<CoachAthletesViewProps> = ({ onNavigate
                     className="w-10 h-10 rounded-xl object-cover ring-1 ring-slate-200 dark:ring-neutral-700 shrink-0"
                   />
                   <div className="min-w-0">
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate">
-                      {client.displayName}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                        {client.displayName}
+                      </h3>
+                      {client.emailVerified && (
+                        <span className="text-[10px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-1.5 py-0.2 rounded font-semibold">
+                          E-mail Validado
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-slate-500 dark:text-neutral-400 truncate">
                       {client.email}
                     </p>
                   </div>
                 </div>
 
-                {/* Right side: Only Activation State & Action Button */}
-                <div className="flex items-center gap-3 shrink-0">
+                {/* Right side: Activation State, Reports, and Account Deletion */}
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                   {/* Status Indicator */}
                   <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${
                     isActive
@@ -129,7 +204,7 @@ export const CoachAthletesView: React.FC<CoachAthletesViewProps> = ({ onNavigate
                       : 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
                   }`}>
                     <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                    <span>{isActive ? 'Ativo' : 'Bloqueado'}</span>
+                    <span className="hidden sm:inline">{isActive ? 'Ativo' : 'Bloqueado'}</span>
                   </span>
 
                   {/* Toggle Button */}
@@ -145,12 +220,12 @@ export const CoachAthletesView: React.FC<CoachAthletesViewProps> = ({ onNavigate
                     {isActive ? (
                       <>
                         <Lock className="w-3.5 h-3.5" />
-                        <span>Bloquear</span>
+                        <span className="hidden sm:inline">Bloquear</span>
                       </>
                     ) : (
                       <>
                         <Unlock className="w-3.5 h-3.5" />
-                        <span>Ativar</span>
+                        <span className="hidden sm:inline">Ativar</span>
                       </>
                     )}
                   </button>
@@ -158,10 +233,19 @@ export const CoachAthletesView: React.FC<CoachAthletesViewProps> = ({ onNavigate
                   {/* Open / Relatório */}
                   <button
                     onClick={() => handleOpenAthlete(client.uid)}
-                    className="p-2 rounded-xl bg-amber-500/10 hover:bg-amber-500 text-amber-600 hover:text-black dark:text-amber-400 transition"
-                    title="Ver Relatórios"
+                    className="p-2 rounded-xl bg-amber-500/10 hover:bg-amber-500 text-amber-600 hover:text-black dark:text-amber-400 transition cursor-pointer"
+                    title="Ver Relatórios do Atleta"
                   >
                     <TrendingUp className="w-4 h-4" />
+                  </button>
+
+                  {/* Eliminar Conta Permanentemente */}
+                  <button
+                    onClick={() => setClientToDelete(client)}
+                    className="p-2 rounded-xl bg-red-500/10 hover:bg-red-600 text-red-500 hover:text-white transition cursor-pointer border border-red-500/20"
+                    title="Eliminar esta conta do sistema e da base de dados"
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
 
@@ -170,6 +254,187 @@ export const CoachAthletesView: React.FC<CoachAthletesViewProps> = ({ onNavigate
           })
         )}
       </div>
+
+      {/* Confirmation Modal for Deleting Account */}
+      {clientToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-neutral-900 border border-red-500/30 rounded-3xl max-w-md w-full p-6 shadow-2xl text-white space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-500 flex items-center justify-center mx-auto">
+              <ShieldAlert className="w-6 h-6" />
+            </div>
+
+            <div className="text-center">
+              <h3 className="text-base font-bold text-white">
+                Eliminar Conta do Sistema
+              </h3>
+              <p className="text-xs text-neutral-400 mt-1">
+                Tens a certeza que desejas eliminar permanentemente esta conta?
+              </p>
+            </div>
+
+            {/* Account Details Box */}
+            <div className="p-3 bg-neutral-950 border border-neutral-800 rounded-2xl text-xs space-y-1">
+              <div className="font-bold text-white flex items-center justify-between">
+                <span>Nome:</span>
+                <span className="text-amber-400">{clientToDelete.displayName}</span>
+              </div>
+              <div className="text-neutral-400 flex items-center justify-between">
+                <span>E-mail:</span>
+                <span className="font-mono text-white">{clientToDelete.email}</span>
+              </div>
+              <div className="text-neutral-400 flex items-center justify-between">
+                <span>ID Firestore:</span>
+                <span className="font-mono text-[10px] text-neutral-500">{clientToDelete.uid}</span>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-red-950/40 border border-red-800/40 text-xs text-red-300 leading-relaxed">
+              ⚠️ <strong>Atenção:</strong> Os dados deste aluno serão removidos da coleção <code>users</code> da base de dados e a conta não poderá mais aceder ao sistema.
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setClientToDelete(null)}
+                disabled={isDeleting}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-semibold text-xs transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-red-600/30"
+              >
+                {isDeleting ? (
+                  <span>A eliminar...</span>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Confirmar Eliminação</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Informative Database Access Modal */}
+      {showDatabaseModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-xl w-full p-6 shadow-2xl text-white space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center">
+                  <Database className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    Como Aceder à Base de Dados & Gerir Contas
+                  </h3>
+                  <p className="text-[11px] text-neutral-400">
+                    Guia de administração para o Coach Sérgio Cunha e Administrador
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDatabaseModal(false)}
+                className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              {/* Option 1: Direct in App */}
+              <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-amber-400 text-sm">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Método 1: Eliminar Contas Diretamente na Aplicação (Recomendado)</span>
+                </div>
+                <p className="text-neutral-300 leading-relaxed">
+                  Não precisas de abrir a consola técnica para remover uma conta indesejada. Basta clicares no ícone do caixote do lixo (<Trash2 className="w-3.5 h-3.5 inline text-red-500" />) na tabela de atletas acima.
+                </p>
+                <ul className="list-disc pl-5 space-y-1 text-neutral-400 text-[11px]">
+                  <li>O documento do aluno é eliminado da coleção <code className="text-amber-400">users</code> no Firestore.</li>
+                  <li>O acesso à aplicação é revogado instantaneamente.</li>
+                  <li>A lista de alunos atualiza automaticamente sem necessidade de reiniciar.</li>
+                </ul>
+              </div>
+
+              {/* Option 2: Firebase Console Root */}
+              <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-2.5">
+                <div className="flex items-center gap-2 font-bold text-purple-400 text-sm">
+                  <Server className="w-4 h-4" />
+                  <span>Método 2: Acesso Técnico ao Google Firebase Console</span>
+                </div>
+                <p className="text-neutral-300 leading-relaxed">
+                  A base de dados da aplicação está aprovisionada no projeto <code className="text-amber-400 font-mono">{firebaseConfig.projectId}</code> com a base de dados Firestore <code className="text-amber-400 font-mono">{firebaseConfig.firestoreDatabaseId}</code>:
+                </p>
+
+                <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[11px] leading-relaxed">
+                  <span className="font-semibold text-blue-200 block mb-1">ℹ️ Por que apareceu o aviso "Não tem projetos no Firebase"?</span>
+                  O link anterior continha um identificador temporário. Além disso, se tiver mais de uma conta Google aberta no navegador, a consola da Google abre frequentemente na conta errada. Certifica-te de que no canto superior direito da consola Firebase está selecionada a tua conta Google (<code className="text-white font-semibold">sgpmcunha@gmail.com</code>).
+                </div>
+
+                <div className="space-y-2 bg-neutral-900/80 p-3 rounded-xl border border-neutral-800">
+                  <div>
+                    <span className="font-semibold text-white block">1. Firestore Database (Coleção 'users' e dados):</span>
+                    <a 
+                      href={`https://console.firebase.google.com/project/${firebaseConfig.projectId}/firestore/databases/${firebaseConfig.firestoreDatabaseId}/data`}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-amber-400 hover:underline font-mono text-[11px] flex items-center gap-1 mt-0.5 break-all"
+                    >
+                      <span>{`https://console.firebase.google.com/project/${firebaseConfig.projectId}/firestore/...`}</span>
+                      <ExternalLink className="w-3 h-3 shrink-0" />
+                    </a>
+                    <span className="text-[11px] text-neutral-400 block mt-0.5">
+                      Permite navegar pelas coleções, editar documentos ou clicar nos 3 pontos &gt; "Delete document".
+                    </span>
+                  </div>
+
+                  <div className="pt-2 border-t border-neutral-800">
+                    <span className="font-semibold text-white block">2. Firebase Authentication (Contas de Autenticação):</span>
+                    <a 
+                      href={`https://console.firebase.google.com/project/${firebaseConfig.projectId}/authentication/users`}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-amber-400 hover:underline font-mono text-[11px] flex items-center gap-1 mt-0.5 break-all"
+                    >
+                      <span>{`https://console.firebase.google.com/project/${firebaseConfig.projectId}/authentication/users`}</span>
+                      <ExternalLink className="w-3 h-3 shrink-0" />
+                    </a>
+                    <span className="text-[11px] text-neutral-400 block mt-0.5">
+                      Permite ver todos os e-mails registados e eliminar contas diretamente no Auth.
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Data Safety Note */}
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
+                <span>
+                  <strong>Dica de Segurança:</strong> Os perfis do Coach Sérgio Cunha (<code className="text-white">sgpmcunha@gmail.com</code>) e do Administrador possuem proteção especial no sistema e nunca são apagados acidentalmente.
+                </span>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDatabaseModal(false)}
+                className="py-2.5 px-5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs transition cursor-pointer"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -15,7 +15,13 @@ import {
   Moon,
   Upload,
   UserCog,
-  ShieldAlert
+  ShieldAlert,
+  Trash2,
+  RotateCcw,
+  Eye,
+  EyeOff,
+  Image as ImageIcon,
+  X
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -33,6 +39,22 @@ export const AuthPortalView: React.FC = () => {
     switchPersona 
   } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const { 
+    logoUrl, 
+    isCustomLogo, 
+    isLogoRemoved, 
+    showAuthLogo, 
+    removeLogoCompletely, 
+    toggleAuthLogo, 
+    resetToDefaultLogo,
+    updateLogo 
+  } = useLogo();
+
+  const [showBrandingModal, setShowBrandingModal] = useState(false);
+  const [brandingFeedback, setBrandingFeedback] = useState<string | null>(null);
+  const [isSavingBranding, setIsSavingBranding] = useState(false);
+  const quickFileInputRef = useRef<HTMLInputElement>(null);
+
   const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'verify-code'>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -202,7 +224,7 @@ export const AuthPortalView: React.FC = () => {
         <div className="absolute top-10 right-10 w-80 h-80 bg-amber-600/20 rounded-full blur-[120px]" />
       </div>
 
-      {/* Top Bar with Brand & Theme Toggle */}
+      {/* Top Bar with Brand & Theme Toggle & Branding Controls */}
       <header className="relative z-10 w-full max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
@@ -211,34 +233,65 @@ export const AuthPortalView: React.FC = () => {
           </span>
         </div>
 
-        <button
-          onClick={toggleTheme}
-          className="p-2 rounded-xl bg-neutral-900/80 border border-neutral-800 text-neutral-300 hover:text-amber-400 hover:border-amber-500/40 transition shadow-sm text-xs flex items-center gap-2 cursor-pointer"
-          title={isDark ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
-        >
-          {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
-          <span className="hidden sm:inline text-[11px] font-semibold">
-            {isDark ? 'Modo Claro' : 'Modo Escuro'}
-          </span>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Quick Branding & Logo Button */}
+          <button
+            type="button"
+            onClick={() => setShowBrandingModal(true)}
+            className="p-2 rounded-xl bg-neutral-900/80 hover:bg-neutral-800 border border-neutral-800 hover:border-amber-500/40 text-neutral-300 hover:text-amber-400 transition shadow-sm text-xs flex items-center gap-1.5 cursor-pointer"
+            title="Personalizar ou eliminar logótipo desta página"
+          >
+            <ImageIcon className="w-4 h-4 text-amber-400" />
+            <span className="hidden sm:inline text-[11px] font-semibold">
+              {isLogoRemoved || !showAuthLogo ? 'Sem Logótipo' : 'Gerir Logótipo'}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="p-2 rounded-xl bg-neutral-900/80 border border-neutral-800 text-neutral-300 hover:text-amber-400 hover:border-amber-500/40 transition shadow-sm text-xs flex items-center gap-2 cursor-pointer"
+            title={isDark ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
+          >
+            {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+            <span className="hidden sm:inline text-[11px] font-semibold">
+              {isDark ? 'Modo Claro' : 'Modo Escuro'}
+            </span>
+          </button>
+        </div>
       </header>
 
       {/* Main Central Authentication Card */}
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-6 max-w-md w-full mx-auto">
         
-        {/* Central Official App Logo */}
-        <div className="mb-6 flex flex-col items-center animate-fade-in p-2">
-          <CoachCunhaLogo size="hero" />
+        {/* Central Official App Header - Only shows logo if NOT removed and allowed */}
+        {showAuthLogo && !isLogoRemoved && logoUrl ? (
+          <div className="mb-6 flex flex-col items-center animate-fade-in p-2">
+            <CoachCunhaLogo size="hero" />
 
-          <div className="mt-3 text-center">
-            <span className="text-[11px] font-extrabold tracking-[0.25em] text-amber-400 uppercase drop-shadow-md">
-              Acompanhamento de Elite & Alta Performance
-            </span>
-            <p className="text-xs text-neutral-400 mt-0.5">
-              Portal Central de Autenticação
+            <div className="mt-3 text-center">
+              <span className="text-[11px] font-extrabold tracking-[0.25em] text-amber-400 uppercase drop-shadow-md">
+                Acompanhamento de Elite & Alta Performance
+              </span>
+              <p className="text-xs text-neutral-400 mt-0.5">
+                Portal Central de Autenticação
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-6 flex flex-col items-center animate-fade-in text-center px-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold mb-3 shadow-sm">
+              <Dumbbell className="w-3.5 h-3.5" />
+              <span>Coach Cunha Project</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+              Acompanhamento <span className="text-amber-500">de Elite</span>
+            </h1>
+            <p className="text-xs text-neutral-400 mt-1">
+              Portal Oficial de Autenticação
             </p>
           </div>
-        </div>
+        )}
 
         {/* Authentication Box */}
         <div className="w-full bg-neutral-900/90 border border-neutral-800/90 rounded-3xl p-6 sm:p-7 shadow-2xl backdrop-blur-xl transition-all">
@@ -724,6 +777,219 @@ export const AuthPortalView: React.FC = () => {
           Armazenamento Seguro em Google Cloud Firestore • Autenticação Verificada
         </p>
       </footer>
+
+      {/* Quick Branding & Logo Customizer Modal */}
+      {showBrandingModal && (
+        <div 
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setShowBrandingModal(false)}
+        >
+          <div 
+            className="relative w-full max-w-lg bg-neutral-900 border border-neutral-800 rounded-3xl p-6 shadow-2xl text-white space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center">
+                  <ImageIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black uppercase tracking-tight">
+                    Gestão de Logótipo & Marca
+                  </h3>
+                  <p className="text-xs text-neutral-400">
+                    Controla o que aparece na página inicial e no sistema
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBrandingModal(false)}
+                className="p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-neutral-800 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Feedback message */}
+            {brandingFeedback && (
+              <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2 animate-fade-in">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="flex-1">{brandingFeedback}</span>
+                <button onClick={() => setBrandingFeedback(null)} className="p-0.5 cursor-pointer">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Current Status Box */}
+            <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800 flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center shrink-0 overflow-hidden">
+                  {showAuthLogo && !isLogoRemoved && logoUrl ? (
+                    <img src={logoUrl} alt="Logo" className="w-8 h-8 object-contain" />
+                  ) : (
+                    <EyeOff className="w-5 h-5 text-neutral-500" />
+                  )}
+                </div>
+                <div>
+                  <span className="font-bold text-white block">
+                    {isLogoRemoved 
+                      ? 'Logótipo Eliminado' 
+                      : !showAuthLogo 
+                      ? 'Logótipo Ocultado no Login' 
+                      : 'Logótipo Ativo'}
+                  </span>
+                  <span className="text-[11px] text-neutral-400 block">
+                    {isLogoRemoved 
+                      ? 'Nenhum logótipo está a ser exibido no sistema.' 
+                      : !showAuthLogo 
+                      ? 'A página de entrada exibe apenas o título limpo.' 
+                      : 'O logótipo atual é visível no topo deste ecrã.'}
+                  </span>
+                </div>
+              </div>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                isLogoRemoved || !showAuthLogo 
+                  ? 'bg-amber-500/20 text-amber-300' 
+                  : 'bg-emerald-500/20 text-emerald-300'
+              }`}>
+                {isLogoRemoved || !showAuthLogo ? 'Oculto' : 'Visível'}
+              </span>
+            </div>
+
+            {/* Action Buttons Grid */}
+            <div className="space-y-2">
+              {/* Button 1: Eliminate Logo completely */}
+              {!isLogoRemoved && (
+                <button
+                  type="button"
+                  disabled={isSavingBranding}
+                  onClick={async () => {
+                    setIsSavingBranding(true);
+                    try {
+                      await removeLogoCompletely();
+                      setBrandingFeedback('Logótipo eliminado permanentemente da página inicial e do sistema!');
+                    } catch (e: any) {
+                      setBrandingFeedback('Erro ao eliminar logótipo: ' + (e?.message || 'Tenta novamente.'));
+                    } finally {
+                      setIsSavingBranding(false);
+                    }
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-red-500/15 border border-red-500/30 hover:bg-red-500/25 text-red-400 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"
+                >
+                  <Trash2 className="w-4 h-4 text-red-400" />
+                  <span>Eliminar Logótipo Desta Página & Sistema</span>
+                </button>
+              )}
+
+              {/* Button 2: Toggle Visibility on Login */}
+              <button
+                type="button"
+                disabled={isSavingBranding}
+                onClick={async () => {
+                  setIsSavingBranding(true);
+                  try {
+                    await toggleAuthLogo(!showAuthLogo);
+                    setBrandingFeedback(showAuthLogo 
+                      ? 'Logótipo ocultado da página inicial.' 
+                      : 'Logótipo agora visível na página inicial.');
+                  } catch (e: any) {
+                    setBrandingFeedback('Erro ao alternar visibilidade.');
+                  } finally {
+                    setIsSavingBranding(false);
+                  }
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"
+              >
+                {showAuthLogo && !isLogoRemoved ? (
+                  <>
+                    <EyeOff className="w-4 h-4 text-amber-400" />
+                    <span>Ocultar Logótipo Desta Página</span>
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-4 h-4 text-amber-400" />
+                    <span>Mostrar Logótipo Nesta Página</span>
+                  </>
+                )}
+              </button>
+
+              {/* Button 3: Restore Default Emblem */}
+              {(isCustomLogo || isLogoRemoved) && (
+                <button
+                  type="button"
+                  disabled={isSavingBranding}
+                  onClick={async () => {
+                    setIsSavingBranding(true);
+                    try {
+                      await resetToDefaultLogo();
+                      setBrandingFeedback('Emblema oficial dourado do Coach Cunha reposto com sucesso!');
+                    } catch (e: any) {
+                      setBrandingFeedback('Erro ao repor logótipo.');
+                    } finally {
+                      setIsSavingBranding(false);
+                    }
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"
+                >
+                  <RotateCcw className="w-4 h-4 text-amber-400" />
+                  <span>Repor Emblema Padrão Original</span>
+                </button>
+              )}
+
+              {/* Button 4: Upload Custom Image */}
+              <input
+                ref={quickFileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                className="hidden"
+                onChange={async (e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    const file = e.target.files[0];
+                    setIsSavingBranding(true);
+                    const reader = new FileReader();
+                    reader.onload = async (ev) => {
+                      const dataUrl = ev.target?.result as string;
+                      if (dataUrl) {
+                        try {
+                          await updateLogo(dataUrl, file.name, file.size);
+                          setBrandingFeedback(`Logótipo "${file.name}" gravado com sucesso!`);
+                        } catch (err) {
+                          setBrandingFeedback('Erro ao carregar ficheiro.');
+                        } finally {
+                          setIsSavingBranding(false);
+                        }
+                      }
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+              <button
+                type="button"
+                disabled={isSavingBranding}
+                onClick={() => quickFileInputRef.current?.click()}
+                className="w-full py-2.5 px-4 rounded-xl bg-amber-500/15 border border-amber-500/30 hover:bg-amber-500/25 text-amber-400 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"
+              >
+                <Upload className="w-4 h-4" />
+                <span>Carregar Nova Imagem / Logótipo</span>
+              </button>
+            </div>
+
+            <div className="pt-2 flex justify-end border-t border-neutral-800">
+              <button
+                type="button"
+                onClick={() => setShowBrandingModal(false)}
+                className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs font-bold text-white transition cursor-pointer"
+              >
+                Concluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

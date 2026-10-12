@@ -15,7 +15,11 @@ import {
   Sparkles,
   Smartphone,
   Layout,
-  Lock
+  Lock,
+  Trash2,
+  Eye,
+  EyeOff,
+  Shield
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -38,9 +42,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const { 
     logoUrl, 
     isCustomLogo, 
+    isLogoRemoved,
+    showAuthLogo,
     logoDetails, 
     updateLogo, 
-    resetToDefaultLogo 
+    resetToDefaultLogo,
+    removeLogoCompletely,
+    toggleAuthLogo
   } = useLogo();
 
   const [activeTab, setActiveTab] = useState<'theme' | 'logo' | 'security' | 'profile'>(defaultTab);
@@ -141,12 +149,50 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       await resetToDefaultLogo();
       setLogoFeedback({
         type: 'success',
-        message: 'Logótipo padrão do Coach Cunha reposto com sucesso.'
+        message: 'Logótipo padrão do Coach Cunha reposto com sucesso no Firebase e no dispositivo.'
       });
-    } catch (e) {
+    } catch (e: any) {
       setLogoFeedback({
         type: 'error',
-        message: 'Não foi possível repor o logótipo original.'
+        message: 'Não foi possível repor o logótipo original: ' + (e?.message || '')
+      });
+    } finally {
+      setIsSavingLogo(false);
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    setIsSavingLogo(true);
+    try {
+      await removeLogoCompletely();
+      setLogoFeedback({
+        type: 'success',
+        message: 'Logótipo eliminado da página inicial e do sistema! Alterações gravadas permanentemente.'
+      });
+    } catch (e: any) {
+      setLogoFeedback({
+        type: 'error',
+        message: 'Erro ao eliminar o logótipo: ' + (e?.message || 'Tenta novamente.')
+      });
+    } finally {
+      setIsSavingLogo(false);
+    }
+  };
+
+  const handleToggleAuthLogo = async (show: boolean) => {
+    setIsSavingLogo(true);
+    try {
+      await toggleAuthLogo(show);
+      setLogoFeedback({
+        type: 'success',
+        message: show 
+          ? 'Visibilidade do logótipo ativada na página inicial.'
+          : 'Logótipo ocultado da página inicial (ecrã de login).'
+      });
+    } catch (e: any) {
+      setLogoFeedback({
+        type: 'error',
+        message: 'Erro ao alterar visibilidade: ' + (e?.message || '')
       });
     } finally {
       setIsSavingLogo(false);
@@ -278,95 +324,181 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             {/* TAB 1: LOGO & BRANDING */}
             {activeTab === 'logo' && (
               <div className="space-y-5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-100 dark:border-neutral-800">
                   <div>
                     <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
                       <ImageIcon className="w-4 h-4 text-amber-500" />
                       Logótipo Oficial da Aplicação & Ecrã de Login
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-                      Este logótipo é aplicado em todo o sistema: no <strong>ecrã de login (autenticação)</strong>, no <strong>cabeçalho</strong> e nas áreas dos alunos.
+                      Personaliza ou remove o logótipo do ecrã de entrada (login), cabeçalho e áreas de alunos.
                     </p>
                   </div>
 
-                {isCustomLogo && (
-                  <button
-                    onClick={handleResetLogo}
-                    disabled={isSavingLogo}
-                    className="inline-flex items-center gap-1.5 text-xs text-red-500 hover:text-red-600 dark:hover:text-red-400 font-bold px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 transition self-start cursor-pointer disabled:opacity-50"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    Repor Original
-                  </button>
-                )}
-              </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Toggle Auth Logo Visibility */}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleAuthLogo(!showAuthLogo)}
+                      disabled={isSavingLogo}
+                      className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border transition cursor-pointer disabled:opacity-50 ${
+                        showAuthLogo && !isLogoRemoved
+                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20'
+                          : 'bg-slate-100 dark:bg-neutral-800 border-slate-300 dark:border-neutral-700 text-slate-600 dark:text-neutral-400 hover:text-white'
+                      }`}
+                      title={showAuthLogo ? 'Ocultar logótipo no login' : 'Mostrar logótipo no login'}
+                    >
+                      {showAuthLogo && !isLogoRemoved ? (
+                        <>
+                          <Eye className="w-3.5 h-3.5 text-amber-500" />
+                          <span>Login: Visível</span>
+                        </>
+                      ) : (
+                        <>
+                          <EyeOff className="w-3.5 h-3.5" />
+                          <span>Login: Oculto</span>
+                        </>
+                      )}
+                    </button>
 
-              {/* Feedback toast */}
-              {logoFeedback && (
-                <div className={`p-3.5 rounded-2xl text-xs font-medium flex items-center gap-2.5 animate-fade-in ${
-                  logoFeedback.type === 'success'
-                    ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
-                    : 'bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300'
-                }`}>
-                  {logoFeedback.type === 'success' ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                  ) : (
-                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-                  )}
-                  <span className="flex-1">{logoFeedback.message}</span>
-                  <button onClick={() => setLogoFeedback(null)} className="p-0.5 cursor-pointer">
-                    <X className="w-3.5 h-3.5 opacity-60 hover:opacity-100" />
-                  </button>
-                </div>
-              )}
+                    {/* Eliminate Logo Completely */}
+                    {!isLogoRemoved && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveLogo}
+                        disabled={isSavingLogo}
+                        className="inline-flex items-center gap-1.5 text-xs text-red-500 hover:text-red-600 dark:hover:text-red-400 font-bold px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 transition cursor-pointer disabled:opacity-50"
+                        title="Eliminar este logótipo da página inicial e de todo o sistema"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Eliminar Logótipo</span>
+                      </button>
+                    )}
 
-              {/* Live Preview Cards Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                {/* Preview 1: Authentication Screen */}
-                <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800 text-center flex flex-col items-center justify-center relative overflow-hidden">
-                  <span className="text-[10px] uppercase font-bold text-amber-500 tracking-wider mb-2 flex items-center gap-1">
-                    <Lock className="w-3 h-3" />
-                    Pré-visualização: Ecrã de Login
-                  </span>
-                  <div className="w-24 h-28 my-1 flex items-center justify-center">
-                    <img 
-                      src={logoUrl} 
-                      alt="Logo Oficial" 
-                      className="max-w-full max-h-full object-contain filter drop-shadow-[0_8px_16px_rgba(245,158,11,0.3)]" 
-                    />
+                    {/* Restore Default */}
+                    {(isCustomLogo || isLogoRemoved) && (
+                      <button
+                        type="button"
+                        onClick={handleResetLogo}
+                        disabled={isSavingLogo}
+                        className="inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-neutral-300 hover:text-slate-900 dark:hover:text-white font-bold px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 transition cursor-pointer disabled:opacity-50"
+                        title="Repor emblema padrão original"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Repor Padrão</span>
+                      </button>
+                    )}
                   </div>
-                  <span className="text-[10px] text-neutral-400 font-mono mt-1">
-                    {isCustomLogo ? (logoDetails?.fileName || 'Personalizado') : 'Logo Oficial'}
+                </div>
+
+                {/* Status Callout Banner */}
+                <div className={`p-3 rounded-2xl border text-xs flex items-center justify-between gap-3 ${
+                  isLogoRemoved || !showAuthLogo
+                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300'
+                    : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 shrink-0 text-amber-500" />
+                    <span>
+                      {isLogoRemoved 
+                        ? 'O logótipo está atualmente ELIMINADO de todo o sistema (ecrã inicial e cabeçalho).'
+                        : !showAuthLogo
+                        ? 'O logótipo está OCULTO apenas na página inicial (login), mantendo o cabeçalho limpo.'
+                        : 'O logótipo está ATIVO e visível na página inicial e no cabeçalho.'}
+                    </span>
+                  </div>
+                  <span className="font-mono text-[10px] uppercase font-bold shrink-0 px-2 py-0.5 rounded bg-black/20">
+                    Sincronizado na Nuvem
                   </span>
                 </div>
 
-                {/* Preview 2: Navbar / Headers */}
-                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 flex flex-col justify-between">
-                  <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-neutral-400 tracking-wider mb-2 flex items-center gap-1">
-                    <Layout className="w-3 h-3 text-amber-500" />
-                    Pré-visualização: Cabeçalho da App
-                  </span>
-                  <div className="p-2.5 rounded-xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 flex items-center gap-2.5 shadow-sm my-auto">
-                    <img 
-                      src={logoUrl} 
-                      alt="Logo Icon" 
-                      className="w-8 h-8 rounded-lg object-contain shrink-0" 
-                    />
-                    <div>
-                      <span className="font-extrabold text-xs text-slate-900 dark:text-white block uppercase">
-                        Coach Cunha <span className="text-amber-500">Project</span>
-                      </span>
-                      <span className="text-[9px] text-slate-400 dark:text-neutral-500 block">
-                        Acompanhamento de Elite
+                {/* Feedback toast */}
+                {logoFeedback && (
+                  <div className={`p-3.5 rounded-2xl text-xs font-medium flex items-center gap-2.5 animate-fade-in ${
+                    logoFeedback.type === 'success'
+                      ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300'
+                  }`}>
+                    {logoFeedback.type === 'success' ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                    )}
+                    <span className="flex-1">{logoFeedback.message}</span>
+                    <button onClick={() => setLogoFeedback(null)} className="p-0.5 cursor-pointer">
+                      <X className="w-3.5 h-3.5 opacity-60 hover:opacity-100" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Live Preview Cards Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {/* Preview 1: Authentication Screen */}
+                  <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800 text-center flex flex-col items-center justify-center relative overflow-hidden min-h-[160px]">
+                    <span className="text-[10px] uppercase font-bold text-amber-500 tracking-wider mb-2 flex items-center gap-1">
+                      <Lock className="w-3 h-3" />
+                      Pré-visualização: Ecrã de Login
+                    </span>
+                    
+                    {showAuthLogo && !isLogoRemoved && logoUrl ? (
+                      <>
+                        <div className="w-24 h-24 my-1 flex items-center justify-center">
+                          <img 
+                            src={logoUrl} 
+                            alt="Logo Oficial" 
+                            className="max-w-full max-h-full object-contain filter drop-shadow-[0_8px_16px_rgba(245,158,11,0.3)]" 
+                          />
+                        </div>
+                        <span className="text-[10px] text-neutral-400 font-mono mt-1">
+                          {isCustomLogo ? (logoDetails?.fileName || 'Personalizado') : 'Logo Oficial'}
+                        </span>
+                      </>
+                    ) : (
+                      <div className="py-5 px-3 flex flex-col items-center justify-center text-center">
+                        <div className="w-10 h-10 rounded-2xl bg-neutral-900 border border-neutral-800 flex items-center justify-center text-neutral-500 mb-2">
+                          <EyeOff className="w-5 h-5 text-amber-500/70" />
+                        </div>
+                        <span className="text-xs font-bold text-white uppercase tracking-tight">Sem Logótipo no Login</span>
+                        <p className="text-[10px] text-neutral-400 mt-0.5">Apenas título e campos limpos</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Preview 2: Navbar / Headers */}
+                  <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 flex flex-col justify-between min-h-[160px]">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-neutral-400 tracking-wider mb-2 flex items-center gap-1">
+                      <Layout className="w-3 h-3 text-amber-500" />
+                      Pré-visualização: Cabeçalho da App
+                    </span>
+                    <div className="p-2.5 rounded-xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 flex items-center gap-2.5 shadow-sm my-auto">
+                      {!isLogoRemoved && logoUrl ? (
+                        <img 
+                          src={logoUrl} 
+                          alt="Logo Icon" 
+                          className="w-8 h-8 rounded-lg object-contain shrink-0" 
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 font-bold shrink-0 text-xs">
+                          <Shield className="w-4 h-4" />
+                        </div>
+                      )}
+                      <div>
+                        <span className="font-extrabold text-xs text-slate-900 dark:text-white block uppercase">
+                          Coach Cunha <span className="text-amber-500">Project</span>
+                        </span>
+                        <span className="text-[9px] text-slate-400 dark:text-neutral-500 block">
+                          Acompanhamento de Elite
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-neutral-400 pt-2">
+                      <span>Estado:</span>
+                      <span className="font-bold text-emerald-500">
+                        {isLogoRemoved ? 'Eliminado' : isCustomLogo ? 'Personalizado' : 'Padrão'}
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-neutral-400 pt-2">
-                    <span>Estado:</span>
-                    <span className="font-bold text-emerald-500">{isCustomLogo ? 'Ativo & Gravado' : 'Padrão'}</span>
-                  </div>
                 </div>
-              </div>
 
               {/* Drag & Drop Upload Zone */}
               <div

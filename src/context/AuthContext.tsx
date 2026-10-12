@@ -26,6 +26,7 @@ import {
   where,
   setDoc,
   updateDoc,
+  deleteDoc,
   type FirebaseUser
 } from '../firebase';
 import { UserProfile, UserRole, SubscriptionStatus } from '../types';
@@ -58,6 +59,7 @@ interface AuthContextType {
   renewSubscription: (planName: string) => Promise<void>;
   updateClientSubscription: (clientId: string, status: SubscriptionStatus) => Promise<void>;
   toggleStudentManualAccess: (clientId: string, unlock: boolean) => Promise<void>;
+  deleteClientAccount: (clientId: string) => Promise<{ success: boolean; message: string }>;
   allClients: UserProfile[];
   isRememberMeEnabled: boolean;
 }
@@ -846,6 +848,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {}
   };
 
+  const deleteClientAccount = async (clientId: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      // 1. Delete from Firestore users collection
+      try {
+        await deleteDoc(doc(db, 'users', clientId));
+      } catch (fsErr) {
+        console.warn('Firestore delete user error:', fsErr);
+      }
+
+      // 2. Remove from allClients state and local storage
+      const updatedClients = allClients.filter(c => c.uid !== clientId);
+      saveClients(updatedClients);
+
+      // 3. If currently impersonating this client, stop impersonation
+      if (impersonatedUser?.uid === clientId) {
+        setImpersonatedUser(null);
+      }
+
+      return {
+        success: true,
+        message: 'Conta eliminada com sucesso da base de dados e do sistema.'
+      };
+    } catch (err: any) {
+      console.error('Error deleting account:', err);
+      throw new Error(err?.message || 'Erro ao eliminar a conta do sistema.');
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       currentUser,
@@ -874,6 +904,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       renewSubscription,
       updateClientSubscription,
       toggleStudentManualAccess,
+      deleteClientAccount,
       allClients,
       isRememberMeEnabled,
     }}>

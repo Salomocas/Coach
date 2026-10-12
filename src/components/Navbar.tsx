@@ -16,7 +16,8 @@ import {
   Sparkles,
   ArrowLeft,
   Settings,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Shield
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
@@ -48,7 +49,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateClient, onNavigateCoac
 
   const { notifications, unreadCount, markNotificationAsRead } = useData();
   const { theme, isDark, toggleTheme } = useTheme();
-  const { logoUrl } = useLogo();
+  const { logoUrl, isLogoRemoved } = useLogo();
   
   const [showNotifs, setShowNotifs] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -84,11 +85,17 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateClient, onNavigateCoac
           
           {/* Brand */}
           <div className="flex items-center gap-2.5 sm:gap-3.5">
-            <img 
-              src={logoUrl} 
-              alt="Coach Cunha Logo" 
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl object-contain ring-1 ring-slate-200 dark:ring-neutral-800 shrink-0 bg-white dark:bg-neutral-900 p-0.5" 
-            />
+            {logoUrl && !isLogoRemoved ? (
+              <img 
+                src={logoUrl} 
+                alt="Coach Cunha Logo" 
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl object-contain ring-1 ring-slate-200 dark:ring-neutral-800 shrink-0 bg-white dark:bg-neutral-900 p-0.5" 
+              />
+            ) : (
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 font-bold shrink-0">
+                <Shield className="w-4 h-4" />
+              </div>
+            )}
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-black text-base sm:text-lg tracking-tight text-slate-900 dark:text-white uppercase leading-none">

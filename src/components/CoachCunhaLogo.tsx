@@ -12,7 +12,24 @@ export const CoachCunhaLogo: React.FC<CoachCunhaLogoProps> = ({
   className = '',
   showText = false,
 }) => {
-  const { logoUrl } = useLogo();
+  const { logoUrl, isLogoRemoved } = useLogo();
+
+  // If the logo has been eliminated or is empty, don't show the image
+  if (isLogoRemoved || !logoUrl) {
+    if (!showText) return null;
+    return (
+      <div className={`flex flex-col items-center justify-center select-none ${className}`}>
+        <div className="text-center">
+          <span className="text-[11px] font-extrabold uppercase tracking-widest text-amber-500 block">
+            Official System
+          </span>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
+            Coach Cunha <span className="text-amber-500">Project</span>
+          </h1>
+        </div>
+      </div>
+    );
+  }
 
   // Size mapping with optimized ratios
   const sizeClasses = {
