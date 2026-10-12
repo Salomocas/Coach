@@ -93,6 +93,7 @@ interface DataContextType {
 
   customMetrics: CustomMetricDefinition[];
   addCustomMetric: (metric: Omit<CustomMetricDefinition, 'id' | 'createdAt'>) => Promise<void>;
+  updateCustomMetric: (id: string, updated: Partial<CustomMetricDefinition>) => Promise<void>;
   deleteCustomMetric: (metricId: string) => Promise<void>;
 
   messages: Message[];
@@ -750,6 +751,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateCustomMetric = async (metricId: string, updated: Partial<CustomMetricDefinition>) => {
+    setCustomMetrics(prev => prev.map(m => m.id === metricId ? { ...m, ...updated } : m));
+    try {
+      await updateDoc(doc(db, 'custom_metrics', metricId), updated);
+    } catch (e) {
+      console.warn('Update custom metric in Firestore:', e);
+    }
+  };
+
   const deleteCustomMetric = async (metricId: string) => {
     setCustomMetrics(prev => prev.filter(m => m.id !== metricId));
     try {
@@ -853,6 +863,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       deleteProgressLog,
       customMetrics: customMetrics.filter(m => m.clientId === 'all' || (isCoach ? (m.clientId === selectedAthleteId) : (m.clientId === (currentUser?.uid || 'client-ricardo-silva')))),
       addCustomMetric,
+      updateCustomMetric,
       deleteCustomMetric,
       messages,
       sendMessage,

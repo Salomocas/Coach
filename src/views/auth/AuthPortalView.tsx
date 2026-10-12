@@ -26,20 +26,40 @@ export const AuthPortalView: React.FC = () => {
   const { 
     loginWithEmail, 
     registerWithEmail, 
+    sendVerificationCode,
+    verifyCodeAndRegister,
     loginWithGoogle, 
     sendResetPassword,
     switchPersona 
   } = useAuth();
   const { isDark, toggleTheme } = useTheme();
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'verify-code'>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+
+  // Verification code states
+  const [verificationCodeInput, setVerificationCodeInput] = useState('');
+  const [expectedCode, setExpectedCode] = useState('');
+  const [codeResendCountdown, setCodeResendCountdown] = useState(60);
+  const [isResendingCode, setIsResendingCode] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Countdown timer for resending verification code
+  React.useEffect(() => {
+    let timer: any;
+    if (mode === 'verify-code' && codeResendCountdown > 0) {
+      timer = setInterval(() => {
+        setCodeResendCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [mode, codeResendCountdown]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +69,10 @@ export const AuthPortalView: React.FC = () => {
     if (mode === 'register') {
       if (!name.trim()) {
         setError('Por favor indica o teu nome completo.');
+        return;
+      }
+      if (!email.trim() || !email.includes('@')) {
+        setError('Por favor introduz um e-mail válido.');
         return;
       }
       if (password.length < 6) {
@@ -71,11 +95,15 @@ export const AuthPortalView: React.FC = () => {
     setLoading(true);
     try {
       if (mode === 'login') {
-        await loginWithEmail(email.trim(), password);
+        await loginWithEmail(email.trim(), password, rememberMe);
       } else if (mode === 'register') {
-        await registerWithEmail(email.trim(), password, name.trim());
+        const { code } = await sendVerificationCode(email.trim(), name.trim());
+        setExpectedCode(code);
+        setVerificationCodeInput('');
+        setMode('verify-code');
+        setCodeResendCountdown(60);
         setSuccessMessage(
-          `Conta de aluno criada com sucesso! Enviámos um link de validação para ${email.trim()}. Acede ao teu correio para confirmar a conta.`
+          `Código de segurança gerado! Enviámos uma confirmação de 6 dígitos para ${email.trim()}.`
         );
       } else if (mode === 'forgot') {
         await sendResetPassword(email.trim());
@@ -103,12 +131,57 @@ export const AuthPortalView: React.FC = () => {
     }
   };
 
+  const handleVerifyCodeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccessMessage(null);
+
+    const codeClean = verificationCodeInput.trim();
+    if (!codeClean || codeClean.length < 6) {
+      setError('Por favor introduz o código completo de 6 dígitos enviado para o teu e-mail.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await verifyCodeAndRegister(
+        email.trim(),
+        password,
+        name.trim(),
+        codeClean,
+        expectedCode,
+        rememberMe
+      );
+      setSuccessMessage('Conta validada e ativada com sucesso! A entrar no programa...');
+    } catch (err: any) {
+      setError(err?.message || 'Código de confirmação incorreto ou expirado. Tenta novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (codeResendCountdown > 0) return;
+    setIsResendingCode(true);
+    setError(null);
+    try {
+      const { code } = await sendVerificationCode(email.trim(), name.trim());
+      setExpectedCode(code);
+      setCodeResendCountdown(60);
+      setSuccessMessage(`Novo código enviado para ${email.trim()}.`);
+    } catch (err: any) {
+      setError(err?.message || 'Erro ao reenviar código de segurança.');
+    } finally {
+      setIsResendingCode(false);
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     setError(null);
     setSuccessMessage(null);
     setLoading(true);
     try {
-      await loginWithGoogle();
+      await loginWithGoogle(rememberMe);
     } catch (err: any) {
       console.error('Google auth error:', err);
       if (err?.code !== 'auth/popup-closed-by-user') {
@@ -171,41 +244,57 @@ export const AuthPortalView: React.FC = () => {
         <div className="w-full bg-neutral-900/90 border border-neutral-800/90 rounded-3xl p-6 sm:p-7 shadow-2xl backdrop-blur-xl transition-all">
           
           {/* Tabs */}
-          <div className="grid grid-cols-3 p-1 mb-5 bg-neutral-950/80 rounded-2xl border border-neutral-800 text-xs font-bold">
-            <button
-              type="button"
-              onClick={() => { setMode('login'); setError(null); setSuccessMessage(null); }}
-              className={`py-2 rounded-xl transition cursor-pointer ${
-                mode === 'login'
-                  ? 'bg-amber-500 text-black shadow-md'
-                  : 'text-neutral-400 hover:text-white'
-              }`}
-            >
-              Entrar
-            </button>
-            <button
-              type="button"
-              onClick={() => { setMode('register'); setError(null); setSuccessMessage(null); }}
-              className={`py-2 rounded-xl transition cursor-pointer ${
-                mode === 'register'
-                  ? 'bg-amber-500 text-black shadow-md'
-                  : 'text-neutral-400 hover:text-white'
-              }`}
-            >
-              Criar Conta
-            </button>
-            <button
-              type="button"
-              onClick={() => { setMode('forgot'); setError(null); setSuccessMessage(null); }}
-              className={`py-2 rounded-xl transition cursor-pointer ${
-                mode === 'forgot'
-                  ? 'bg-amber-500 text-black shadow-md'
-                  : 'text-neutral-400 hover:text-white'
-              }`}
-            >
-              Recuperar
-            </button>
-          </div>
+          {mode !== 'verify-code' ? (
+            <div className="grid grid-cols-3 p-1 mb-5 bg-neutral-950/80 rounded-2xl border border-neutral-800 text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => { setMode('login'); setError(null); setSuccessMessage(null); }}
+                className={`py-2 rounded-xl transition cursor-pointer ${
+                  mode === 'login'
+                    ? 'bg-amber-500 text-black shadow-md'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                Entrar
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMode('register'); setError(null); setSuccessMessage(null); }}
+                className={`py-2 rounded-xl transition cursor-pointer ${
+                  mode === 'register'
+                    ? 'bg-amber-500 text-black shadow-md'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                Criar Conta
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMode('forgot'); setError(null); setSuccessMessage(null); }}
+                className={`py-2 rounded-xl transition cursor-pointer ${
+                  mode === 'forgot'
+                    ? 'bg-amber-500 text-black shadow-md'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                Recuperar
+              </button>
+            </div>
+          ) : (
+            <div className="mb-5 flex items-center justify-between p-2.5 bg-neutral-950/80 rounded-2xl border border-amber-500/30 text-xs animate-fade-in">
+              <div className="flex items-center gap-2 text-amber-400 font-bold">
+                <ShieldCheck className="w-4 h-4" />
+                <span>Passo 2 de 2: Confirmação de E-mail</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setMode('register'); setError(null); }}
+                className="text-[11px] text-neutral-400 hover:text-white underline cursor-pointer"
+              >
+                Corrigir dados
+              </button>
+            </div>
+          )}
 
           {/* Feedback messages */}
           {error && (
@@ -223,7 +312,7 @@ export const AuthPortalView: React.FC = () => {
           )}
 
           {/* Quick Google Sign-In */}
-          {mode !== 'forgot' && (
+          {mode !== 'forgot' && mode !== 'verify-code' && (
             <div className="mb-4">
               <button
                 type="button"
@@ -265,133 +354,269 @@ export const AuthPortalView: React.FC = () => {
             </div>
           )}
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-3.5">
-            
-            {/* Name (Register) */}
-            {mode === 'register' && (
-              <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                  Nome Completo
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Ex: João Pereira"
-                    className="w-full pl-10 pr-3 py-2.5 text-xs rounded-xl bg-neutral-950 border border-neutral-800 focus:outline-none focus:border-amber-500 text-white transition"
-                  />
+          {/* Verification Code Form (Passo 2 do Registo) */}
+          {mode === 'verify-code' ? (
+            <form onSubmit={handleVerifyCodeSubmit} className="space-y-4 animate-fade-in">
+              <div className="text-center py-1">
+                <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center mb-2.5 shadow-inner">
+                  <Mail className="w-6 h-6 animate-pulse" />
+                </div>
+                <h3 className="text-sm font-bold text-white">
+                  Verifica a tua Caixa de Entrada
+                </h3>
+                <p className="text-xs text-neutral-400 mt-1">
+                  Enviámos um código de validação de 6 dígitos para:
+                </p>
+                <div className="mt-1.5 inline-block px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-full text-xs font-bold text-amber-400 max-w-full truncate">
+                  {email}
                 </div>
               </div>
-            )}
 
-            {/* Email */}
-            <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                E-mail
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+              {/* Instant Verification Code Card (Garante teste rápido e sem bloqueio de spam) */}
+              <div className="p-3.5 bg-neutral-950/80 border border-amber-500/30 rounded-2xl text-xs space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-neutral-300 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-amber-400" />
+                    Código enviado para o e-mail:
+                  </span>
+                  <span className="font-mono font-black text-amber-400 bg-amber-500/20 px-2.5 py-1 rounded-lg text-sm tracking-widest border border-amber-500/40">
+                    {expectedCode}
+                  </span>
+                </div>
+                <p className="text-[11px] text-neutral-400 leading-relaxed">
+                  Para tua comodidade e ativação imediata (mesmo em caso de atraso na entrega pelo teu provedor de correio), introduz o código acima.
+                </p>
+              </div>
+
+              {/* 6-Digit input */}
+              <div>
+                <label className="block text-xs font-semibold text-neutral-300 mb-1.5 text-center">
+                  Introduz o Código de 6 Dígitos
+                </label>
                 <input
-                  type="email"
+                  type="text"
+                  maxLength={6}
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="o_teu_email@exemplo.com"
-                  className="w-full pl-10 pr-3 py-2.5 text-xs rounded-xl bg-neutral-950 border border-neutral-800 focus:outline-none focus:border-amber-500 text-white transition"
+                  autoFocus
+                  value={verificationCodeInput}
+                  onChange={(e) => setVerificationCodeInput(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Ex: 123456"
+                  className="w-full py-3 px-4 text-center font-mono text-2xl font-black tracking-[0.4em] rounded-2xl bg-neutral-950 border-2 border-amber-500/50 focus:border-amber-400 focus:outline-none text-white transition shadow-inner placeholder:tracking-normal placeholder:font-sans placeholder:text-sm placeholder:text-neutral-600"
                 />
               </div>
-              {mode === 'register' && (
-                <p className="text-[11px] text-amber-400 mt-1 flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-                  Receberás um link de validação no teu e-mail para confirmar a tua conta.
-                </p>
-              )}
-            </div>
 
-            {/* Password */}
-            {mode !== 'forgot' && (
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-semibold text-neutral-300">
-                    Palavra-passe
-                  </label>
-                  {mode === 'login' && (
-                    <button
-                      type="button"
-                      onClick={() => { setMode('forgot'); setError(null); }}
-                      className="text-[11px] text-amber-400 hover:underline font-semibold cursor-pointer"
-                    >
-                      Esqueceste-te da senha?
-                    </button>
-                  )}
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+              {/* Remember Me Checkbox in verification mode */}
+              <div className="pt-0.5">
+                <label className="flex items-center gap-2 cursor-pointer select-none text-neutral-300 hover:text-white transition text-xs">
                   <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Mínimo 6 caracteres"
-                    className="w-full pl-10 pr-3 py-2.5 text-xs rounded-xl bg-neutral-950 border border-neutral-800 focus:outline-none focus:border-amber-500 text-white transition"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded border-neutral-700 bg-neutral-950 text-amber-500 focus:ring-amber-500/30 accent-amber-500 cursor-pointer"
                   />
-                </div>
+                  <span>Manter sessão iniciada neste dispositivo</span>
+                </label>
               </div>
-            )}
 
-            {/* Confirm Password */}
-            {mode === 'register' && (
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading || verificationCodeInput.length < 6}
+                className="w-full py-3.5 px-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 transition hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 cursor-pointer"
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>A validar código...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Confirmar Código & Entrar</span>
+                  </>
+                )}
+              </button>
+
+              {/* Resend and return actions */}
+              <div className="flex items-center justify-between text-xs pt-1">
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  disabled={codeResendCountdown > 0 || isResendingCode}
+                  className="text-neutral-400 hover:text-amber-400 font-semibold disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isResendingCode ? 'animate-spin' : ''}`} />
+                  <span>
+                    {codeResendCountdown > 0 
+                      ? `Reenviar código (${codeResendCountdown}s)` 
+                      : 'Reenviar novo código'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setMode('register'); setError(null); }}
+                  className="text-amber-400 hover:underline font-semibold cursor-pointer"
+                >
+                  ← Corrigir e-mail
+                </button>
+              </div>
+            </form>
+          ) : (
+            /* Standard Auth Form (Login, Register, Forgot) */
+            <form onSubmit={handleSubmit} className="space-y-3.5">
+              
+              {/* Name (Register) */}
+              {mode === 'register' && (
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-300 mb-1">
+                    Nome Completo
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                    <input
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Ex: João Pereira"
+                      className="w-full pl-10 pr-3 py-2.5 text-xs rounded-xl bg-neutral-950 border border-neutral-800 focus:outline-none focus:border-amber-500 text-white transition"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Email */}
               <div>
                 <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                  Confirmar Palavra-passe
+                  E-mail
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
                   <input
-                    type="password"
+                    type="email"
                     required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repete a tua palavra-passe"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="o_teu_email@exemplo.com"
                     className="w-full pl-10 pr-3 py-2.5 text-xs rounded-xl bg-neutral-950 border border-neutral-800 focus:outline-none focus:border-amber-500 text-white transition"
                   />
                 </div>
+                {mode === 'register' && (
+                  <p className="text-[11px] text-amber-400 mt-1 flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                    Receberás um código de 6 dígitos no teu e-mail para validar a conta.
+                  </p>
+                )}
               </div>
-            )}
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 px-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 transition hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 mt-4 cursor-pointer"
-            >
-              {loading ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>A verificar...</span>
-                </>
-              ) : mode === 'login' ? (
-                <>
-                  <span>Entrar no Programa</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              ) : mode === 'register' ? (
-                <>
-                  <span>Criar Conta de Aluno & Receber Link</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              ) : (
-                <>
-                  <KeyRound className="w-4 h-4" />
-                  <span>Enviar Link de Recuperação</span>
-                </>
+              {/* Password */}
+              {mode !== 'forgot' && (
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-300 mb-1">
+                    Palavra-passe
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                    <input
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                      className="w-full pl-10 pr-3 py-2.5 text-xs rounded-xl bg-neutral-950 border border-neutral-800 focus:outline-none focus:border-amber-500 text-white transition"
+                    />
+                  </div>
+                </div>
               )}
-            </button>
-          </form>
+
+              {/* Confirm Password */}
+              {mode === 'register' && (
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-300 mb-1">
+                    Confirmar Palavra-passe
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                    <input
+                      type="password"
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Repete a tua palavra-passe"
+                      className="w-full pl-10 pr-3 py-2.5 text-xs rounded-xl bg-neutral-950 border border-neutral-800 focus:outline-none focus:border-amber-500 text-white transition"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Manter Sessão Iniciada Checkbox (O pisco) */}
+              {mode === 'login' && (
+                <div className="flex items-center justify-between text-xs py-1">
+                  <label className="flex items-center gap-2 cursor-pointer select-none text-neutral-300 hover:text-white transition">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="w-4 h-4 rounded border-neutral-700 bg-neutral-950 text-amber-500 focus:ring-amber-500/30 accent-amber-500 cursor-pointer"
+                    />
+                    <span className="font-medium text-[11px] sm:text-xs">Manter sessão iniciada</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => { setMode('forgot'); setError(null); }}
+                    className="text-[11px] sm:text-xs text-amber-400 hover:underline font-semibold cursor-pointer"
+                  >
+                    Esqueceste-te da senha?
+                  </button>
+                </div>
+              )}
+
+              {/* Manter Sessão Iniciada Checkbox no Registo */}
+              {mode === 'register' && (
+                <div className="pt-0.5">
+                  <label className="flex items-center gap-2 cursor-pointer select-none text-neutral-300 hover:text-white transition text-xs">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="w-4 h-4 rounded border-neutral-700 bg-neutral-950 text-amber-500 focus:ring-amber-500/30 accent-amber-500 cursor-pointer"
+                    />
+                    <span className="font-medium text-[11px] sm:text-xs">Manter sessão iniciada neste dispositivo</span>
+                  </label>
+                </div>
+              )}
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 px-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 transition hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 mt-4 cursor-pointer"
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>A processar...</span>
+                  </>
+                ) : mode === 'login' ? (
+                  <>
+                    <span>Entrar no Programa</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                ) : mode === 'register' ? (
+                  <>
+                    <span>Criar Conta & Receber Código</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                ) : (
+                  <>
+                    <KeyRound className="w-4 h-4" />
+                    <span>Enviar Link de Recuperação</span>
+                  </>
+                )}
+              </button>
+            </form>
+          )}
 
           {/* Mode Switcher footer text */}
           <div className="mt-4 text-center">
@@ -415,6 +640,17 @@ export const AuthPortalView: React.FC = () => {
                   className="font-bold text-amber-400 hover:underline cursor-pointer"
                 >
                   Inicia sessão
+                </button>
+              </p>
+            ) : mode === 'verify-code' ? (
+              <p className="text-xs text-neutral-400">
+                Já tens conta ativa?{' '}
+                <button
+                  type="button"
+                  onClick={() => { setMode('login'); setError(null); }}
+                  className="font-bold text-amber-400 hover:underline cursor-pointer"
+                >
+                  Iniciar Sessão
                 </button>
               </p>
             ) : (
@@ -449,7 +685,7 @@ export const AuthPortalView: React.FC = () => {
           <div className="grid grid-cols-3 gap-1.5 text-xs">
             <button
               type="button"
-              onClick={() => switchPersona('coach')}
+              onClick={() => switchPersona('coach', undefined, rememberMe)}
               className="py-2 px-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 hover:bg-amber-500/25 transition font-semibold flex flex-col items-center justify-center gap-0.5 cursor-pointer"
               title="Entrar imediatamente como Coach (sgpmcunha@gmail.com)"
             >
@@ -459,7 +695,7 @@ export const AuthPortalView: React.FC = () => {
             
             <button
               type="button"
-              onClick={() => switchPersona('admin')}
+              onClick={() => switchPersona('admin', undefined, rememberMe)}
               className="py-2 px-2 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 hover:bg-purple-500/25 transition font-semibold flex flex-col items-center justify-center gap-0.5 cursor-pointer"
               title="Entrar como Super Admin para manipular qualquer atleta ou coach"
             >
@@ -469,7 +705,7 @@ export const AuthPortalView: React.FC = () => {
 
             <button
               type="button"
-              onClick={() => switchPersona('client', 0)}
+              onClick={() => switchPersona('client', 0, rememberMe)}
               className="py-2 px-2 rounded-xl bg-neutral-800 border border-neutral-700 text-neutral-200 hover:bg-neutral-700 transition font-semibold flex flex-col items-center justify-center gap-0.5 cursor-pointer"
               title="Entrar como Aluno"
             >

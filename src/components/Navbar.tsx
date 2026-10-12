@@ -317,7 +317,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateClient, onNavigateCoac
                     {/* Botão Configurações da Aplicação */}
                     <button
                       onClick={() => {
-                        setSettingsTab((isCoach || isAdmin) ? 'logo' : 'theme');
+                        setSettingsTab('logo');
                         setIsSettingsOpen(true);
                         setShowUserMenu(false);
                       }}
@@ -328,29 +328,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateClient, onNavigateCoac
                       </div>
                       <div>
                         <span className="font-semibold text-xs block text-slate-800 dark:text-neutral-200 group-hover:text-slate-900 dark:group-hover:text-white">Configurações</span>
-                        <span className="text-[10px] text-slate-500 dark:text-neutral-400 block">Aparência, logótipo e sistema</span>
+                        <span className="text-[10px] text-slate-500 dark:text-neutral-400 block">Logótipo oficial, aparência visual e conta</span>
                       </div>
                     </button>
-
-                    {/* Opção Imagens & Logótipo para Coach e Admin */}
-                    {(isCoach || isAdmin) && (
-                      <button
-                        onClick={() => {
-                          setSettingsTab('logo');
-                          setIsSettingsOpen(true);
-                          setShowUserMenu(false);
-                        }}
-                        className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-200 hover:text-slate-900 dark:hover:text-white flex items-center gap-2.5 transition group cursor-pointer"
-                      >
-                        <div className="w-6 h-6 rounded-md bg-blue-500/10 text-blue-500 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition">
-                          <ImageIcon className="w-3.5 h-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-semibold text-xs block text-slate-800 dark:text-neutral-200 group-hover:text-slate-900 dark:group-hover:text-white">Imagens & Logótipo</span>
-                          <span className="text-[10px] text-slate-500 dark:text-neutral-400 block">Dropar imagem centralizada</span>
-                        </div>
-                      </button>
-                    )}
 
                     {/* Edit Profile Action */}
                     <button
@@ -385,26 +365,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateClient, onNavigateCoac
                         <span className="font-semibold text-xs block text-slate-800 dark:text-neutral-200 group-hover:text-slate-900 dark:group-hover:text-white">Alterar Palavra-passe</span>
                         <span className="text-[10px] text-slate-500 dark:text-neutral-400 block">Credenciais e segurança</span>
                       </div>
-                    </button>
-                  </div>
-
-                  {/* Theme Mode Quick Toggle Option in Dropdown */}
-                  <div className="py-1 border-b border-slate-200 dark:border-neutral-800/80 mb-1">
-                    <button
-                      onClick={toggleTheme}
-                      className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-200 hover:text-slate-900 dark:hover:text-white flex items-center justify-between transition cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-md bg-slate-200 dark:bg-neutral-800 text-slate-700 dark:text-amber-400 flex items-center justify-center">
-                          {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-                        </div>
-                        <span className="font-medium text-xs">
-                          {isDark ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
-                        </span>
-                      </div>
-                      <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-200 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400">
-                        {theme}
-                      </span>
                     </button>
                   </div>
 

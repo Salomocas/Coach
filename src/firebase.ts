@@ -14,6 +14,10 @@ import {
   updatePassword,
   reauthenticateWithCredential,
   EmailAuthProvider,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+  inMemoryPersistence,
   type User as FirebaseUser
 } from 'firebase/auth';
 import { 
@@ -115,6 +119,10 @@ export {
   updatePassword,
   reauthenticateWithCredential,
   EmailAuthProvider,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+  inMemoryPersistence,
   type FirebaseUser,
   doc,
   setDoc,

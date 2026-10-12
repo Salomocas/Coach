@@ -124,7 +124,8 @@ export const LogoProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         if (docSnap && docSnap.exists()) {
           const data = docSnap.data();
-          if (data?.logoUrl) {
+          // Only overwrite if remote has a custom logo defined
+          if (data?.logoUrl && data.logoUrl !== DEFAULT_LOGO) {
             setLogoUrl(data.logoUrl);
             try {
               localStorage.setItem('coach_cunha_custom_logo', data.logoUrl);

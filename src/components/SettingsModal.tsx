@@ -31,7 +31,7 @@ interface SettingsModalProps {
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   onClose,
-  defaultTab = 'theme'
+  defaultTab = 'logo'
 }) => {
   const { currentUser, isCoach, isAdmin, changePassword } = useAuth();
   const { theme, setTheme, isDark } = useTheme();
@@ -186,40 +186,40 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto"
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-md animate-fade-in"
       onClick={onClose}
     >
-      <div 
-        className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh] transition-colors"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="p-5 sm:p-6 border-b border-slate-200 dark:border-neutral-800 flex items-center justify-between bg-slate-50/70 dark:bg-neutral-950/70">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center">
-              <Settings className="w-5 h-5" />
+      <div className="min-h-full flex items-center justify-center p-4 sm:p-6">
+        <div 
+          className="relative w-full max-w-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col my-6 sm:my-8 max-h-[88vh] transition-colors"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="p-5 sm:p-6 border-b border-slate-200 dark:border-neutral-800 flex items-center justify-between bg-slate-50/70 dark:bg-neutral-950/70 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center">
+                <Settings className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  Configurações da Plataforma
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-neutral-400">
+                  Logótipo oficial, aparência visual, segurança e conta
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-                Configurações da Plataforma
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-neutral-400">
-                Logótipo oficial, aparência visual, segurança e conta
-              </p>
-            </div>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+              title="Fechar configurações"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-neutral-800 transition cursor-pointer"
-            title="Fechar configurações"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
 
-        {/* Tab Navigation */}
-        <div className="flex border-b border-slate-200 dark:border-neutral-800 px-4 sm:px-6 pt-2 gap-1.5 sm:gap-2 bg-slate-50/40 dark:bg-neutral-950/40 overflow-x-auto scrollbar-none">
-          {(isCoach || isAdmin) && (
+          {/* Tab Navigation */}
+          <div className="flex border-b border-slate-200 dark:border-neutral-800 px-4 sm:px-6 pt-2 gap-1.5 sm:gap-2 bg-slate-50/40 dark:bg-neutral-950/40 overflow-x-auto scrollbar-none shrink-0">
             <button
               onClick={() => setActiveTab('logo')}
               className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold border-b-2 transition whitespace-nowrap cursor-pointer ${
@@ -234,61 +234,60 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <span className="w-2 h-2 rounded-full bg-emerald-500" title="Logótipo personalizado ativo" />
               )}
             </button>
-          )}
 
-          <button
-            onClick={() => setActiveTab('theme')}
-            className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold border-b-2 transition whitespace-nowrap cursor-pointer ${
-              activeTab === 'theme'
-                ? 'border-amber-500 text-amber-500'
-                : 'border-transparent text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            {isDark ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
-            <span>Tema Visual</span>
-          </button>
+            <button
+              onClick={() => setActiveTab('theme')}
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold border-b-2 transition whitespace-nowrap cursor-pointer ${
+                activeTab === 'theme'
+                  ? 'border-amber-500 text-amber-500'
+                  : 'border-transparent text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              {isDark ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
+              <span>Tema Visual</span>
+            </button>
 
-          <button
-            onClick={() => setActiveTab('security')}
-            className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold border-b-2 transition whitespace-nowrap cursor-pointer ${
-              activeTab === 'security'
-                ? 'border-amber-500 text-amber-500'
-                : 'border-transparent text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <KeyRound className="w-3.5 h-3.5" />
-            <span>Palavra-passe</span>
-          </button>
+            <button
+              onClick={() => setActiveTab('security')}
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold border-b-2 transition whitespace-nowrap cursor-pointer ${
+                activeTab === 'security'
+                  ? 'border-amber-500 text-amber-500'
+                  : 'border-transparent text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <KeyRound className="w-3.5 h-3.5" />
+              <span>Palavra-passe</span>
+            </button>
 
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold border-b-2 transition whitespace-nowrap cursor-pointer ${
-              activeTab === 'profile'
-                ? 'border-amber-500 text-amber-500'
-                : 'border-transparent text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <User className="w-3.5 h-3.5" />
-            <span>Dados da Conta</span>
-          </button>
-        </div>
+            <button
+              onClick={() => setActiveTab('profile')}
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold border-b-2 transition whitespace-nowrap cursor-pointer ${
+                activeTab === 'profile'
+                  ? 'border-amber-500 text-amber-500'
+                  : 'border-transparent text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <User className="w-3.5 h-3.5" />
+              <span>Dados da Conta</span>
+            </button>
+          </div>
 
-        {/* Tab Content */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
+          {/* Tab Content */}
+          <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
 
-          {/* TAB 1: LOGO & BRANDING (Only Coach / Admin) */}
-          {activeTab === 'logo' && (isCoach || isAdmin) && (
-            <div className="space-y-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-amber-500" />
-                    Logótipo Oficial da Aplicação
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-                    Este logótipo é aplicado em todo o sistema: no <strong>ecrã de login (autenticação)</strong>, no <strong>cabeçalho</strong> e nas áreas dos alunos.
-                  </p>
-                </div>
+            {/* TAB 1: LOGO & BRANDING */}
+            {activeTab === 'logo' && (
+              <div className="space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4 text-amber-500" />
+                      Logótipo Oficial da Aplicação & Ecrã de Login
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
+                      Este logótipo é aplicado em todo o sistema: no <strong>ecrã de login (autenticação)</strong>, no <strong>cabeçalho</strong> e nas áreas dos alunos.
+                    </p>
+                  </div>
 
                 {isCustomLogo && (
                   <button
@@ -613,5 +612,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 };

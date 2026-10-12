@@ -8,6 +8,7 @@ import {
   Dumbbell, 
   Sparkles, 
   ChevronRight, 
+  ChevronLeft,
   AlertCircle,
   X,
   ExternalLink,
@@ -245,44 +246,111 @@ export const ClientCalendarView: React.FC = () => {
         </div>
       )}
 
-      {/* Week Day Pills Selector */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-        {daysOfWeek.map((day) => {
-          const isSelected = selectedDayIndex === day.index;
-          const isToday = todayIndex === day.index;
-          const dayPlan = displayedPlan.days.find(d => d.dayIndex === day.index);
-          const isRest = dayPlan?.isRestDay;
-          const hasExercises = (dayPlan?.exercises.length || 0) > 0;
+      {/* Week Day Selector with Navigation Arrows */}
+      <div className="space-y-2">
+        {/* Mobile Horizontal Quick Navigation Bar (Prev / Day / Next) */}
+        <div className="flex sm:hidden items-center justify-between p-2 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-sm">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedDayIndex(prev => (prev > 0 ? prev - 1 : 6));
+              setCompletedWorkoutToday(false);
+            }}
+            className="p-2 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-200 active:scale-95 transition cursor-pointer flex items-center gap-1 text-xs font-bold"
+            title="Dia anterior"
+          >
+            <ChevronLeft className="w-4 h-4 text-amber-500" />
+            <span>Anterior</span>
+          </button>
 
-          return (
-            <button
-              key={day.index}
-              onClick={() => {
-                setSelectedDayIndex(day.index);
-                setCompletedWorkoutToday(false);
-              }}
-              className={`flex-1 min-w-[75px] sm:min-w-[100px] py-3 px-3 rounded-2xl border text-center transition-all cursor-pointer relative ${
-                isSelected
-                  ? 'bg-amber-500 text-black border-amber-500 font-extrabold shadow-md shadow-amber-500/15 scale-[1.02]'
-                  : 'bg-white dark:bg-neutral-900/80 border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-neutral-300 hover:border-slate-300 dark:hover:border-neutral-700 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              {isToday && (
-                <span className={`inline-block text-[9px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded-full mb-0.5 ${
-                  isSelected 
-                    ? 'bg-black text-amber-400' 
-                    : 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40'
-                }`}>
-                  Hoje
-                </span>
-              )}
-              <div className="text-xs uppercase tracking-wider font-semibold">{day.label}</div>
-              <div className="text-sm font-bold mt-0.5">
-                {isRest ? 'Descanso' : hasExercises ? `${dayPlan?.exercises.length} ex.` : 'Ativo'}
-              </div>
-            </button>
-          );
-        })}
+          <div className="text-center px-2">
+            <div className="text-[10px] uppercase font-bold text-slate-400 dark:text-neutral-500">
+              {daysOfWeek[selectedDayIndex]?.index === todayIndex ? '🔥 Hoje' : `Dia ${selectedDayIndex + 1} de 7`}
+            </div>
+            <div className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center justify-center gap-1.5">
+              <span>{daysOfWeek[selectedDayIndex]?.full}</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedDayIndex(prev => (prev < 6 ? prev + 1 : 0));
+              setCompletedWorkoutToday(false);
+            }}
+            className="p-2 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-200 active:scale-95 transition cursor-pointer flex items-center gap-1 text-xs font-bold"
+            title="Próximo dia"
+          >
+            <span>Seguinte</span>
+            <ChevronRight className="w-4 h-4 text-amber-500" />
+          </button>
+        </div>
+
+        {/* Days Carousel Row with Left/Right Advance Buttons */}
+        <div className="relative flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedDayIndex(prev => (prev > 0 ? prev - 1 : 6));
+              setCompletedWorkoutToday(false);
+            }}
+            className="hidden sm:flex shrink-0 p-2.5 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-neutral-300 hover:text-amber-500 hover:border-amber-500/40 shadow-sm transition cursor-pointer items-center justify-center"
+            title="Recuar dia"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none flex-1">
+            {daysOfWeek.map((day) => {
+              const isSelected = selectedDayIndex === day.index;
+              const isToday = todayIndex === day.index;
+              const dayPlan = displayedPlan.days.find(d => d.dayIndex === day.index);
+              const isRest = dayPlan?.isRestDay;
+              const hasExercises = (dayPlan?.exercises.length || 0) > 0;
+
+              return (
+                <button
+                  key={day.index}
+                  onClick={() => {
+                    setSelectedDayIndex(day.index);
+                    setCompletedWorkoutToday(false);
+                  }}
+                  className={`flex-1 min-w-[70px] sm:min-w-[95px] py-2.5 sm:py-3 px-2 sm:px-3 rounded-2xl border text-center transition-all cursor-pointer relative shrink-0 ${
+                    isSelected
+                      ? 'bg-amber-500 text-black border-amber-500 font-extrabold shadow-md shadow-amber-500/15 scale-[1.02]'
+                      : 'bg-white dark:bg-neutral-900/80 border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-neutral-300 hover:border-slate-300 dark:hover:border-neutral-700 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {isToday && (
+                    <span className={`inline-block text-[9px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded-full mb-0.5 ${
+                      isSelected 
+                        ? 'bg-black text-amber-400' 
+                        : 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40'
+                    }`}>
+                      Hoje
+                    </span>
+                  )}
+                  <div className="text-xs uppercase tracking-wider font-semibold">{day.label}</div>
+                  <div className="text-xs sm:text-sm font-bold mt-0.5 truncate">
+                    {isRest ? 'Descanso' : hasExercises ? `${dayPlan?.exercises.length} ex.` : 'Ativo'}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedDayIndex(prev => (prev < 6 ? prev + 1 : 0));
+              setCompletedWorkoutToday(false);
+            }}
+            className="hidden sm:flex shrink-0 p-2.5 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-neutral-300 hover:text-amber-500 hover:border-amber-500/40 shadow-sm transition cursor-pointer items-center justify-center"
+            title="Avançar dia"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Selected Day Workout Container */}

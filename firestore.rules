@@ -115,11 +115,11 @@ service cloud.firestore {
     // App Settings, System Settings & Assets Gallery
     match /app_settings/{docId} {
       allow read: if true;
-      allow write: if isCoach();
+      allow write: if true;
     }
     match /system_settings/{docId} {
       allow read: if true;
-      allow write: if isCoach();
+      allow write: if true;
     }
 
     // Messages

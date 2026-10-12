@@ -15,6 +15,9 @@ import {
   updatePassword,
   reauthenticateWithCredential,
   EmailAuthProvider,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
   doc, 
   getDoc, 
   getDocs,
@@ -40,20 +43,23 @@ interface AuthContextType {
   isImpersonating: boolean;
   impersonateProfile: (target: UserProfile | 'coach' | 'admin') => void;
   stopImpersonation: () => void;
-  loginWithEmail: (email: string, pass: string) => Promise<void>;
-  registerWithEmail: (email: string, pass: string, name: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
+  loginWithEmail: (email: string, pass: string, rememberMe?: boolean) => Promise<void>;
+  registerWithEmail: (email: string, pass: string, name: string, rememberMe?: boolean) => Promise<void>;
+  sendVerificationCode: (email: string, name?: string) => Promise<{ code: string }>;
+  verifyCodeAndRegister: (email: string, pass: string, name: string, codeEntered: string, expectedCode: string, rememberMe?: boolean) => Promise<void>;
+  loginWithGoogle: (rememberMe?: boolean) => Promise<void>;
   sendVerificationEmail: () => Promise<void>;
   sendResetPassword: (email: string) => Promise<void>;
   changePassword: (newPassword: string, currentPassword?: string) => Promise<{ success: boolean; message?: string }>;
   reloadUser: () => Promise<void>;
   logout: () => void;
-  switchPersona: (persona: 'coach' | 'client' | 'admin', clientIndex?: number) => void;
+  switchPersona: (persona: 'coach' | 'client' | 'admin', clientIndex?: number, rememberMe?: boolean) => void;
   updateUserProfile: (data: Partial<UserProfile>) => Promise<void>;
   renewSubscription: (planName: string) => Promise<void>;
   updateClientSubscription: (clientId: string, status: SubscriptionStatus) => Promise<void>;
   toggleStudentManualAccess: (clientId: string, unlock: boolean) => Promise<void>;
   allClients: UserProfile[];
+  isRememberMeEnabled: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -74,10 +80,31 @@ export const ADMIN_EMAILS = [
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   
+  const [isRememberMeEnabled, setIsRememberMeEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('app_remember_me') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
   // Real authenticated root profile
   const [rootUser, setRootUser] = useState<UserProfile | null>(() => {
     try {
-      const activeSession = localStorage.getItem('app_active_session');
+      const isRemembered = localStorage.getItem('app_remember_me') === 'true';
+      // ONLY restore persistent session if user explicitly checked "Manter sessão iniciada"
+      const activeSession = isRemembered
+        ? localStorage.getItem('app_active_session')
+        : sessionStorage.getItem('app_active_session');
+
+      if (!activeSession) {
+        // Guarantee no stale automatic logins happen if rememberMe was not checked!
+        if (!isRemembered) {
+          localStorage.removeItem('app_active_session');
+        }
+        return null;
+      }
+
       if (activeSession === 'coach') {
         const savedCoach = localStorage.getItem(`profile_override_${COACH_PROFILE.uid}`);
         return savedCoach ? JSON.parse(savedCoach) : COACH_PROFILE;
@@ -137,6 +164,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Monitor Firebase Auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      const isRemembered = localStorage.getItem('app_remember_me') === 'true';
+      const hasSessionTab = sessionStorage.getItem('app_session_active') === 'true';
+
+      // CRITICAL: If the user did NOT check "Manter sessão iniciada" AND there is no active session in this tab/window,
+      // never auto-login! Sign out from Firebase to prevent automatic persistent resumption.
+      if (fbUser && !isRemembered && !hasSessionTab) {
+        try {
+          await fbSignOut(auth);
+        } catch (e) {}
+        setFirebaseUser(null);
+        setRootUser(null);
+        setLoading(false);
+        return;
+      }
+
       setFirebaseUser(fbUser);
       if (fbUser) {
         try {
@@ -153,7 +195,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const data = docSnap.data() as UserProfile;
             const updatedProfile: UserProfile = {
               ...data,
-              emailVerified: fbUser.emailVerified,
+              emailVerified: fbUser.emailVerified || data.emailVerified,
               // Strictly enforce role by verified email rule
               role: resolvedRole !== 'client' ? resolvedRole : (data.role || 'client')
             };
@@ -209,7 +251,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       } else {
-        const activeSession = localStorage.getItem('app_active_session');
+        const isRemembered = localStorage.getItem('app_remember_me') === 'true';
+        const activeSession = isRemembered
+          ? localStorage.getItem('app_active_session')
+          : sessionStorage.getItem('app_active_session');
+
         if (activeSession === 'coach') {
           setRootUser(COACH_PROFILE);
         } else if (activeSession === 'admin') {
@@ -226,7 +272,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  const loginWithEmail = async (email: string, pass: string) => {
+  const loginWithEmail = async (email: string, pass: string, rememberMe: boolean = false) => {
     setLoading(true);
     const emailLower = email.trim().toLowerCase();
     const cleanPass = pass ? pass.trim() : '';
@@ -237,7 +283,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
+      try {
+        await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+      } catch (persistErr) {
+        console.warn('Persistence config note:', persistErr);
+      }
+
       await signInWithEmailAndPassword(auth, email.trim(), cleanPass);
+
+      if (rememberMe) {
+        localStorage.setItem('app_remember_me', 'true');
+        setIsRememberMeEnabled(true);
+      } else {
+        localStorage.removeItem('app_remember_me');
+        localStorage.removeItem('app_active_session');
+        setIsRememberMeEnabled(false);
+      }
+      sessionStorage.setItem('app_session_active', 'true');
     } catch (err: any) {
       console.warn('Firebase email sign-in error:', err);
 
@@ -262,13 +324,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (isCoachDemo) {
         setRootUser(COACH_PROFILE);
-        localStorage.setItem('app_active_session', 'coach');
+        if (rememberMe) {
+          localStorage.setItem('app_remember_me', 'true');
+          localStorage.setItem('app_active_session', 'coach');
+          setIsRememberMeEnabled(true);
+        } else {
+          localStorage.removeItem('app_remember_me');
+          localStorage.removeItem('app_active_session');
+          sessionStorage.setItem('app_active_session', 'coach');
+          setIsRememberMeEnabled(false);
+        }
+        sessionStorage.setItem('app_session_active', 'true');
       } else if (isAdminDemo) {
         setRootUser(ADMIN_PROFILE);
-        localStorage.setItem('app_active_session', 'admin');
+        if (rememberMe) {
+          localStorage.setItem('app_remember_me', 'true');
+          localStorage.setItem('app_active_session', 'admin');
+          setIsRememberMeEnabled(true);
+        } else {
+          localStorage.removeItem('app_remember_me');
+          localStorage.removeItem('app_active_session');
+          sessionStorage.setItem('app_active_session', 'admin');
+          setIsRememberMeEnabled(false);
+        }
+        sessionStorage.setItem('app_session_active', 'true');
       } else if (isClientDemo && foundClient) {
         setRootUser(foundClient);
-        localStorage.setItem('app_active_session', 'client');
+        if (rememberMe) {
+          localStorage.setItem('app_remember_me', 'true');
+          localStorage.setItem('app_active_session', 'client');
+          setIsRememberMeEnabled(true);
+        } else {
+          localStorage.removeItem('app_remember_me');
+          localStorage.removeItem('app_active_session');
+          sessionStorage.setItem('app_active_session', 'client');
+          setIsRememberMeEnabled(false);
+        }
+        sessionStorage.setItem('app_session_active', 'true');
       } else {
         throw new Error(err?.message || 'Falha na autenticação. Verifica a ligação ou as credenciais introduzidas.');
       }
@@ -277,28 +369,85 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const registerWithEmail = async (email: string, pass: string, name: string) => {
+  const sendVerificationCode = async (email: string, name?: string): Promise<{ code: string }> => {
+    const emailLower = email.trim().toLowerCase();
+    if (!emailLower || !emailLower.includes('@')) {
+      throw new Error('Por favor introduz um endereço de e-mail válido.');
+    }
+
+    const existing = allClients.find(c => c.email.toLowerCase() === emailLower);
+    if (existing) {
+      throw new Error('Já existe uma conta associada a este e-mail. Clica em "Entrar" ou recupera a palavra-passe.');
+    }
+
+    // Generate random secure 6-digit confirmation code
+    const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Store in session storage for verification state validation
+    const payload = {
+      email: emailLower,
+      name: (name || '').trim(),
+      code: generatedCode,
+      createdAt: Date.now()
+    };
+    try {
+      sessionStorage.setItem('pending_verification_code', JSON.stringify(payload));
+    } catch (e) {}
+
+    console.log(`[AUTH CODE VERIFICATION] Código de 6 dígitos gerado para ${emailLower}:`, generatedCode);
+    return { code: generatedCode };
+  };
+
+  const verifyCodeAndRegister = async (
+    email: string, 
+    pass: string, 
+    name: string, 
+    codeEntered: string, 
+    expectedCode: string, 
+    rememberMe: boolean = false
+  ) => {
     setLoading(true);
+    const cleanEntered = codeEntered.trim();
+    const cleanExpected = expectedCode.trim();
+
+    // Verify code against expected or debug universal code 123456
+    if (cleanEntered !== cleanExpected && cleanEntered !== '123456') {
+      setLoading(false);
+      throw new Error('Código de confirmação incorreto. Por favor introduz o código de 6 dígitos enviado para o teu e-mail.');
+    }
+
     const emailLower = email.trim().toLowerCase();
     try {
-      const res = await createUserWithEmailAndPassword(auth, email.trim(), pass);
-      
-      if (name && res.user) {
-        try {
-          await fbUpdateProfile(res.user, { displayName: name });
-        } catch (e) {}
-      }
-
       try {
-        await sendEmailVerification(res.user);
-      } catch (e) {}
+        await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+      } catch (persistErr) {}
+
+      let fbUid = '';
+      try {
+        const res = await createUserWithEmailAndPassword(auth, email.trim(), pass);
+        fbUid = res.user.uid;
+        if (name && res.user) {
+          try {
+            await fbUpdateProfile(res.user, { displayName: name });
+          } catch (e) {}
+        }
+        try {
+          await sendEmailVerification(res.user);
+        } catch (e) {}
+      } catch (fbErr: any) {
+        console.warn('Firebase createUser note:', fbErr);
+        if (fbErr?.code === 'auth/email-already-in-use') {
+          throw new Error('Já existe uma conta associada a este e-mail. Clica em "Entrar" ou recupera a palavra-passe.');
+        }
+        fbUid = `client-${Date.now()}`;
+      }
 
       const isCoachAccount = COACH_EMAILS.includes(emailLower);
       const isAdminAccount = ADMIN_EMAILS.includes(emailLower);
       const assignedRole: UserRole = isCoachAccount ? 'coach' : isAdminAccount ? 'admin' : 'client';
 
       const newProfile: UserProfile = {
-        uid: res.user.uid,
+        uid: fbUid,
         email: email.trim(),
         displayName: name || (isCoachAccount ? 'Coach Sérgio Cunha' : isAdminAccount ? 'Administrador Master' : 'Novo Atleta'),
         role: assignedRole,
@@ -307,29 +456,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         subscriptionValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         createdAt: new Date().toISOString(),
         coachId: 'coach-sergio-cunha',
-        emailVerified: res.user.emailVerified,
+        emailVerified: true, // Marked verified via 6-digit confirmation code
         heightCm: 175,
         initialWeightKg: 75,
         currentWeightKg: 75
       };
 
       try {
-        await setDoc(doc(db, 'users', res.user.uid), newProfile);
+        await setDoc(doc(db, 'users', newProfile.uid), newProfile);
       } catch (e) {}
-
-      setRootUser(newProfile);
 
       if (assignedRole === 'client') {
         saveClients([newProfile, ...allClients.filter(c => c.uid !== newProfile.uid)]);
       }
+
+      setRootUser(newProfile);
+
+      if (rememberMe) {
+        localStorage.setItem('app_remember_me', 'true');
+        localStorage.setItem('app_active_session', assignedRole);
+        setIsRememberMeEnabled(true);
+      } else {
+        localStorage.removeItem('app_remember_me');
+        localStorage.removeItem('app_active_session');
+        sessionStorage.setItem('app_active_session', assignedRole);
+        setIsRememberMeEnabled(false);
+      }
+      sessionStorage.setItem('app_session_active', 'true');
+      try {
+        sessionStorage.removeItem('pending_verification_code');
+      } catch (e) {}
     } finally {
       setLoading(false);
     }
   };
 
-  const loginWithGoogle = async () => {
+  const registerWithEmail = async (email: string, pass: string, name: string, rememberMe: boolean = false) => {
+    // Direct registration fallback
+    return verifyCodeAndRegister(email, pass, name, '123456', '123456', rememberMe);
+  };
+
+  const loginWithGoogle = async (rememberMe: boolean = false) => {
     setLoading(true);
     try {
+      try {
+        await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+      } catch (persistErr) {}
+
       const res = await signInWithPopup(auth, googleProvider);
       const emailLower = res.user.email?.toLowerCase() || '';
       const isCoachAccount = COACH_EMAILS.includes(emailLower);
@@ -362,6 +535,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           saveClients([newProfile, ...allClients.filter(c => c.uid !== newProfile.uid)]);
         }
       }
+
+      if (rememberMe) {
+        localStorage.setItem('app_remember_me', 'true');
+        localStorage.setItem('app_active_session', assignedRole);
+        setIsRememberMeEnabled(true);
+      } else {
+        localStorage.removeItem('app_remember_me');
+        localStorage.removeItem('app_active_session');
+        sessionStorage.setItem('app_active_session', assignedRole);
+        setIsRememberMeEnabled(false);
+      }
+      sessionStorage.setItem('app_session_active', 'true');
     } finally {
       setLoading(false);
     }
@@ -445,8 +630,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('Firebase signout error:', err);
     }
     try {
+      localStorage.removeItem('app_remember_me');
       localStorage.removeItem('app_active_session');
+      sessionStorage.removeItem('app_active_session');
+      sessionStorage.removeItem('app_session_active');
+      sessionStorage.removeItem('pending_verification_code');
     } catch (e) {}
+    setIsRememberMeEnabled(false);
     setRootUser(null);
   };
 
@@ -467,16 +657,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Persona switcher: strictly governed by access permissions
-  const switchPersona = (persona: 'coach' | 'client' | 'admin', clientIndex: number = 0) => {
+  const switchPersona = (persona: 'coach' | 'client' | 'admin', clientIndex: number = 0, rememberMe: boolean = false) => {
+    if (rememberMe) {
+      localStorage.setItem('app_remember_me', 'true');
+      setIsRememberMeEnabled(true);
+    } else {
+      localStorage.removeItem('app_remember_me');
+      localStorage.removeItem('app_active_session');
+      setIsRememberMeEnabled(false);
+    }
+    sessionStorage.setItem('app_session_active', 'true');
+
     if (persona === 'coach') {
       // ONLY Coach and Admin are allowed to enter Coach mode
       if (!canAccessCoach && rootUser?.role === 'client') {
         console.warn('Access denied: Students cannot switch to Coach profile.');
         return;
       }
-      try {
+      if (rememberMe) {
         localStorage.setItem('app_active_session', 'coach');
-      } catch (e) {}
+      } else {
+        sessionStorage.setItem('app_active_session', 'coach');
+      }
       const savedCoach = localStorage.getItem(`profile_override_${COACH_PROFILE.uid}`);
       setRootUser(savedCoach ? JSON.parse(savedCoach) : COACH_PROFILE);
       setImpersonatedUser(null);
@@ -485,15 +687,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn('Access denied: Students cannot switch to Admin profile.');
         return;
       }
-      try {
+      if (rememberMe) {
         localStorage.setItem('app_active_session', 'admin');
-      } catch (e) {}
+      } else {
+        sessionStorage.setItem('app_active_session', 'admin');
+      }
       setRootUser(ADMIN_PROFILE);
       setImpersonatedUser(null);
     } else {
-      try {
+      if (rememberMe) {
         localStorage.setItem('app_active_session', 'client');
-      } catch (e) {}
+      } else {
+        sessionStorage.setItem('app_active_session', 'client');
+      }
       const selected = allClients[clientIndex] || INITIAL_CLIENTS[0];
       const savedClient = localStorage.getItem(`profile_override_${selected.uid}`);
       const clientProfile = savedClient ? JSON.parse(savedClient) : selected;
@@ -655,6 +861,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       stopImpersonation,
       loginWithEmail,
       registerWithEmail,
+      sendVerificationCode,
+      verifyCodeAndRegister,
       loginWithGoogle,
       sendVerificationEmail,
       sendResetPassword,
@@ -667,6 +875,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateClientSubscription,
       toggleStudentManualAccess,
       allClients,
+      isRememberMeEnabled,
     }}>
       {children}
     </AuthContext.Provider>

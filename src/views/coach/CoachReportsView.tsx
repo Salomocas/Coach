@@ -10,6 +10,8 @@ import {
   X, 
   Sparkles, 
   ChevronDown, 
+  ChevronLeft,
+  ChevronRight,
   ArrowUpRight, 
   ArrowDownRight, 
   Ruler, 
@@ -22,7 +24,9 @@ import {
   Eye,
   Apple,
   Clock,
-  MessageSquare
+  MessageSquare,
+  Edit2,
+  RotateCcw
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -56,14 +60,19 @@ export const CoachReportsView: React.FC = () => {
     selectedAthleteId, 
     setSelectedAthleteId, 
     addProgressLog, 
+    updateProgressLog,
     deleteProgressLog,
     customMetrics,
     addCustomMetric,
+    updateCustomMetric,
     deleteCustomMetric,
     nutritionPlans,
     mealAdherenceLogs,
     sendMessage
   } = useData();
+
+  // Division between existing report (physical evolution) and diet compliance
+  const [reportTab, setReportTab] = useState<'evolution' | 'diet'>('evolution');
 
   // Multi-selection of metrics to plot/cross:
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['weight', 'bodyFat']);
@@ -73,7 +82,11 @@ export const CoachReportsView: React.FC = () => {
   const [endDate, setEndDate] = useState<string>('');
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
+
   const [isCustomMetricModalOpen, setIsCustomMetricModalOpen] = useState(false);
+  const [editingMetric, setEditingMetric] = useState<CustomMetricDefinition | null>(null);
+
   const [feedback, setFeedback] = useState<string | null>(null);
 
   // New assessment form state
@@ -339,7 +352,7 @@ export const CoachReportsView: React.FC = () => {
     };
   }, [sortedLogs, currentClient]);
 
-  // Handle Save New Assessment
+  // Handle Save / Update Assessment
   const handleSaveAssessment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentClient) return;
@@ -375,11 +388,17 @@ export const CoachReportsView: React.FC = () => {
       notes: newNotes.trim() || undefined
     };
 
-    await addProgressLog(logData);
-    setFeedback(`Nova avaliação física registada com sucesso para ${currentClient.displayName}!`);
+    if (editingLogId) {
+      await updateProgressLog(editingLogId, logData);
+      setFeedback(`Avaliação física de ${newDate} atualizada com sucesso para ${currentClient.displayName}!`);
+    } else {
+      await addProgressLog(logData);
+      setFeedback(`Nova avaliação física registada com sucesso para ${currentClient.displayName}!`);
+    }
     setTimeout(() => setFeedback(null), 4000);
 
     // Reset fields
+    setEditingLogId(null);
     setNewWeight('');
     setNewBodyFat('');
     setNewMuscleMass('');
@@ -393,29 +412,95 @@ export const CoachReportsView: React.FC = () => {
     setIsAddModalOpen(false);
   };
 
-  // Handle Save Custom Metric Definition
+  const handleOpenEditLog = (log: ProgressLog) => {
+    setEditingLogId(log.id);
+    setNewDate(log.date);
+    setNewWeight(log.weightKg.toString());
+    setNewBodyFat(log.bodyFatPercent !== undefined ? log.bodyFatPercent.toString() : '');
+    setNewMuscleMass(log.muscleMassKg !== undefined ? log.muscleMassKg.toString() : '');
+    setNewWaist(log.waistCm !== undefined ? log.waistCm.toString() : '');
+    setNewChest(log.chestCm !== undefined ? log.chestCm.toString() : '');
+    setNewArm(log.armCm !== undefined ? log.armCm.toString() : '');
+    setNewHips(log.hipsCm !== undefined ? log.hipsCm.toString() : '');
+    setNewThigh(log.thighCm !== undefined ? log.thighCm.toString() : '');
+    setNewNotes(log.notes || '');
+
+    const customVals: Record<string, string> = {};
+    if (log.customValues) {
+      Object.entries(log.customValues).forEach(([k, v]) => {
+        customVals[k] = v.toString();
+      });
+    }
+    setNewCustomValues(customVals);
+    setIsAddModalOpen(true);
+  };
+
+  const handleOpenCreateLog = () => {
+    setEditingLogId(null);
+    setNewDate(new Date().toISOString().split('T')[0]);
+    setNewWeight('');
+    setNewBodyFat('');
+    setNewMuscleMass('');
+    setNewWaist('');
+    setNewChest('');
+    setNewArm('');
+    setNewHips('');
+    setNewThigh('');
+    setNewCustomValues({});
+    setNewNotes('');
+    setIsAddModalOpen(true);
+  };
+
+  // Handle Save / Update Custom Metric Definition
   const handleSaveCustomMetric = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentClient || !newMetricName.trim()) return;
 
-    const metricId = 'metric-' + Date.now();
-    await addCustomMetric({
-      clientId: currentClient.uid,
-      name: newMetricName.trim(),
-      unit: newMetricUnit.trim() || 'cm',
-      color: newMetricColor,
-      description: newMetricDesc.trim() || undefined
-    });
+    if (editingMetric) {
+      await updateCustomMetric(editingMetric.id, {
+        name: newMetricName.trim(),
+        unit: newMetricUnit.trim() || 'cm',
+        color: newMetricColor,
+        description: newMetricDesc.trim() || undefined
+      });
+      setFeedback(`Métrica "${newMetricName.trim()}" atualizada com sucesso!`);
+      setEditingMetric(null);
+    } else {
+      const metricId = 'metric-' + Date.now();
+      await addCustomMetric({
+        clientId: currentClient.uid,
+        name: newMetricName.trim(),
+        unit: newMetricUnit.trim() || 'cm',
+        color: newMetricColor,
+        description: newMetricDesc.trim() || undefined
+      });
 
-    // Auto-select so its curve is immediately visible
-    setSelectedMetrics(prev => [...prev, metricId]);
+      // Auto-select so its curve is immediately visible
+      setSelectedMetrics(prev => [...prev, metricId]);
+      setFeedback(`Nova métrica "${newMetricName.trim()}" criada para ${currentClient.displayName}!`);
+    }
 
-    setFeedback(`Nova métrica "${newMetricName.trim()}" criada para ${currentClient.displayName}!`);
     setTimeout(() => setFeedback(null), 4000);
 
     setNewMetricName('');
     setNewMetricDesc('');
     setIsCustomMetricModalOpen(false);
+  };
+
+  const handleStartEditMetric = (metric: CustomMetricDefinition) => {
+    setEditingMetric(metric);
+    setNewMetricName(metric.name);
+    setNewMetricUnit(metric.unit);
+    setNewMetricColor(metric.color);
+    setNewMetricDesc(metric.description || '');
+  };
+
+  const handleCancelEditMetric = () => {
+    setEditingMetric(null);
+    setNewMetricName('');
+    setNewMetricUnit('cm');
+    setNewMetricColor('#f97316');
+    setNewMetricDesc('');
   };
 
   // Handle Delete Custom Metric
@@ -502,26 +587,83 @@ export const CoachReportsView: React.FC = () => {
             </div>
           </div>
 
-          {/* Action Buttons: Definir Métricas & Registar Avaliação */}
+          {/* Action Buttons: Contextual by Tab */}
           <div className="flex items-center gap-2 self-end sm:self-auto sm:mt-4">
-            <button
-              onClick={() => setIsCustomMetricModalOpen(true)}
-              className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-slate-800 dark:text-white font-bold text-xs transition flex items-center gap-1.5 cursor-pointer shadow-sm"
-              title="Definir métricas específicas para este aluno (ex: Antebraço, Supino, etc.)"
-            >
-              <Sliders className="w-4 h-4 text-amber-500" />
-              <span>Métricas do Aluno</span>
-            </button>
+            {reportTab === 'evolution' ? (
+              <>
+                <button
+                  onClick={() => {
+                    handleCancelEditMetric();
+                    setIsCustomMetricModalOpen(true);
+                  }}
+                  className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-slate-800 dark:text-white font-bold text-xs transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  title="Gerir, editar ou apagar métricas específicas para este aluno"
+                >
+                  <Sliders className="w-4 h-4 text-amber-500" />
+                  <span>Métricas do Aluno</span>
+                </button>
 
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="px-4 py-2.5 rounded-xl bg-amber-500 text-black font-extrabold text-xs hover:bg-amber-400 transition flex items-center gap-2 shadow-md shadow-amber-500/10 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Registar Avaliação</span>
-            </button>
+                <button
+                  onClick={handleOpenCreateLog}
+                  className="px-4 py-2.5 rounded-xl bg-amber-500 text-black font-extrabold text-xs hover:bg-amber-400 transition flex items-center gap-2 shadow-md shadow-amber-500/10 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Registar Avaliação</span>
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => {
+                  setMenuFilterOnlyMissed(false);
+                  setIsMenuModalOpen(true);
+                }}
+                className="px-4 py-2.5 rounded-xl bg-amber-500 text-black font-extrabold text-xs hover:bg-amber-400 transition flex items-center gap-2 shadow-md shadow-amber-500/10 cursor-pointer"
+              >
+                <Eye className="w-4 h-4" />
+                <span>Auditar Cardápio Semanal</span>
+              </button>
+            )}
           </div>
         </div>
+      </div>
+
+      {/* Sub-Navigation: Division between Physical Evolution and Diet Adherence */}
+      <div className="flex border-b border-slate-200 dark:border-neutral-800 gap-1 sm:gap-2 overflow-x-auto scrollbar-none pb-px">
+        <button
+          type="button"
+          onClick={() => setReportTab('evolution')}
+          className={`flex items-center gap-2.5 px-4 sm:px-5 py-3 text-xs sm:text-sm font-black border-b-2 transition whitespace-nowrap cursor-pointer ${
+            reportTab === 'evolution'
+              ? 'border-amber-500 text-amber-500'
+              : 'border-transparent text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <TrendingUp className="w-4 h-4" />
+          <span>Avaliações & Evolução Física</span>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400">
+            {stats.totalAssessments} {stats.totalAssessments === 1 ? 'registo' : 'registos'}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setReportTab('diet')}
+          className={`flex items-center gap-2.5 px-4 sm:px-5 py-3 text-xs sm:text-sm font-black border-b-2 transition whitespace-nowrap cursor-pointer ${
+            reportTab === 'diet'
+              ? 'border-amber-500 text-amber-500'
+              : 'border-transparent text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <Utensils className="w-4 h-4" />
+          <span>Cumprimento da Ementa & Dieta</span>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+            dietStats.missedCount > 0
+              ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 font-black'
+              : 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-black'
+          }`}>
+            {dietStats.missedCount > 0 ? `${dietStats.missedCount} faltas` : `${dietStats.complianceRate}%`}
+          </span>
+        </button>
       </div>
 
       {/* Selected Athlete Banner */}
@@ -573,578 +715,600 @@ export const CoachReportsView: React.FC = () => {
         </div>
       )}
 
-      {/* KPI Cards Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Peso */}
-        <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 dark:text-neutral-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Peso Corporal</span>
-            <Scale className="w-4 h-4 text-amber-500" />
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">
-              {stats.latestWeight}
-            </span>
-            <span className="text-xs font-bold text-slate-400">kg</span>
-          </div>
-          <div className="mt-2 flex items-center gap-1 text-xs font-bold">
-            {stats.weightDiff < 0 ? (
-              <span className="text-emerald-500 flex items-center">
-                <ArrowDownRight className="w-3.5 h-3.5" />
-                {Math.abs(stats.weightDiff)} kg
-              </span>
-            ) : stats.weightDiff > 0 ? (
-              <span className="text-amber-500 flex items-center">
-                <ArrowUpRight className="w-3.5 h-3.5" />
-                +{stats.weightDiff} kg
-              </span>
-            ) : (
-              <span className="text-slate-400">Estável</span>
-            )}
-            <span className="text-[11px] text-slate-400 dark:text-neutral-500 font-normal">desde a 1ª avaliação</span>
-          </div>
-        </div>
-
-        {/* Card 2: % Gordura */}
-        <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 dark:text-neutral-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">% Gordura (BF)</span>
-            <TrendingUp className="w-4 h-4 text-cyan-500" />
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">
-              {stats.latestBodyFat || 16.5}
-            </span>
-            <span className="text-xs font-bold text-slate-400">%</span>
-          </div>
-          <div className="mt-2 flex items-center gap-1 text-xs font-bold">
-            {stats.bodyFatDiff < 0 ? (
-              <span className="text-emerald-500 flex items-center">
-                <ArrowDownRight className="w-3.5 h-3.5" />
-                {Math.abs(stats.bodyFatDiff)}%
-              </span>
-            ) : stats.bodyFatDiff > 0 ? (
-              <span className="text-red-500 flex items-center">
-                <ArrowUpRight className="w-3.5 h-3.5" />
-                +{stats.bodyFatDiff}%
-              </span>
-            ) : (
-              <span className="text-slate-400">Estável</span>
-            )}
-            <span className="text-[11px] text-slate-400 dark:text-neutral-500 font-normal">evolução</span>
-          </div>
-        </div>
-
-        {/* Card 3: Massa Muscular */}
-        <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 dark:text-neutral-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Massa Muscular</span>
-            <Activity className="w-4 h-4 text-emerald-500" />
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">
-              {stats.latestMuscleMass}
-            </span>
-            <span className="text-xs font-bold text-slate-400">kg</span>
-          </div>
-          <p className="mt-2 text-[11px] text-slate-400 dark:text-neutral-500">
-            Tónus & massa magra ativa
-          </p>
-        </div>
-
-        {/* Card 4: IMC */}
-        <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 dark:text-neutral-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">IMC Atual</span>
-            <Ruler className="w-4 h-4 text-purple-500" />
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">
-              {stats.bmi}
-            </span>
-          </div>
-          <div className="mt-2">
-            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${getBmiBadge(parseFloat(stats.bmi)).color}`}>
-              {getBmiBadge(parseFloat(stats.bmi)).label}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Diet Compliance Summary Card (Esteticamente separado, sem encavalitar informação) */}
-      <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-neutral-800/80">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold shrink-0">
-              <Utensils className="w-5 h-5" />
+      {/* Tab 1: Avaliações & Evolução Física */}
+      {reportTab === 'evolution' && (
+        <div className="space-y-6">
+          {/* KPI Cards Summary */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Card 1: Peso */}
+            <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center justify-between text-slate-400 dark:text-neutral-500 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider">Peso Corporal</span>
+                <Scale className="w-4 h-4 text-amber-500" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">
+                  {stats.latestWeight}
+                </span>
+                <span className="text-xs font-bold text-slate-400">kg</span>
+              </div>
+              <div className="mt-2 flex items-center gap-1 text-xs font-bold">
+                {stats.weightDiff < 0 ? (
+                  <span className="text-emerald-500 flex items-center">
+                    <ArrowDownRight className="w-3.5 h-3.5" />
+                    {Math.abs(stats.weightDiff)} kg
+                  </span>
+                ) : stats.weightDiff > 0 ? (
+                  <span className="text-amber-500 flex items-center">
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                    +{stats.weightDiff} kg
+                  </span>
+                ) : (
+                  <span className="text-slate-400">Estável</span>
+                )}
+                <span className="text-[11px] text-slate-400 dark:text-neutral-500 font-normal">desde a 1ª avaliação</span>
+              </div>
             </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
-                  Resumo de Cumprimento da Dieta
-                </h3>
-                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
-                  dietStats.complianceRate >= 85
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                    : dietStats.complianceRate >= 70
-                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                    : 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
-                }`}>
-                  {dietStats.complianceRate >= 85 ? 'Excelente Adesão' : dietStats.complianceRate >= 70 ? 'Atenção às Faltas' : 'Adesão Crítica'}
+
+            {/* Card 2: % Gordura */}
+            <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center justify-between text-slate-400 dark:text-neutral-500 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider">% Gordura (BF)</span>
+                <TrendingUp className="w-4 h-4 text-cyan-500" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">
+                  {stats.latestBodyFat || 16.5}
+                </span>
+                <span className="text-xs font-bold text-slate-400">%</span>
+              </div>
+              <div className="mt-2 flex items-center gap-1 text-xs font-bold">
+                {stats.bodyFatDiff < 0 ? (
+                  <span className="text-emerald-500 flex items-center">
+                    <ArrowDownRight className="w-3.5 h-3.5" />
+                    {Math.abs(stats.bodyFatDiff)}%
+                  </span>
+                ) : stats.bodyFatDiff > 0 ? (
+                  <span className="text-red-500 flex items-center">
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                    +{stats.bodyFatDiff}%
+                  </span>
+                ) : (
+                  <span className="text-slate-400">Estável</span>
+                )}
+                <span className="text-[11px] text-slate-400 dark:text-neutral-500 font-normal">evolução</span>
+              </div>
+            </div>
+
+            {/* Card 3: Massa Muscular */}
+            <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center justify-between text-slate-400 dark:text-neutral-500 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider">Massa Muscular</span>
+                <Activity className="w-4 h-4 text-emerald-500" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">
+                  {stats.latestMuscleMass}
+                </span>
+                <span className="text-xs font-bold text-slate-400">kg</span>
+              </div>
+              <p className="mt-2 text-[11px] text-slate-400 dark:text-neutral-500">
+                Tónus & massa magra ativa
+              </p>
+            </div>
+
+            {/* Card 4: IMC */}
+            <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center justify-between text-slate-400 dark:text-neutral-500 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider">IMC Atual</span>
+                <Ruler className="w-4 h-4 text-purple-500" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">
+                  {stats.bmi}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 dark:text-neutral-500 mt-0.5">
-                Plano ativo: <strong className="text-slate-700 dark:text-neutral-300">{currentNutritionPlan?.title || 'Ementa Semanal'}</strong> (~{dietStats.dailyCaloriesTarget} kcal/dia)
-              </p>
+              <div className="mt-2">
+                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${getBmiBadge(parseFloat(stats.bmi)).color}`}>
+                  {getBmiBadge(parseFloat(stats.bmi)).label}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Action button to inspect weekly menu */}
-          <button
-            onClick={() => {
-              setMenuFilterOnlyMissed(false);
-              setIsMenuModalOpen(true);
-            }}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm ${
-              dietStats.missedCount > 0
-                ? 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30'
-                : 'bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-slate-800 dark:text-white'
-            }`}
-            title="Abrir cardápio semanal para auditar refeições e motivos das faltas"
-          >
-            <Eye className="w-4 h-4 text-amber-500" />
-            <span>Visualizar Cardápio Semanal</span>
-            {dietStats.missedCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-black text-[10px] font-black">
-                {dietStats.missedCount} {dietStats.missedCount === 1 ? 'falta' : 'faltas'}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* 3 Main Compliance Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {/* Box 1: Compliance Rate */}
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-950/60 border border-slate-100 dark:border-neutral-800/80 flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center font-black text-sm shrink-0 font-mono">
-              {dietStats.complianceRate}%
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-neutral-500 block">Taxa de Cumprimento</span>
-              <span className="text-sm font-extrabold text-slate-900 dark:text-white">
-                {dietStats.completedCount} de {dietStats.totalScheduled} refeições
-              </span>
-            </div>
-          </div>
-
-          {/* Box 2: Missed meals alert */}
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-950/60 border border-slate-100 dark:border-neutral-800/80 flex items-center gap-3.5">
-            <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-black text-sm shrink-0 ${
-              dietStats.missedCount > 0 ? 'bg-amber-500/15 text-amber-500' : 'bg-emerald-500/15 text-emerald-500'
-            }`}>
-              {dietStats.missedCount > 0 ? <AlertTriangle className="w-5 h-5 text-amber-500" /> : <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-neutral-500 block">Faltas Registadas</span>
-              <span className={`text-sm font-extrabold ${dietStats.missedCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                {dietStats.missedCount === 0 ? '0 Faltas • 100% rigor' : `${dietStats.missedCount} ${dietStats.missedCount === 1 ? 'refeição saltada' : 'refeições saltadas'}`}
-              </span>
-            </div>
-          </div>
-
-          {/* Box 3: Calories Average */}
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-950/60 border border-slate-100 dark:border-neutral-800/80 flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-blue-500/15 text-blue-500 flex items-center justify-center font-black text-sm shrink-0">
-              <Apple className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-neutral-500 block">Calorias Médias</span>
-              <span className="text-sm font-extrabold text-slate-900 dark:text-white">
-                ~{dietStats.complianceRate >= 85 ? dietStats.dailyCaloriesTarget - 60 : dietStats.dailyCaloriesTarget - 240} kcal
-                <span className="text-xs text-slate-400 font-normal ml-1">/ {dietStats.dailyCaloriesTarget} alvo</span>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* 7 Days of the Week Adherence Tracker (Horizontal clean bar) */}
-        <div className="pt-1">
-          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-wider mb-2">
-            <span>Cumprimento por Dia da Semana:</span>
-            <span>{dietStats.daysData.filter(d => !d.hasMissed).length} de 7 dias sem faltas</span>
-          </div>
-
-          <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
-            {dietStats.daysData.map(d => {
-              return (
-                <div 
-                  key={d.dayIndex}
-                  onClick={() => {
-                    setSelectedMenuDayIndex(d.dayIndex);
-                    setMenuFilterOnlyMissed(false);
-                    setIsMenuModalOpen(true);
-                  }}
-                  className={`p-2 sm:p-2.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col justify-between ${
-                    d.hasMissed
-                      ? 'bg-amber-500/10 border-amber-500/40 text-amber-900 dark:text-amber-300 hover:bg-amber-500/20 shadow-sm ring-1 ring-amber-500/20'
-                      : 'bg-emerald-500/10 border-emerald-500/25 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-500/20'
-                  }`}
-                  title={`${d.fullDayName}: ${d.completedCount}/${d.totalExpected} refeições cumpridas.${d.hasMissed ? ` Falta registada: ${d.missedNames}. Clique para auditar cardápio deste dia.` : ' 100% cumprido!'}`}
-                >
-                  <div className="text-[10px] uppercase font-bold tracking-wider">{d.dayName}</div>
-                  
-                  <div className="my-1">
-                    {d.hasMissed ? (
-                      <div className="space-y-0.5">
-                        <span className="text-[9px] sm:text-[10px] font-black text-amber-700 dark:text-amber-400 bg-amber-500/20 px-1 sm:px-1.5 py-0.5 rounded inline-block">
-                          ⚠️ Falta
-                        </span>
-                        <div className="text-[9px] font-extrabold text-amber-800 dark:text-amber-200 truncate max-w-full font-sans" title={`Refeição saltada: ${d.missedNames}`}>
-                          {d.missedNames}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-0.5">
-                        <span className="text-[9px] sm:text-[10px] font-black text-emerald-700 dark:text-emerald-400 bg-emerald-500/20 px-1 sm:px-1.5 py-0.5 rounded inline-block">
-                          ✔️ 100%
-                        </span>
-                        <div className="text-[9px] text-emerald-600 dark:text-emerald-400 opacity-80 font-medium hidden sm:block">
-                          Completo
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="text-[9px] opacity-75 font-mono font-bold">
-                    {d.completedCount}/{d.totalExpected}
-                  </div>
+          {/* Graphical Evolution Section */}
+          <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
+            
+            {/* Graph Controls */}
+            <div className="space-y-3 border-b border-slate-100 dark:border-neutral-800/80 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                    <BarChart2 className="w-4 h-4 text-amber-500" />
+                    Evolução Gráfica no Tempo
+                  </h3>
+                  <p className="text-xs text-slate-400 dark:text-neutral-500">
+                    Clica em qualquer métrica para mostrar ou cruzar linhas no gráfico
+                  </p>
                 </div>
-              );
-            })}
-          </div>
-        </div>
 
-        {/* Explicit discrimination of which meals were missed */}
-        {dietStats.missedLogs.length > 0 ? (
-          <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-neutral-800/80">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-neutral-300">
-              <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
-                <AlertTriangle className="w-4 h-4" />
-                <span>Refeições Não Cumpridas nesta Semana ({dietStats.missedLogs.length} registadas):</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  // Pre-select first day with a miss
-                  const firstMissedDay = dietStats.daysData.find(d => d.hasMissed)?.dayIndex ?? 0;
-                  setSelectedMenuDayIndex(firstMissedDay);
-                  setMenuFilterOnlyMissed(true);
-                  setIsMenuModalOpen(true);
-                }}
-                className="text-amber-700 dark:text-amber-400 font-bold hover:underline text-[11px] cursor-pointer flex items-center gap-1"
-              >
-                <span>Auditar Todas no Cardápio</span>
-                <span>&rarr;</span>
-              </button>
-            </div>
+                {/* Metric multi-select buttons: standard + student custom metrics */}
+                <div className="flex items-center gap-1.5 flex-wrap self-start sm:self-auto">
+                  <span className="text-[11px] font-bold text-slate-400 mr-1 hidden sm:inline">Parâmetros:</span>
+                  {combinedMetricConfigs.map((m) => {
+                    const isSelected = selectedMetrics.includes(m.key);
+                    return (
+                      <button
+                        key={m.key}
+                        onClick={() => toggleMetric(m.key)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                          isSelected
+                            ? 'text-black font-extrabold ring-2 ring-black/20'
+                            : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                        style={isSelected ? { backgroundColor: m.color } : {}}
+                        title={isSelected ? `Ocultar linha de ${m.label}` : `Mostrar e cruzar linha de ${m.label}`}
+                      >
+                        <span 
+                          className={`w-2 h-2 rounded-full ${isSelected ? 'bg-black' : ''}`} 
+                          style={!isSelected ? { backgroundColor: m.color } : {}}
+                        />
+                        <span>{m.label} ({m.unit})</span>
+                        {m.isCustom && (
+                          <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${isSelected ? 'bg-black/20 text-black' : 'bg-slate-200 dark:bg-neutral-700 text-slate-500'}`}>
+                            aluno
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
-              {dietStats.missedLogs.map((missed, mIdx) => (
-                <div
-                  key={mIdx}
-                  onClick={() => {
-                    setSelectedMenuDayIndex(missed.dayIndex);
-                    setMenuFilterOnlyMissed(false);
-                    setIsMenuModalOpen(true);
-                  }}
-                  className="p-3 rounded-2xl bg-amber-500/10 dark:bg-amber-950/20 border border-amber-500/30 hover:border-amber-500/60 transition cursor-pointer shadow-sm group flex flex-col justify-between"
-                  title={`Clique para abrir o cardápio de ${missed.dayOfWeek}`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="text-[11px] font-bold text-slate-700 dark:text-neutral-300 flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                        {missed.dayOfWeek}
-                      </span>
-                      <span className="px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-red-600 dark:text-red-400 text-[10px] font-extrabold flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />
-                        {missed.mealName} ({missed.time})
-                      </span>
-                    </div>
-
-                    <div className="text-xs font-medium text-slate-800 dark:text-neutral-200 mt-1">
-                      <strong className="text-amber-700 dark:text-amber-400 block font-semibold text-[11px]">
-                        {missed.mealName} Saltado ({missed.calories} kcal • {missed.proteinG}g P)
-                      </strong>
-                      {missed.foods && missed.foods.length > 0 && (
-                        <p className="text-[11px] text-slate-500 dark:text-neutral-400 line-clamp-1 mt-0.5">
-                          Prescrito: {missed.foods.map((f: any) => `${f.item} (${f.quantity})`).join(', ')}
-                        </p>
-                      )}
-                    </div>
-
-                    {missed.missedReason && (
-                      <div className="mt-2 p-2 rounded-xl bg-white dark:bg-neutral-900 border border-amber-500/20 text-[11px] text-slate-600 dark:text-neutral-300">
-                        <span className="font-bold text-slate-700 dark:text-white block text-[10px] text-amber-600">
-                          Motivo reportado pelo aluno:
-                        </span>
-                        <span className="italic line-clamp-2">"{missed.missedReason}"</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-2.5 pt-2 border-t border-amber-500/20 flex items-center justify-between text-[11px] font-bold text-amber-700 dark:text-amber-400 group-hover:underline">
-                    <span>Ver no cardápio do dia</span>
-                    <span>&rarr;</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-            <span>Excelente consistência! O aluno não registou qualquer falta de refeição nesta semana (100% de adesão).</span>
-          </div>
-        )}
-      </div>
-
-      {/* Graphical Evolution Section */}
-      <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
-        
-        {/* Graph Controls */}
-        <div className="space-y-3 border-b border-slate-100 dark:border-neutral-800/80 pb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
-                <BarChart2 className="w-4 h-4 text-amber-500" />
-                Evolução Gráfica no Tempo
-              </h3>
-              <p className="text-xs text-slate-400 dark:text-neutral-500">
-                Clica em qualquer métrica para mostrar ou cruzar linhas no gráfico
-              </p>
-            </div>
-
-            {/* Metric multi-select buttons: standard + student custom metrics */}
-            <div className="flex items-center gap-1.5 flex-wrap self-start sm:self-auto">
-              <span className="text-[11px] font-bold text-slate-400 mr-1 hidden sm:inline">Parâmetros:</span>
-              {combinedMetricConfigs.map((m) => {
-                const isSelected = selectedMetrics.includes(m.key);
-                return (
+                  {/* Botão para definir nova métrica para este aluno */}
                   <button
-                    key={m.key}
-                    onClick={() => toggleMetric(m.key)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm ${
-                      isSelected
-                        ? 'text-black font-extrabold ring-2 ring-black/20'
-                        : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                    style={isSelected ? { backgroundColor: m.color } : {}}
-                    title={isSelected ? `Ocultar linha de ${m.label}` : `Mostrar e cruzar linha de ${m.label}`}
+                    onClick={() => {
+                      handleCancelEditMetric();
+                      setIsCustomMetricModalOpen(true);
+                    }}
+                    className="px-2.5 py-1.5 rounded-xl border border-dashed border-amber-500/50 hover:border-amber-500 text-amber-600 dark:text-amber-400 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                    title="Criar nova métrica específica para este aluno"
                   >
-                    <span 
-                      className={`w-2 h-2 rounded-full ${isSelected ? 'bg-black' : ''}`} 
-                      style={!isSelected ? { backgroundColor: m.color } : {}}
-                    />
-                    <span>{m.label} ({m.unit})</span>
-                    {m.isCustom && (
-                      <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${isSelected ? 'bg-black/20 text-black' : 'bg-slate-200 dark:bg-neutral-700 text-slate-500'}`}>
-                        aluno
-                      </span>
-                    )}
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Nova Métrica</span>
                   </button>
-                );
-              })}
+                </div>
+              </div>
 
-              {/* Botão para definir nova métrica para este aluno */}
+              {/* Time Range Selector: Puro 'De ... até ...' (SEM ATALHOS conforme solicitado) */}
+              <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800/80 flex-wrap">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-neutral-300 mr-2">
+                  <Calendar className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span>Intervalo:</span>
+                </div>
+
+                {/* De */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold text-slate-400">De</span>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl px-2.5 py-1 text-xs font-mono text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none shadow-sm cursor-pointer"
+                  />
+                </div>
+
+                {/* Até */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold text-slate-400">até</span>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl px-2.5 py-1 text-xs font-mono text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none shadow-sm cursor-pointer"
+                  />
+                </div>
+
+                <div className="text-[11px] text-slate-400 ml-auto font-mono hidden md:inline">
+                  {filteredLogs.length} medições registadas no período
+                </div>
+              </div>
+            </div>
+
+            {/* SVG Interactive Chart Canvas */}
+            <div className="w-full h-64 sm:h-72 relative pt-2">
+              {filteredLogs.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400">
+                  <TrendingUp className="w-8 h-8 mb-2 opacity-50" />
+                  <p className="text-xs font-bold">Sem dados registados no intervalo selecionado ({startDate} a {endDate}).</p>
+                </div>
+              ) : (
+                <EvolutionChart 
+                  logs={filteredLogs} 
+                  selectedMetrics={selectedMetrics}
+                  metricConfigs={combinedMetricConfigs}
+                  startDate={startDate}
+                  endDate={endDate}
+                />
+              )}
+            </div>
+
+            {/* Dynamic Legend */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pt-2 text-xs text-slate-500 dark:text-neutral-400 border-t border-slate-100 dark:border-neutral-800/80">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-[11px] text-slate-400 font-semibold">Linhas ativas:</span>
+                {combinedMetricConfigs.filter(m => selectedMetrics.includes(m.key)).map(m => (
+                  <div key={m.key} className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: m.color }} />
+                    <span className="font-semibold text-slate-700 dark:text-neutral-300">
+                      {m.label} ({m.unit})
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="text-[11px] text-slate-400 font-mono">
+                {filteredLogs.length} pontos de medição ({selectedMetrics.length} {selectedMetrics.length === 1 ? 'linha' : 'linhas'} cruzadas)
+              </div>
+            </div>
+          </div>
+
+          {/* Physical Assessments History Table (Dados puros, com colunas para métricas personalizadas) */}
+          <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-amber-500" />
+                  Histórico Numérico de Avaliações Físicas
+                </h3>
+                <p className="text-xs text-slate-400 dark:text-neutral-500">
+                  Registos detalhados partilhados entre Treinador e Aluno em tempo real
+                </p>
+              </div>
+
               <button
-                onClick={() => setIsCustomMetricModalOpen(true)}
-                className="px-2.5 py-1.5 rounded-xl border border-dashed border-amber-500/50 hover:border-amber-500 text-amber-600 dark:text-amber-400 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
-                title="Criar nova métrica específica para este aluno"
+                onClick={handleOpenCreateLog}
+                className="px-3.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-extrabold text-xs transition flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Nova Métrica</span>
+                <span>Novo Registo</span>
               </button>
             </div>
-          </div>
 
-          {/* Time Range Selector: Puro 'De ... até ...' (SEM ATALHOS conforme solicitado) */}
-          <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800/80 flex-wrap">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-neutral-300 mr-2">
-              <Calendar className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span>Intervalo:</span>
-            </div>
-
-            {/* De */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-semibold text-slate-400">De</span>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl px-2.5 py-1 text-xs font-mono text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none shadow-sm cursor-pointer"
-              />
-            </div>
-
-            {/* Até */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-semibold text-slate-400">até</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl px-2.5 py-1 text-xs font-mono text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none shadow-sm cursor-pointer"
-              />
-            </div>
-
-            <div className="text-[11px] text-slate-400 ml-auto font-mono hidden md:inline">
-              {filteredLogs.length} medições registadas no período
-            </div>
-          </div>
-        </div>
-
-        {/* SVG Interactive Chart Canvas */}
-        <div className="w-full h-64 sm:h-72 relative pt-2">
-          {filteredLogs.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400">
-              <TrendingUp className="w-8 h-8 mb-2 opacity-50" />
-              <p className="text-xs font-bold">Sem dados registados no intervalo selecionado ({startDate} a {endDate}).</p>
-            </div>
-          ) : (
-            <EvolutionChart 
-              logs={filteredLogs} 
-              selectedMetrics={selectedMetrics}
-              metricConfigs={combinedMetricConfigs}
-              startDate={startDate}
-              endDate={endDate}
-            />
-          )}
-        </div>
-
-        {/* Dynamic Legend */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-2 text-xs text-slate-500 dark:text-neutral-400 border-t border-slate-100 dark:border-neutral-800/80">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-[11px] text-slate-400 font-semibold">Linhas ativas:</span>
-            {combinedMetricConfigs.filter(m => selectedMetrics.includes(m.key)).map(m => (
-              <div key={m.key} className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: m.color }} />
-                <span className="font-semibold text-slate-700 dark:text-neutral-300">
-                  {m.label} ({m.unit})
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-[11px] text-slate-400 font-mono">
-            {filteredLogs.length} pontos de medição ({selectedMetrics.length} {selectedMetrics.length === 1 ? 'linha' : 'linhas'} cruzadas)
-          </div>
-        </div>
-      </div>
-
-      {/* Physical Assessments History Table (Dados puros, com colunas para métricas personalizadas) */}
-      <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-amber-500" />
-              Histórico Numérico de Avaliações Físicas
-            </h3>
-            <p className="text-xs text-slate-400 dark:text-neutral-500">
-              Registos detalhados partilhados entre Treinador e Aluno em tempo real
-            </p>
-          </div>
-
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="px-3.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-extrabold text-xs transition flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Novo Registo</span>
-          </button>
-        </div>
-
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-slate-200 dark:border-neutral-800 text-[11px] font-extrabold text-slate-400 dark:text-neutral-500 uppercase tracking-wider">
-                <th className="py-3 px-3">Data</th>
-                <th className="py-3 px-3">Peso</th>
-                <th className="py-3 px-3">% Gordura</th>
-                <th className="py-3 px-3">Massa Magra</th>
-                <th className="py-3 px-3">Cintura</th>
-                <th className="py-3 px-3">Braço</th>
-                <th className="py-3 px-3">Tórax</th>
-                {/* Dynamic columns for custom metrics of this athlete */}
-                {customMetrics.map(cm => (
-                  <th key={cm.id} className="py-3 px-3 text-amber-600 dark:text-amber-400">
-                    {cm.name}
-                  </th>
-                ))}
-                <th className="py-3 px-3">Notas</th>
-                <th className="py-3 px-3 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-neutral-800/60 font-medium">
-              {sortedLogs.length === 0 ? (
-                <tr>
-                  <td colSpan={9 + customMetrics.length} className="py-8 text-center text-slate-400 dark:text-neutral-500">
-                    Ainda não existem avaliações físicas para este atleta. Clica em "Registar Avaliação" para criar a primeira!
-                  </td>
-                </tr>
-              ) : (
-                [...sortedLogs].reverse().map((log) => {
-                  return (
-                    <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-neutral-800/40 transition">
-                      <td className="py-3.5 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">
-                        {new Date(log.date).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      </td>
-                      <td className="py-3.5 px-3 font-mono font-bold text-slate-900 dark:text-white">
-                        {log.weightKg} kg
-                      </td>
-                      <td className="py-3.5 px-3 font-mono text-cyan-600 dark:text-cyan-400 font-semibold">
-                        {log.bodyFatPercent !== undefined ? `${log.bodyFatPercent}%` : '--'}
-                      </td>
-                      <td className="py-3.5 px-3 font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
-                        {log.muscleMassKg !== undefined ? `${log.muscleMassKg} kg` : '--'}
-                      </td>
-                      <td className="py-3.5 px-3 font-mono text-slate-600 dark:text-neutral-300">
-                        {log.waistCm ? `${log.waistCm} cm` : '--'}
-                      </td>
-                      <td className="py-3.5 px-3 font-mono text-slate-600 dark:text-neutral-300">
-                        {log.armCm ? `${log.armCm} cm` : '--'}
-                      </td>
-                      <td className="py-3.5 px-3 font-mono text-slate-600 dark:text-neutral-300">
-                        {log.chestCm ? `${log.chestCm} cm` : '--'}
-                      </td>
-                      {/* Dynamic cells for custom metrics */}
-                      {customMetrics.map(cm => (
-                        <td key={cm.id} className="py-3.5 px-3 font-mono font-semibold" style={{ color: cm.color }}>
-                          {log.customValues && log.customValues[cm.id] !== undefined 
-                            ? `${log.customValues[cm.id]} ${cm.unit}` 
-                            : '--'}
-                        </td>
-                      ))}
-                      <td className="py-3.5 px-3 text-slate-500 dark:text-neutral-400 max-w-xs truncate" title={log.notes}>
-                        {log.notes || <span className="text-slate-300 dark:text-neutral-600 italic">Sem observações</span>}
-                      </td>
-                      <td className="py-3.5 px-3 text-right">
-                        <button
-                          onClick={() => handleDeleteLog(log.id, log.date)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition cursor-pointer"
-                          title="Eliminar este registo"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+            {/* Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-neutral-800 text-[11px] font-extrabold text-slate-400 dark:text-neutral-500 uppercase tracking-wider">
+                    <th className="py-3 px-3">Data</th>
+                    <th className="py-3 px-3">Peso</th>
+                    <th className="py-3 px-3">% Gordura</th>
+                    <th className="py-3 px-3">Massa Magra</th>
+                    <th className="py-3 px-3">Cintura</th>
+                    <th className="py-3 px-3">Braço</th>
+                    <th className="py-3 px-3">Tórax</th>
+                    {/* Dynamic columns for custom metrics of this athlete */}
+                    {customMetrics.map(cm => (
+                      <th key={cm.id} className="py-3 px-3 text-amber-600 dark:text-amber-400">
+                        {cm.name}
+                      </th>
+                    ))}
+                    <th className="py-3 px-3">Notas</th>
+                    <th className="py-3 px-3 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-neutral-800/60 font-medium">
+                  {sortedLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan={9 + customMetrics.length} className="py-8 text-center text-slate-400 dark:text-neutral-500">
+                        Ainda não existem avaliações físicas para este atleta. Clica em "Registar Avaliação" para criar a primeira!
                       </td>
                     </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                  ) : (
+                    [...sortedLogs].reverse().map((log) => {
+                      return (
+                        <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-neutral-800/40 transition">
+                          <td className="py-3.5 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                            {new Date(log.date).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </td>
+                          <td className="py-3.5 px-3 font-mono font-bold text-slate-900 dark:text-white">
+                            {log.weightKg} kg
+                          </td>
+                          <td className="py-3.5 px-3 font-mono text-cyan-600 dark:text-cyan-400 font-semibold">
+                            {log.bodyFatPercent !== undefined ? `${log.bodyFatPercent}%` : '--'}
+                          </td>
+                          <td className="py-3.5 px-3 font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                            {log.muscleMassKg !== undefined ? `${log.muscleMassKg} kg` : '--'}
+                          </td>
+                          <td className="py-3.5 px-3 font-mono text-slate-600 dark:text-neutral-300">
+                            {log.waistCm ? `${log.waistCm} cm` : '--'}
+                          </td>
+                          <td className="py-3.5 px-3 font-mono text-slate-600 dark:text-neutral-300">
+                            {log.armCm ? `${log.armCm} cm` : '--'}
+                          </td>
+                          <td className="py-3.5 px-3 font-mono text-slate-600 dark:text-neutral-300">
+                            {log.chestCm ? `${log.chestCm} cm` : '--'}
+                          </td>
+                          {/* Dynamic cells for custom metrics */}
+                          {customMetrics.map(cm => (
+                            <td key={cm.id} className="py-3.5 px-3 font-mono font-semibold" style={{ color: cm.color }}>
+                              {log.customValues && log.customValues[cm.id] !== undefined 
+                                ? `${log.customValues[cm.id]} ${cm.unit}` 
+                                : '--'}
+                            </td>
+                          ))}
+                          <td className="py-3.5 px-3 text-slate-500 dark:text-neutral-400 max-w-xs truncate" title={log.notes}>
+                            {log.notes || <span className="text-slate-300 dark:text-neutral-600 italic">Sem observações</span>}
+                          </td>
+                          <td className="py-3.5 px-3 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                onClick={() => handleOpenEditLog(log)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 transition cursor-pointer"
+                                title="Editar este registo de avaliação"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteLog(log.id, log.date)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition cursor-pointer"
+                                title="Eliminar este registo"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Tab 2: Cumprimento da Ementa & Dieta (Secção totalmente separada) */}
+      {reportTab === 'diet' && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Diet Compliance Summary Card */}
+          <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-neutral-800/80">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold shrink-0">
+                  <Utensils className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
+                      Resumo de Cumprimento da Dieta
+                    </h3>
+                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                      dietStats.complianceRate >= 85
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                        : dietStats.complianceRate >= 70
+                        ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                        : 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
+                    }`}>
+                      {dietStats.complianceRate >= 85 ? 'Excelente Adesão' : dietStats.complianceRate >= 70 ? 'Atenção às Faltas' : 'Adesão Crítica'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 dark:text-neutral-500 mt-0.5">
+                    Plano ativo: <strong className="text-slate-700 dark:text-neutral-300">{currentNutritionPlan?.title || 'Ementa Semanal'}</strong> (~{dietStats.dailyCaloriesTarget} kcal/dia)
+                  </p>
+                </div>
+              </div>
+
+              {/* Action button to inspect weekly menu */}
+              <button
+                onClick={() => {
+                  setMenuFilterOnlyMissed(false);
+                  setIsMenuModalOpen(true);
+                }}
+                className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm ${
+                  dietStats.missedCount > 0
+                    ? 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-slate-800 dark:text-white'
+                }`}
+                title="Abrir cardápio semanal para auditar refeições e motivos das faltas"
+              >
+                <Eye className="w-4 h-4 text-amber-500" />
+                <span>Visualizar Cardápio Semanal</span>
+                {dietStats.missedCount > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-black text-[10px] font-black">
+                    {dietStats.missedCount} {dietStats.missedCount === 1 ? 'falta' : 'faltas'}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* 3 Main Compliance Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* Box 1: Compliance Rate */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-950/60 border border-slate-100 dark:border-neutral-800/80 flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center font-black text-sm shrink-0 font-mono">
+                  {dietStats.complianceRate}%
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-neutral-500 block">Taxa de Cumprimento</span>
+                  <span className="text-sm font-extrabold text-slate-900 dark:text-white">
+                    {dietStats.completedCount} de {dietStats.totalScheduled} refeições
+                  </span>
+                </div>
+              </div>
+
+              {/* Box 2: Missed meals alert */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-950/60 border border-slate-100 dark:border-neutral-800/80 flex items-center gap-3.5">
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-black text-sm shrink-0 ${
+                  dietStats.missedCount > 0 ? 'bg-amber-500/15 text-amber-500' : 'bg-emerald-500/15 text-emerald-500'
+                }`}>
+                  {dietStats.missedCount > 0 ? <AlertTriangle className="w-5 h-5 text-amber-500" /> : <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-neutral-500 block">Faltas Registadas</span>
+                  <span className={`text-sm font-extrabold ${dietStats.missedCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                    {dietStats.missedCount === 0 ? '0 Faltas • 100% rigor' : `${dietStats.missedCount} ${dietStats.missedCount === 1 ? 'refeição saltada' : 'refeições saltadas'}`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Box 3: Calories Average */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-950/60 border border-slate-100 dark:border-neutral-800/80 flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-blue-500/15 text-blue-500 flex items-center justify-center font-black text-sm shrink-0">
+                  <Apple className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-neutral-500 block">Calorias Médias</span>
+                  <span className="text-sm font-extrabold text-slate-900 dark:text-white">
+                    ~{dietStats.complianceRate >= 85 ? dietStats.dailyCaloriesTarget - 60 : dietStats.dailyCaloriesTarget - 240} kcal
+                    <span className="text-xs text-slate-400 font-normal ml-1">/ {dietStats.dailyCaloriesTarget} alvo</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 7 Days of the Week Adherence Tracker (Horizontal clean bar) */}
+            <div className="pt-1">
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-wider mb-2">
+                <span>Cumprimento por Dia da Semana:</span>
+                <span>{dietStats.daysData.filter(d => !d.hasMissed).length} de 7 dias sem faltas</span>
+              </div>
+
+              <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+                {dietStats.daysData.map(d => {
+                  return (
+                    <div 
+                      key={d.dayIndex}
+                      onClick={() => {
+                        setSelectedMenuDayIndex(d.dayIndex);
+                        setMenuFilterOnlyMissed(false);
+                        setIsMenuModalOpen(true);
+                      }}
+                      className={`p-2 sm:p-2.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col justify-between ${
+                        d.hasMissed
+                          ? 'bg-amber-500/10 border-amber-500/40 text-amber-900 dark:text-amber-300 hover:bg-amber-500/20 shadow-sm ring-1 ring-amber-500/20'
+                          : 'bg-emerald-500/10 border-emerald-500/25 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-500/20'
+                      }`}
+                      title={`${d.fullDayName}: ${d.completedCount}/${d.totalExpected} refeições cumpridas.${d.hasMissed ? ` Falta registada: ${d.missedNames}. Clique para auditar cardápio deste dia.` : ' 100% cumprido!'}`}
+                    >
+                      <div className="text-[10px] uppercase font-bold tracking-wider">{d.dayName}</div>
+                      
+                      <div className="my-1">
+                        {d.hasMissed ? (
+                          <div className="space-y-0.5">
+                            <span className="text-[9px] sm:text-[10px] font-black text-amber-700 dark:text-amber-400 bg-amber-500/20 px-1 sm:px-1.5 py-0.5 rounded inline-block">
+                              ⚠️ Falta
+                            </span>
+                            <div className="text-[9px] font-extrabold text-amber-800 dark:text-amber-200 truncate max-w-full font-sans" title={`Refeição saltada: ${d.missedNames}`}>
+                              {d.missedNames}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-0.5">
+                            <span className="text-[9px] sm:text-[10px] font-black text-emerald-700 dark:text-emerald-400 bg-emerald-500/20 px-1 sm:px-1.5 py-0.5 rounded inline-block">
+                              ✔️ 100%
+                            </span>
+                            <div className="text-[9px] text-emerald-600 dark:text-emerald-400 opacity-80 font-medium hidden sm:block">
+                              Completo
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="text-[9px] opacity-75 font-mono font-bold">
+                        {d.completedCount}/{d.totalExpected}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Explicit discrimination of which meals were missed */}
+            {dietStats.missedLogs.length > 0 ? (
+              <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-neutral-800/80">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-neutral-300">
+                  <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span>Refeições Não Cumpridas nesta Semana ({dietStats.missedLogs.length} registadas):</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Pre-select first day with a miss
+                      const firstMissedDay = dietStats.daysData.find(d => d.hasMissed)?.dayIndex ?? 0;
+                      setSelectedMenuDayIndex(firstMissedDay);
+                      setMenuFilterOnlyMissed(true);
+                      setIsMenuModalOpen(true);
+                    }}
+                    className="text-amber-700 dark:text-amber-400 font-bold hover:underline text-[11px] cursor-pointer flex items-center gap-1"
+                  >
+                    <span>Auditar Todas no Cardápio</span>
+                    <span>&rarr;</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                  {dietStats.missedLogs.map((missed, mIdx) => (
+                    <div
+                      key={mIdx}
+                      onClick={() => {
+                        setSelectedMenuDayIndex(missed.dayIndex);
+                        setMenuFilterOnlyMissed(false);
+                        setIsMenuModalOpen(true);
+                      }}
+                      className="p-3 rounded-2xl bg-amber-500/10 dark:bg-amber-950/20 border border-amber-500/30 hover:border-amber-500/60 transition cursor-pointer shadow-sm group flex flex-col justify-between"
+                      title={`Clique para abrir o cardápio de ${missed.dayOfWeek}`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <span className="text-[11px] font-bold text-slate-700 dark:text-neutral-300 flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                            {missed.dayOfWeek}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-red-600 dark:text-red-400 text-[10px] font-extrabold flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            {missed.mealName} ({missed.time})
+                          </span>
+                        </div>
+
+                        <div className="text-xs font-medium text-slate-800 dark:text-neutral-200 mt-1">
+                          <strong className="text-amber-700 dark:text-amber-400 block font-semibold text-[11px]">
+                            {missed.mealName} Saltado ({missed.calories} kcal • {missed.proteinG}g P)
+                          </strong>
+                          {missed.foods && missed.foods.length > 0 && (
+                            <p className="text-[11px] text-slate-500 dark:text-neutral-400 line-clamp-1 mt-0.5">
+                              Prescrito: {missed.foods.map((f: any) => `${f.item} (${f.quantity})`).join(', ')}
+                            </p>
+                          )}
+                        </div>
+
+                        {missed.missedReason && (
+                          <div className="mt-2 p-2 rounded-xl bg-white dark:bg-neutral-900 border border-amber-500/20 text-[11px] text-slate-600 dark:text-neutral-300">
+                            <span className="font-bold text-slate-700 dark:text-white block text-[10px] text-amber-600">
+                              Motivo reportado pelo aluno:
+                            </span>
+                            <span className="italic line-clamp-2">"{missed.missedReason}"</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-2.5 pt-2 border-t border-amber-500/20 flex items-center justify-between text-[11px] font-bold text-amber-700 dark:text-amber-400 group-hover:underline">
+                        <span>Ver no cardápio do dia</span>
+                        <span>&rarr;</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>Excelente consistência! O aluno não registou qualquer falta de refeição nesta semana (100% de adesão).</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Modal: Registar Nova Avaliação Física (Pure Data, com campos dinâmicos para métricas do aluno) */}
       {isAddModalOpen && (
@@ -1161,7 +1325,7 @@ export const CoachReportsView: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-base text-slate-900 dark:text-white">
-                    Nova Avaliação Física
+                    {editingLogId ? 'Editar Avaliação Física' : 'Nova Avaliação Física'}
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-neutral-400">
                     Atleta: <strong className="text-amber-500">{currentClient?.displayName}</strong>
@@ -1376,7 +1540,7 @@ export const CoachReportsView: React.FC = () => {
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-amber-500 text-black font-extrabold text-xs hover:bg-amber-400 transition shadow-md shadow-amber-500/10 cursor-pointer"
                 >
-                  Gravar Avaliação
+                  {editingLogId ? 'Guardar Alterações da Avaliação' : 'Gravar Avaliação'}
                 </button>
               </div>
 
@@ -1436,24 +1600,45 @@ export const CoachReportsView: React.FC = () => {
                         <span className="font-bold text-slate-800 dark:text-white">{cm.name}</span>
                         <span className="text-[10px] text-slate-400 font-mono">({cm.unit})</span>
                       </div>
-                      <button
-                        onClick={() => handleDeleteCustomMetric(cm.id, cm.name)}
-                        className="p-1 text-slate-400 hover:text-red-500 transition cursor-pointer"
-                        title="Eliminar esta métrica"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditMetric(cm)}
+                          className="p-1 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 transition cursor-pointer"
+                          title="Editar esta métrica"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCustomMetric(cm.id, cm.name)}
+                          className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition cursor-pointer"
+                          title="Eliminar esta métrica"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Create new custom metric form */}
+            {/* Create / Edit custom metric form */}
             <form onSubmit={handleSaveCustomMetric} className="p-5 space-y-3.5">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-amber-500 block">
-                Criar Nova Métrica
-              </span>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-amber-500 block">
+                  {editingMetric ? `Editar Métrica: ${editingMetric.name}` : 'Criar Nova Métrica'}
+                </span>
+                {editingMetric && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEditMetric}
+                    className="text-[10px] text-slate-400 hover:text-amber-500 underline cursor-pointer"
+                  >
+                    Cancelar edição
+                  </button>
+                )}
+              </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300 mb-1">
@@ -1523,18 +1708,28 @@ export const CoachReportsView: React.FC = () => {
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsCustomMetricModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 font-bold text-xs hover:bg-slate-200 dark:hover:bg-neutral-700 transition cursor-pointer"
-                >
-                  Fechar
-                </button>
+                {editingMetric ? (
+                  <button
+                    type="button"
+                    onClick={handleCancelEditMetric}
+                    className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 font-bold text-xs hover:bg-slate-200 dark:hover:bg-neutral-700 transition cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomMetricModalOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 font-bold text-xs hover:bg-slate-200 dark:hover:bg-neutral-700 transition cursor-pointer"
+                  >
+                    Fechar
+                  </button>
+                )}
                 <button
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-amber-500 text-black font-extrabold text-xs hover:bg-amber-400 transition shadow-md shadow-amber-500/10 cursor-pointer"
                 >
-                  Adicionar Métrica
+                  {editingMetric ? 'Guardar Alterações' : 'Adicionar Métrica'}
                 </button>
               </div>
 
@@ -1587,15 +1782,24 @@ export const CoachReportsView: React.FC = () => {
 
             {/* Subheader Filters: Days of the Week tabs + Missed filter toggle */}
             <div className="px-5 sm:px-6 pt-3 pb-2 border-b border-slate-100 dark:border-neutral-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-neutral-900">
-              {/* Day selection pills */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              {/* Day selection pills with navigation arrows */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-1">
+                <button
+                  type="button"
+                  onClick={() => setSelectedMenuDayIndex(prev => (prev > 0 ? prev - 1 : 6))}
+                  className="p-1.5 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 hover:text-amber-500 transition cursor-pointer shrink-0 flex items-center justify-center"
+                  title="Dia anterior"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
                 {dietStats.daysData.map(d => {
                   const isSelected = selectedMenuDayIndex === d.dayIndex;
                   return (
                     <button
                       key={d.dayIndex}
                       onClick={() => setSelectedMenuDayIndex(d.dayIndex)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
                         isSelected
                           ? 'bg-amber-500 text-black shadow-sm shadow-amber-500/20'
                           : d.hasMissed
@@ -1616,6 +1820,15 @@ export const CoachReportsView: React.FC = () => {
                     </button>
                   );
                 })}
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedMenuDayIndex(prev => (prev < 6 ? prev + 1 : 0))}
+                  className="p-1.5 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 hover:text-amber-500 transition cursor-pointer shrink-0 flex items-center justify-center"
+                  title="Dia seguinte"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
 
               {/* Filter toggle: only missed meals */}

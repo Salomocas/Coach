@@ -13,6 +13,7 @@ import {
   Moon, 
   Coffee, 
   ChevronRight, 
+  ChevronLeft,
   ChevronDown, 
   ArrowRight, 
   Search, 
@@ -102,6 +103,10 @@ export const CoachWorkoutsView: React.FC = () => {
   // Helper to determine current day of week (Portugal local time)
   const todayNames = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
   const todayDayName = todayNames[new Date().getDay()];
+  const todayIndex = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
+
+  // Active day index for mobile horizontal pager view
+  const [activeMobileDayIndex, setActiveMobileDayIndex] = useState<number>(todayIndex);
 
   // -------------------------------------------------------------
   // ACTION: Atribuir Plano Semanal Predefinido da Biblioteca
@@ -379,14 +384,74 @@ export const CoachWorkoutsView: React.FC = () => {
           </button>
         </div>
 
+        {/* Mobile Horizontal Quick Navigation Bar (Prev / Day / Next) */}
+        <div className="flex md:hidden items-center justify-between p-2.5 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-sm">
+          <button
+            type="button"
+            onClick={() => setActiveMobileDayIndex(prev => (prev > 0 ? prev - 1 : 6))}
+            className="p-2 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-200 active:scale-95 transition cursor-pointer flex items-center gap-1 text-xs font-bold"
+            title="Dia anterior"
+          >
+            <ChevronLeft className="w-4 h-4 text-amber-500" />
+            <span>Anterior</span>
+          </button>
+
+          <div className="text-center px-2">
+            <div className="text-[10px] uppercase font-bold text-slate-400 dark:text-neutral-500">
+              {days[activeMobileDayIndex]?.dayOfWeek === todayDayName ? '🔥 Hoje' : `Dia ${activeMobileDayIndex + 1} de 7`}
+            </div>
+            <div className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center justify-center gap-1.5">
+              <span>{days[activeMobileDayIndex]?.dayOfWeek}</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setActiveMobileDayIndex(prev => (prev < 6 ? prev + 1 : 0))}
+            className="p-2 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-200 active:scale-95 transition cursor-pointer flex items-center gap-1 text-xs font-bold"
+            title="Próximo dia"
+          >
+            <span>Seguinte</span>
+            <ChevronRight className="w-4 h-4 text-amber-500" />
+          </button>
+        </div>
+
+        {/* Mobile Days Mini Pills Selector */}
+        <div className="flex md:hidden items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          {days.map((day, idx) => {
+            const isSelected = activeMobileDayIndex === idx;
+            const isToday = day.dayOfWeek === todayDayName;
+            return (
+              <button
+                key={day.dayOfWeek}
+                type="button"
+                onClick={() => setActiveMobileDayIndex(idx)}
+                className={`flex-1 min-w-[46px] py-2 px-1 rounded-xl text-center text-xs font-bold transition cursor-pointer shrink-0 border ${
+                  isSelected
+                    ? 'bg-amber-500 text-black border-amber-500 shadow-sm font-black'
+                    : 'bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-neutral-300'
+                }`}
+              >
+                <div className="text-[10px] uppercase">{day.dayOfWeek.slice(0, 3)}</div>
+                {isToday && (
+                  <span className={`inline-block w-1.5 h-1.5 rounded-full mx-auto ${isSelected ? 'bg-black' : 'bg-amber-500'}`} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-7 gap-3.5">
           {days.map((day, dayIndex) => {
             const isToday = day.dayOfWeek === todayDayName;
+            const isMobileActive = activeMobileDayIndex === dayIndex;
 
             return (
               <div
                 key={day.dayOfWeek}
-                className={`flex flex-col justify-between rounded-3xl border p-4 transition shadow-sm ${
+                className={`flex-col justify-between rounded-3xl border p-4 transition shadow-sm ${
+                  isMobileActive ? 'flex' : 'hidden md:flex'
+                } ${
                   isToday
                     ? 'ring-2 ring-amber-500 bg-white dark:bg-neutral-900 border-amber-500/50'
                     : day.isRestDay
