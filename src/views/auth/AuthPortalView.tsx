@@ -32,10 +32,11 @@ export const AuthPortalView: React.FC = () => {
   const { 
     loginWithEmail, 
     registerWithEmail, 
-    sendVerificationCode,
-    verifyCodeAndRegister,
     loginWithGoogle, 
-    sendResetPassword,
+    requestPasswordReset,
+    completePasswordReset,
+    checkPasswordResetRequest,
+    isEmailAuthorized,
     switchPersona 
   } = useAuth();
   const { isDark, toggleTheme } = useTheme();
@@ -55,46 +56,51 @@ export const AuthPortalView: React.FC = () => {
   const [isSavingBranding, setIsSavingBranding] = useState(false);
   const quickFileInputRef = useRef<HTMLInputElement>(null);
 
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'verify-code'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'reset-password'>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
 
-  // Verification code states
-  const [verificationCodeInput, setVerificationCodeInput] = useState('');
-  const [expectedCode, setExpectedCode] = useState('');
-  const [codeResendCountdown, setCodeResendCountdown] = useState(60);
-  const [isResendingCode, setIsResendingCode] = useState(false);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [isSmtpDelivered, setIsSmtpDelivered] = useState(false);
 
-  // Countdown timer for resending verification code
-  React.useEffect(() => {
-    let timer: any;
-    if (mode === 'verify-code' && codeResendCountdown > 0) {
-      timer = setInterval(() => {
-        setCodeResendCountdown((prev) => (prev > 0 ? prev - 1 : 0));
-      }, 1000);
+  const handleCheckUnlock = (targetEmail?: string) => {
+    const checkEmail = (targetEmail || email).trim().toLowerCase();
+    if (!checkEmail || !checkEmail.includes('@')) {
+      setError('Por favor indica um endereço de e-mail válido.');
+      return;
     }
-    return () => clearInterval(timer);
-  }, [mode, codeResendCountdown]);
+    const req = checkPasswordResetRequest(checkEmail);
+    if (req && req.status === 'unlocked') {
+      setEmail(checkEmail);
+      setMode('reset-password');
+      setPassword('');
+      setConfirmPassword('');
+      setError(null);
+      setSuccessMessage('🔓 O teu Coach Sérgio Cunha desbloqueou o teu acesso! Define agora a tua nova palavra-passe.');
+    } else if (req && req.status === 'pending') {
+      setError('⏳ O teu pedido ainda está pendente. O Coach Sérgio Cunha foi notificado e irá desbloquear o teu acesso em breve.');
+    } else {
+      setError('Ainda não existe nenhum pedido de desbloqueio aprovado para este e-mail. Clica em "Solicitar Recuperação" para notificar o Coach.');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccessMessage(null);
 
+    const emailTrim = email.trim().toLowerCase();
+
     if (mode === 'register') {
       if (!name.trim()) {
         setError('Por favor indica o teu nome completo.');
         return;
       }
-      if (!email.trim() || !email.includes('@')) {
+      if (!emailTrim || !emailTrim.includes('@')) {
         setError('Por favor introduz um e-mail válido.');
         return;
       }
@@ -109,8 +115,19 @@ export const AuthPortalView: React.FC = () => {
     }
 
     if (mode === 'forgot') {
-      if (!email.trim() || !email.includes('@')) {
+      if (!emailTrim || !emailTrim.includes('@')) {
         setError('Por favor introduz um endereço de e-mail válido.');
+        return;
+      }
+    }
+
+    if (mode === 'reset-password') {
+      if (password.length < 6) {
+        setError('A nova palavra-passe deve conter pelo menos 6 caracteres.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('As palavras-passe introduzidas não coincidem.');
         return;
       }
     }
@@ -118,34 +135,35 @@ export const AuthPortalView: React.FC = () => {
     setLoading(true);
     try {
       if (mode === 'login') {
-        await loginWithEmail(email.trim(), password, rememberMe);
-      } else if (mode === 'register') {
-        const { code, smtpDelivered, smtpNotice } = await sendVerificationCode(email.trim(), name.trim());
-        setExpectedCode(code);
-        setIsSmtpDelivered(!!smtpDelivered);
-        setVerificationCodeInput('');
-        setMode('verify-code');
-        setCodeResendCountdown(60);
-        if (smtpDelivered) {
-          setSuccessMessage(
-            `E-mail de confirmação enviado para a tua caixa de correio (${email.trim()}) com o código de 6 dígitos!`
-          );
-        } else {
-          setSuccessMessage(
-            smtpNotice || `Código de segurança gerado! Enviámos uma confirmação de 6 dígitos para ${email.trim()}.`
-          );
+        // If coach recently unlocked a password reset for this email, route to set new password!
+        const resetReq = checkPasswordResetRequest(emailTrim);
+        if (resetReq && resetReq.status === 'unlocked') {
+          setMode('reset-password');
+          setPassword('');
+          setConfirmPassword('');
+          setSuccessMessage('🔓 O Coach Sérgio Cunha desbloqueou o teu acesso! Define agora a tua nova palavra-passe abaixo:');
+          return;
         }
+
+        await loginWithEmail(emailTrim, password, rememberMe);
+      } else if (mode === 'register') {
+        // Direct registration with coach authorization (no verification codes)
+        await registerWithEmail(emailTrim, password, name.trim(), rememberMe);
+        setSuccessMessage('Conta criada com sucesso! A entrar no programa...');
       } else if (mode === 'forgot') {
-        await sendResetPassword(email.trim());
+        const res = await requestPasswordReset(emailTrim);
         setSuccessMessage(
-          `Link de redefinição enviado com sucesso para ${email.trim()}! Verifica a tua caixa de correio para definir a nova senha.`
+          res.message || 'Pedido enviado ao Coach Sérgio Cunha com sucesso! Assim que o Coach aprovar o desbloqueio, poderás definir a tua nova senha.'
         );
+      } else if (mode === 'reset-password') {
+        await completePasswordReset(emailTrim, password);
+        setSuccessMessage('Palavra-passe alterada com sucesso! A iniciar sessão no teu programa...');
       }
     } catch (err: any) {
       console.error('Auth error in portal:', err);
       let msg = 'Ocorreu um erro no processamento. Por favor tenta novamente.';
       if (err?.code === 'auth/user-not-found' || err?.code === 'auth/wrong-password' || err?.code === 'auth/invalid-credential') {
-        msg = 'E-mail ou palavra-passe incorretos. Verifica os dados ou clica em Recuperar.';
+        msg = 'E-mail ou palavra-passe incorretos. Verifica os dados ou solicita recuperação ao Coach.';
       } else if (err?.code === 'auth/email-already-in-use') {
         msg = 'Já existe uma conta associada a este e-mail. Clica em "Entrar" ou recupera a palavra-passe.';
       } else if (err?.code === 'auth/weak-password') {
@@ -158,56 +176,6 @@ export const AuthPortalView: React.FC = () => {
       setError(msg);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleVerifyCodeSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccessMessage(null);
-
-    const codeClean = verificationCodeInput.trim();
-    if (!codeClean || codeClean.length < 6) {
-      setError('Por favor introduz o código completo de 6 dígitos enviado para o teu e-mail.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await verifyCodeAndRegister(
-        email.trim(),
-        password,
-        name.trim(),
-        codeClean,
-        expectedCode,
-        rememberMe
-      );
-      setSuccessMessage('Conta validada e ativada com sucesso! A entrar no programa...');
-    } catch (err: any) {
-      setError(err?.message || 'Código de confirmação incorreto ou expirado. Tenta novamente.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResendCode = async () => {
-    if (codeResendCountdown > 0) return;
-    setIsResendingCode(true);
-    setError(null);
-    try {
-      const { code, smtpDelivered, smtpNotice } = await sendVerificationCode(email.trim(), name.trim());
-      setExpectedCode(code);
-      setIsSmtpDelivered(!!smtpDelivered);
-      setCodeResendCountdown(60);
-      if (smtpDelivered) {
-        setSuccessMessage(`Novo código enviado para a tua caixa de correio (${email.trim()})!`);
-      } else {
-        setSuccessMessage(smtpNotice || `Novo código gerado para ${email.trim()}.`);
-      }
-    } catch (err: any) {
-      setError(err?.message || 'Erro ao reenviar código de segurança.');
-    } finally {
-      setIsResendingCode(false);
     }
   };
 
@@ -323,7 +291,7 @@ export const AuthPortalView: React.FC = () => {
         <div className="w-full bg-neutral-900/90 border border-neutral-800/90 rounded-3xl p-6 sm:p-7 shadow-2xl backdrop-blur-xl transition-all">
           
           {/* Tabs */}
-          {mode !== 'verify-code' ? (
+          {mode !== 'reset-password' ? (
             <div className="grid grid-cols-3 p-1 mb-5 bg-neutral-950/80 rounded-2xl border border-neutral-800 text-xs font-bold">
               <button
                 type="button"
@@ -360,17 +328,17 @@ export const AuthPortalView: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="mb-5 flex items-center justify-between p-2.5 bg-neutral-950/80 rounded-2xl border border-amber-500/30 text-xs animate-fade-in">
+            <div className="mb-5 flex items-center justify-between p-3 bg-amber-500/10 rounded-2xl border border-amber-500/30 text-xs animate-fade-in">
               <div className="flex items-center gap-2 text-amber-400 font-bold">
-                <ShieldCheck className="w-4 h-4" />
-                <span>Passo 2 de 2: Confirmação de E-mail</span>
+                <KeyRound className="w-4 h-4" />
+                <span>Nova Palavra-passe Autorizada pelo Coach</span>
               </div>
               <button
                 type="button"
-                onClick={() => { setMode('register'); setError(null); }}
+                onClick={() => { setMode('login'); setError(null); }}
                 className="text-[11px] text-neutral-400 hover:text-white underline cursor-pointer"
               >
-                Corrigir dados
+                Cancelar
               </button>
             </div>
           )}
@@ -391,7 +359,7 @@ export const AuthPortalView: React.FC = () => {
           )}
 
           {/* Quick Google Sign-In */}
-          {mode !== 'forgot' && mode !== 'verify-code' && (
+          {mode !== 'forgot' && mode !== 'reset-password' && (
             <div className="mb-4">
               <button
                 type="button"
@@ -433,180 +401,43 @@ export const AuthPortalView: React.FC = () => {
             </div>
           )}
 
-          {/* Verification Code Form (Passo 2 do Registo) */}
-          {mode === 'verify-code' ? (
-            <form onSubmit={handleVerifyCodeSubmit} className="space-y-4 animate-fade-in">
-              <div className="text-center py-1">
-                <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center mb-2.5 shadow-inner">
-                  <Mail className="w-6 h-6 animate-pulse" />
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-3.5">
+            {/* Mode: reset-password */}
+            {mode === 'reset-password' && (
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-2 mb-2">
+                <div className="flex items-center gap-2 text-amber-400 font-bold">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Desbloqueio Ativo pelo Coach</span>
                 </div>
-                <h3 className="text-sm font-bold text-white">
-                  Verifica a tua Caixa de Entrada
-                </h3>
-                <p className="text-xs text-neutral-400 mt-1">
-                  Enviámos um código de validação de 6 dígitos para:
-                </p>
-                <div className="mt-1.5 inline-block px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-full text-xs font-bold text-amber-400 max-w-full truncate">
-                  {email}
-                </div>
-              </div>
-
-              {/* Delivery Status & Virtual Mailbox Card */}
-              <div className="p-4 bg-gradient-to-b from-neutral-900 to-neutral-950 border border-amber-500/40 rounded-2xl text-xs space-y-2.5 shadow-xl">
-                <div className="flex items-center justify-between pb-2 border-b border-neutral-800">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs">
-                      {isSmtpDelivered ? '🚀' : '✉️'}
-                    </div>
-                    <div>
-                      <span className="font-bold text-white text-[11px] block">
-                        {isSmtpDelivered ? 'Enviado para a tua Caixa de Correio Real' : 'Caixa de Entrada & Validador Instantâneo'}
-                      </span>
-                      <span className="text-[10px] text-neutral-400">
-                        De: <span className="text-amber-400 font-mono">noreply@coachcunha.pt</span>
-                      </span>
-                    </div>
-                  </div>
-                  <span className={`text-[10px] border px-2 py-0.5 rounded-full font-bold ${
-                    isSmtpDelivered 
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
-                      : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                  }`}>
-                    {isSmtpDelivered ? '✓ Enviado via SMTP' : 'Código Gerado'}
-                  </span>
-                </div>
-
-                <div className="p-2.5 rounded-xl bg-neutral-950 border border-neutral-800 flex items-center justify-between gap-2">
-                  <div>
-                    <span className="text-[10px] text-neutral-400 block font-medium">Código de Segurança:</span>
-                    <span className="font-mono font-black text-amber-400 text-lg tracking-[0.25em]">
-                      {expectedCode}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setVerificationCodeInput(expectedCode);
-                    }}
-                    className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-[11px] transition cursor-pointer shadow-sm active:scale-95 flex items-center gap-1.5"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Preencher Código</span>
-                  </button>
-                </div>
-
-                <p className="text-[10px] text-neutral-400 leading-relaxed">
-                  {isSmtpDelivered ? (
-                    <>
-                      📬 <strong>E-mail enviado via SMTP!</strong> Verifica a tua caixa de entrada (e pasta de spam) em <strong className="text-amber-400">{email}</strong>. Se quiseres agilizar o teste agora mesmo, clica diretamente em <strong>"Preencher Código"</strong> acima.
-                    </>
-                  ) : (
-                    <>
-                      ℹ️ <strong>Envio SMTP Integrado:</strong> A aplicação já suporta disparo SMTP direto para o teu e-mail real. Podes configurar as credenciais do teu servidor SMTP (Gmail, Brevo, Outlook) no painel de configurações ou no ficheiro <code className="text-amber-400">.env</code>. O código gerado acima permite-te entrar imediatamente sem demoras! (Código universal: <span className="font-mono text-amber-400 font-bold">123456</span>).
-                    </>
-                  )}
+                <p className="text-[11px] text-neutral-300 leading-relaxed">
+                  O Coach Sérgio Cunha aprovou a recuperação para o e-mail: <strong className="text-amber-400">{email}</strong>. Define a tua nova palavra-passe para teres acesso ao teu programa.
                 </p>
               </div>
+            )}
 
-              {/* 6-Digit input */}
+            {/* Name (Register) */}
+            {mode === 'register' && (
               <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1.5 text-center">
-                  Introduz o Código de 6 Dígitos
+                <label className="block text-xs font-semibold text-neutral-300 mb-1">
+                  Nome Completo
                 </label>
-                <input
-                  type="text"
-                  maxLength={6}
-                  required
-                  autoFocus
-                  value={verificationCodeInput}
-                  onChange={(e) => setVerificationCodeInput(e.target.value.replace(/\D/g, ''))}
-                  placeholder="Ex: 123456"
-                  className="w-full py-3 px-4 text-center font-mono text-2xl font-black tracking-[0.4em] rounded-2xl bg-neutral-950 border-2 border-amber-500/50 focus:border-amber-400 focus:outline-none text-white transition shadow-inner placeholder:tracking-normal placeholder:font-sans placeholder:text-sm placeholder:text-neutral-600"
-                />
-              </div>
-
-              {/* Remember Me Checkbox in verification mode */}
-              <div className="pt-0.5">
-                <label className="flex items-center gap-2 cursor-pointer select-none text-neutral-300 hover:text-white transition text-xs">
+                <div className="relative">
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
                   <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded border-neutral-700 bg-neutral-950 text-amber-500 focus:ring-amber-500/30 accent-amber-500 cursor-pointer"
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Ex: João Pereira"
+                    className="w-full pl-10 pr-3 py-2.5 text-xs rounded-xl bg-neutral-950 border border-neutral-800 focus:outline-none focus:border-amber-500 text-white transition"
                   />
-                  <span>Manter sessão iniciada neste dispositivo</span>
-                </label>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading || verificationCodeInput.length < 6}
-                className="w-full py-3.5 px-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 transition hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 cursor-pointer"
-              >
-                {loading ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>A validar código...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Confirmar Código & Entrar</span>
-                  </>
-                )}
-              </button>
-
-              {/* Resend and return actions */}
-              <div className="flex items-center justify-between text-xs pt-1">
-                <button
-                  type="button"
-                  onClick={handleResendCode}
-                  disabled={codeResendCountdown > 0 || isResendingCode}
-                  className="text-neutral-400 hover:text-amber-400 font-semibold disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isResendingCode ? 'animate-spin' : ''}`} />
-                  <span>
-                    {codeResendCountdown > 0 
-                      ? `Reenviar código (${codeResendCountdown}s)` 
-                      : 'Reenviar novo código'}
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => { setMode('register'); setError(null); }}
-                  className="text-amber-400 hover:underline font-semibold cursor-pointer"
-                >
-                  ← Corrigir e-mail
-                </button>
-              </div>
-            </form>
-          ) : (
-            /* Standard Auth Form (Login, Register, Forgot) */
-            <form onSubmit={handleSubmit} className="space-y-3.5">
-              
-              {/* Name (Register) */}
-              {mode === 'register' && (
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                    Nome Completo
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-                    <input
-                      type="text"
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Ex: João Pereira"
-                      className="w-full pl-10 pr-3 py-2.5 text-xs rounded-xl bg-neutral-950 border border-neutral-800 focus:outline-none focus:border-amber-500 text-white transition"
-                    />
-                  </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Email */}
+            {/* Email (Login, Register, Forgot) */}
+            {mode !== 'reset-password' && (
               <div>
                 <label className="block text-xs font-semibold text-neutral-300 mb-1">
                   E-mail
@@ -622,66 +453,77 @@ export const AuthPortalView: React.FC = () => {
                     className="w-full pl-10 pr-3 py-2.5 text-xs rounded-xl bg-neutral-950 border border-neutral-800 focus:outline-none focus:border-amber-500 text-white transition"
                   />
                 </div>
+
                 {mode === 'register' && (
-                  <p className="text-[11px] text-amber-400 mt-1 flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-                    Receberás um código de 6 dígitos no teu e-mail para validar a conta.
+                  <div className="p-2.5 mt-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300 leading-relaxed flex items-start gap-2">
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                    <span>
+                      <strong>Acesso por Autorização:</strong> O teu treinador deve ter adicionado previamente o teu e-mail à aplicação. A tua palavra-passe é criada aqui por ti. O teu programa inicia em versão bloqueada e é ativado diretamente pelo Coach sem pagamentos adicionais.
+                    </span>
+                  </div>
+                )}
+
+                {mode === 'forgot' && (
+                  <p className="text-[11px] text-neutral-400 mt-1.5 leading-relaxed">
+                    💡 Ao clicares em enviar, o Coach Sérgio Cunha recebe o pedido no painel de controlo. Assim que ele desbloquear o teu perfil, poderás definir a nova palavra-passe.
                   </p>
                 )}
               </div>
+            )}
 
-              {/* Password */}
-              {mode !== 'forgot' && (
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                    Palavra-passe
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-                    <input
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Mínimo 6 caracteres"
-                      className="w-full pl-10 pr-3 py-2.5 text-xs rounded-xl bg-neutral-950 border border-neutral-800 focus:outline-none focus:border-amber-500 text-white transition"
-                    />
-                  </div>
+            {/* Password (Login, Register, Reset-password) */}
+            {mode !== 'forgot' && (
+              <div>
+                <label className="block text-xs font-semibold text-neutral-300 mb-1">
+                  {mode === 'reset-password' ? 'Nova Palavra-passe' : 'Palavra-passe'}
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Mínimo 6 caracteres"
+                    className="w-full pl-10 pr-3 py-2.5 text-xs rounded-xl bg-neutral-950 border border-neutral-800 focus:outline-none focus:border-amber-500 text-white transition"
+                  />
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Confirm Password */}
-              {mode === 'register' && (
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                    Confirmar Palavra-passe
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-                    <input
-                      type="password"
-                      required
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Repete a tua palavra-passe"
-                      className="w-full pl-10 pr-3 py-2.5 text-xs rounded-xl bg-neutral-950 border border-neutral-800 focus:outline-none focus:border-amber-500 text-white transition"
-                    />
-                  </div>
+            {/* Confirm Password (Register, Reset-password) */}
+            {(mode === 'register' || mode === 'reset-password') && (
+              <div>
+                <label className="block text-xs font-semibold text-neutral-300 mb-1">
+                  {mode === 'reset-password' ? 'Confirmar Nova Palavra-passe' : 'Confirmar Palavra-passe'}
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repete a palavra-passe"
+                    className="w-full pl-10 pr-3 py-2.5 text-xs rounded-xl bg-neutral-950 border border-neutral-800 focus:outline-none focus:border-amber-500 text-white transition"
+                  />
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Manter Sessão Iniciada Checkbox (O pisco) */}
-              {mode === 'login' && (
-                <div className="flex items-center justify-between text-xs py-1">
-                  <label className="flex items-center gap-2 cursor-pointer select-none text-neutral-300 hover:text-white transition">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="w-4 h-4 rounded border-neutral-700 bg-neutral-950 text-amber-500 focus:ring-amber-500/30 accent-amber-500 cursor-pointer"
-                    />
-                    <span className="font-medium text-[11px] sm:text-xs">Manter sessão iniciada</span>
-                  </label>
+            {/* Manter Sessão Iniciada Checkbox (Login & Register) */}
+            {(mode === 'login' || mode === 'register') && (
+              <div className="flex items-center justify-between text-xs py-1">
+                <label className="flex items-center gap-2 cursor-pointer select-none text-neutral-300 hover:text-white transition">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded border-neutral-700 bg-neutral-950 text-amber-500 focus:ring-amber-500/30 accent-amber-500 cursor-pointer"
+                  />
+                  <span className="font-medium text-[11px] sm:text-xs">Manter sessão iniciada</span>
+                </label>
+                {mode === 'login' && (
                   <button
                     type="button"
                     onClick={() => { setMode('forgot'); setError(null); }}
@@ -689,54 +531,56 @@ export const AuthPortalView: React.FC = () => {
                   >
                     Esqueceste-te da senha?
                   </button>
-                </div>
-              )}
-
-              {/* Manter Sessão Iniciada Checkbox no Registo */}
-              {mode === 'register' && (
-                <div className="pt-0.5">
-                  <label className="flex items-center gap-2 cursor-pointer select-none text-neutral-300 hover:text-white transition text-xs">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="w-4 h-4 rounded border-neutral-700 bg-neutral-950 text-amber-500 focus:ring-amber-500/30 accent-amber-500 cursor-pointer"
-                    />
-                    <span className="font-medium text-[11px] sm:text-xs">Manter sessão iniciada neste dispositivo</span>
-                  </label>
-                </div>
-              )}
-
-              {/* Submit */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 px-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 transition hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 mt-4 cursor-pointer"
-              >
-                {loading ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>A processar...</span>
-                  </>
-                ) : mode === 'login' ? (
-                  <>
-                    <span>Entrar no Programa</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                ) : mode === 'register' ? (
-                  <>
-                    <span>Criar Conta & Receber Código</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                ) : (
-                  <>
-                    <KeyRound className="w-4 h-4" />
-                    <span>Enviar Link de Recuperação</span>
-                  </>
                 )}
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 px-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 transition hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 mt-4 cursor-pointer"
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>A processar...</span>
+                </>
+              ) : mode === 'login' ? (
+                <>
+                  <span>Entrar no Programa</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              ) : mode === 'register' ? (
+                <>
+                  <span>Criar Conta de Aluno</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              ) : mode === 'forgot' ? (
+                <>
+                  <KeyRound className="w-4 h-4" />
+                  <span>Solicitar Desbloqueio ao Coach</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Gravar Nova Palavra-passe & Entrar</span>
+                </>
+              )}
+            </button>
+
+            {/* Secondary action for Forgot Mode: check if coach already unlocked */}
+            {mode === 'forgot' && (
+              <button
+                type="button"
+                onClick={() => handleCheckUnlock()}
+                className="w-full py-2.5 px-4 rounded-xl border border-neutral-800 hover:border-amber-500/50 text-neutral-300 hover:text-white font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer mt-2"
+              >
+                <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
+                <span>Verificar se o Coach Já Desbloqueou</span>
               </button>
-            </form>
-          )}
+            )}
+          </form>
 
           {/* Mode Switcher footer text */}
           <div className="mt-4 text-center">
@@ -762,24 +606,13 @@ export const AuthPortalView: React.FC = () => {
                   Inicia sessão
                 </button>
               </p>
-            ) : mode === 'verify-code' ? (
-              <p className="text-xs text-neutral-400">
-                Já tens conta ativa?{' '}
-                <button
-                  type="button"
-                  onClick={() => { setMode('login'); setError(null); }}
-                  className="font-bold text-amber-400 hover:underline cursor-pointer"
-                >
-                  Iniciar Sessão
-                </button>
-              </p>
             ) : (
               <button
                 type="button"
                 onClick={() => { setMode('login'); setError(null); }}
                 className="text-xs font-bold text-amber-400 hover:underline cursor-pointer"
               >
-                Voltar ao Início de Sessão
+                ← Voltar ao Início de Sessão
               </button>
             )}
           </div>

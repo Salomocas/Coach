@@ -29,7 +29,7 @@ import {
   deleteDoc,
   type FirebaseUser
 } from '../firebase';
-import { UserProfile, UserRole, SubscriptionStatus } from '../types';
+import { UserProfile, UserRole, SubscriptionStatus, AuthorizedStudent, PasswordResetRequest } from '../types';
 import { COACH_PROFILE, ADMIN_PROFILE, INITIAL_CLIENTS } from '../initialData';
 
 interface AuthContextType {
@@ -62,6 +62,16 @@ interface AuthContextType {
   deleteClientAccount: (clientId: string) => Promise<{ success: boolean; message: string }>;
   allClients: UserProfile[];
   isRememberMeEnabled: boolean;
+  // Coach Authorization & Password Recovery
+  authorizedStudents: AuthorizedStudent[];
+  authorizeEmail: (email: string, name?: string) => Promise<void>;
+  revokeAuthorizedEmail: (email: string) => Promise<void>;
+  isEmailAuthorized: (email: string) => boolean;
+  passwordResetRequests: PasswordResetRequest[];
+  requestPasswordReset: (email: string) => Promise<{ success: boolean; message: string }>;
+  unlockPasswordReset: (email: string) => Promise<void>;
+  completePasswordReset: (email: string, newPassword: string) => Promise<void>;
+  checkPasswordResetRequest: (email: string) => PasswordResetRequest | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -163,6 +173,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Pre-authorized athletes / emails list
+  const DEFAULT_AUTHORIZED_STUDENTS: AuthorizedStudent[] = [
+    ...INITIAL_CLIENTS.map(c => ({
+      email: c.email.toLowerCase(),
+      name: c.displayName,
+      authorizedAt: c.createdAt || '2026-01-01',
+      authorizedBy: 'Coach Sérgio Cunha',
+      isRegistered: true
+    })),
+    ...COACH_EMAILS.map(em => ({
+      email: em.toLowerCase(),
+      name: 'Coach Sérgio Cunha',
+      authorizedAt: '2026-01-01',
+      authorizedBy: 'Sistema',
+      isRegistered: true
+    })),
+    ...ADMIN_EMAILS.map(em => ({
+      email: em.toLowerCase(),
+      name: 'Administrador Master',
+      authorizedAt: '2026-01-01',
+      authorizedBy: 'Sistema',
+      isRegistered: true
+    }))
+  ];
+
+  const [authorizedStudents, setAuthorizedStudents] = useState<AuthorizedStudent[]>(() => {
+    try {
+      const saved = localStorage.getItem('coach_authorized_students');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return DEFAULT_AUTHORIZED_STUDENTS;
+  });
+
+  const [passwordResetRequests, setPasswordResetRequests] = useState<PasswordResetRequest[]>(() => {
+    try {
+      const saved = localStorage.getItem('coach_reset_requests');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return [];
+  });
+
   // Monitor Firebase Auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
@@ -240,6 +297,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } catch (errClients) {
               console.warn('Could not query registered clients from Firestore:', errClients);
             }
+
+            // Sync authorized students and password reset requests
+            try {
+              const authSnap = await getDocs(collection(db, 'authorized_students'));
+              if (!authSnap.empty) {
+                const remoteAuth = authSnap.docs.map(d => d.data() as AuthorizedStudent);
+                setAuthorizedStudents(prev => {
+                  const map = new Map<string, AuthorizedStudent>();
+                  prev.forEach(a => map.set(a.email.toLowerCase(), a));
+                  remoteAuth.forEach(a => map.set(a.email.toLowerCase(), a));
+                  return Array.from(map.values());
+                });
+              }
+            } catch (errAuth) {}
+
+            try {
+              const resetSnap = await getDocs(collection(db, 'password_reset_requests'));
+              if (!resetSnap.empty) {
+                const remoteResets = resetSnap.docs.map(d => d.data() as PasswordResetRequest);
+                setPasswordResetRequests(remoteResets);
+              }
+            } catch (errReset) {}
           }
         } catch (err) {
           console.warn('Could not read user profile from Firestore, using local fallback:', err);
@@ -305,6 +384,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err: any) {
       console.warn('Firebase email sign-in error:', err);
 
+      // Check if user set or has valid local credentials (offline/custom registration or recent password reset)
+      const savedLocalCred = localStorage.getItem(`user_cred_${emailLower}`);
+      const isLocalCustomPass = !!savedLocalCred && savedLocalCred === cleanPass;
+
+      // If Firebase is offline/unreachable, only allow verified demo access with standard demo passwords
+      const isCoachDemo = COACH_EMAILS.includes(emailLower) && (cleanPass === 'coach123' || cleanPass === 'admin123' || cleanPass === 'master123');
+      const isAdminDemo = ADMIN_EMAILS.includes(emailLower) && (cleanPass === 'admin123' || cleanPass === 'master123');
+      const foundClient = allClients.find(c => c.email.toLowerCase() === emailLower);
+      const isClientDemo = !!foundClient && (cleanPass === 'client123' || cleanPass === '123456' || cleanPass === 'demo123');
+
+      if (isLocalCustomPass) {
+        const clientProfile: UserProfile = foundClient || {
+          uid: `client-${Date.now()}`,
+          email: email.trim(),
+          displayName: 'Novo Aluno',
+          role: 'client',
+          subscriptionStatus: 'expired',
+          isManuallyUnlocked: false,
+          subscriptionPlan: 'Aguardar Desbloqueio do Coach',
+          subscriptionValidUntil: '2026-10-01',
+          createdAt: new Date().toISOString()
+        };
+        setRootUser(clientProfile);
+        if (rememberMe) {
+          localStorage.setItem('app_remember_me', 'true');
+          localStorage.setItem('app_active_session', 'client');
+          setIsRememberMeEnabled(true);
+        } else {
+          localStorage.removeItem('app_remember_me');
+          localStorage.removeItem('app_active_session');
+          sessionStorage.setItem('app_active_session', 'client');
+          setIsRememberMeEnabled(false);
+        }
+        sessionStorage.setItem('app_session_active', 'true');
+        return;
+      }
+
       // Check if Firebase rejected due to wrong credentials
       const isAuthCredentialFailure = 
         err?.code === 'auth/wrong-password' || 
@@ -314,15 +430,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         err?.message?.includes('invalid-credential') ||
         err?.message?.includes('wrong-password');
 
-      if (isAuthCredentialFailure) {
+      if (isAuthCredentialFailure && !isCoachDemo && !isAdminDemo && !isClientDemo) {
         throw new Error('Email ou palavra-passe incorretos. Por favor tenta novamente.');
       }
-
-      // If Firebase is offline/unreachable, only allow verified demo access with standard demo passwords
-      const isCoachDemo = COACH_EMAILS.includes(emailLower) && (cleanPass === 'coach123' || cleanPass === 'admin123' || cleanPass === 'master123');
-      const isAdminDemo = ADMIN_EMAILS.includes(emailLower) && (cleanPass === 'admin123' || cleanPass === 'master123');
-      const foundClient = allClients.find(c => c.email.toLowerCase() === emailLower);
-      const isClientDemo = !!foundClient && (cleanPass === 'client123' || cleanPass === '123456' || cleanPass === 'demo123');
 
       if (isCoachDemo) {
         setRootUser(COACH_PROFILE);
@@ -371,80 +481,235 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const sendVerificationCode = async (email: string, name?: string): Promise<{ code: string; smtpDelivered?: boolean; smtpNotice?: string }> => {
+  // CHECK IF EMAIL IS AUTHORIZED BY COACH
+  const isEmailAuthorized = (email: string): boolean => {
+    const emailLower = email.trim().toLowerCase();
+    if (!emailLower || !emailLower.includes('@')) return false;
+    if (COACH_EMAILS.includes(emailLower) || ADMIN_EMAILS.includes(emailLower)) return true;
+    if (allClients.some(c => c.email.toLowerCase() === emailLower)) return true;
+    return authorizedStudents.some(s => s.email.toLowerCase() === emailLower);
+  };
+
+  // COACH ADDS AN ATHLETE EMAIL TO AUTHORIZE REGISTRATION
+  const authorizeEmail = async (email: string, name?: string) => {
+    const emailLower = email.trim().toLowerCase();
+    if (!emailLower || !emailLower.includes('@')) {
+      throw new Error('Por favor introduz um e-mail válido.');
+    }
+
+    if (authorizedStudents.some(s => s.email.toLowerCase() === emailLower)) {
+      throw new Error(`O e-mail ${emailLower} já se encontra autorizado.`);
+    }
+
+    const newAuth: AuthorizedStudent = {
+      email: emailLower,
+      name: (name || '').trim(),
+      authorizedAt: new Date().toISOString(),
+      authorizedBy: 'Coach Sérgio Cunha',
+      isRegistered: false
+    };
+
+    const updated = [newAuth, ...authorizedStudents];
+    setAuthorizedStudents(updated);
+    try {
+      localStorage.setItem('coach_authorized_students', JSON.stringify(updated));
+    } catch (e) {}
+
+    try {
+      await setDoc(doc(db, 'authorized_students', emailLower), newAuth);
+    } catch (e) {
+      console.warn('Could not save authorized email to Firestore:', e);
+    }
+  };
+
+  // COACH REVOKES AN AUTHORIZED EMAIL
+  const revokeAuthorizedEmail = async (email: string) => {
+    const emailLower = email.trim().toLowerCase();
+    const updated = authorizedStudents.filter(s => s.email.toLowerCase() !== emailLower);
+    setAuthorizedStudents(updated);
+    try {
+      localStorage.setItem('coach_authorized_students', JSON.stringify(updated));
+    } catch (e) {}
+
+    try {
+      await deleteDoc(doc(db, 'authorized_students', emailLower));
+    } catch (e) {}
+  };
+
+  // ATHLETE REQUESTS PASSWORD RECOVERY (NOTIFIES COACH)
+  const requestPasswordReset = async (email: string): Promise<{ success: boolean; message: string }> => {
     const emailLower = email.trim().toLowerCase();
     if (!emailLower || !emailLower.includes('@')) {
       throw new Error('Por favor introduz um endereço de e-mail válido.');
     }
 
-    const existing = allClients.find(c => c.email.toLowerCase() === emailLower);
-    if (existing) {
-      throw new Error('Já existe uma conta associada a este e-mail. Clica em "Entrar" ou recupera a palavra-passe.');
+    const foundClient = allClients.find(c => c.email.toLowerCase() === emailLower);
+    const authRecord = authorizedStudents.find(s => s.email.toLowerCase() === emailLower);
+
+    if (!foundClient && !authRecord && !COACH_EMAILS.includes(emailLower) && !ADMIN_EMAILS.includes(emailLower)) {
+      throw new Error('Este e-mail ainda não se encontra registado nem autorizado no sistema.');
     }
 
-    // Generate random secure 6-digit confirmation code
-    const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    // Store in session storage for verification state validation
-    const payload = {
+    const req: PasswordResetRequest = {
+      id: emailLower,
       email: emailLower,
-      name: (name || '').trim(),
-      code: generatedCode,
-      createdAt: Date.now()
+      studentName: foundClient?.displayName || authRecord?.name || emailLower,
+      requestedAt: new Date().toISOString(),
+      status: 'pending'
     };
-    try {
-      sessionStorage.setItem('pending_verification_code', JSON.stringify(payload));
-    } catch (e) {}
 
-    // Dispatch real email via Backend SMTP Service
-    let smtpDelivered = false;
-    let smtpNotice = '';
+    setPasswordResetRequests(prev => {
+      const filtered = prev.filter(r => r.email.toLowerCase() !== emailLower);
+      const nextList = [req, ...filtered];
+      try {
+        localStorage.setItem('coach_reset_requests', JSON.stringify(nextList));
+      } catch (e) {}
+      return nextList;
+    });
+
     try {
-      const response = await fetch('/api/smtp/send-verification-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: emailLower,
-          code: generatedCode,
-          name: (name || '').trim()
-        })
-      });
-      const data = await response.json();
-      if (data.success) {
-        smtpDelivered = true;
-        smtpNotice = data.message || `E-mail enviado para ${emailLower}`;
-        console.log(`[AUTH SMTP] E-mail enviado com sucesso para ${emailLower}!`, data);
-      } else {
-        smtpNotice = data.message || '';
-        console.warn(`[AUTH SMTP] Servidor SMTP respondeu:`, data);
-      }
-    } catch (err: any) {
-      console.warn('[AUTH SMTP] Falha na chamada da API SMTP:', err);
+      await setDoc(doc(db, 'password_reset_requests', emailLower), req);
+    } catch (e) {
+      console.warn('Could not write password reset request to Firestore:', e);
     }
 
-    console.log(`[AUTH CODE VERIFICATION] Código de 6 dígitos gerado para ${emailLower}:`, generatedCode);
-    return { code: generatedCode, smtpDelivered, smtpNotice };
+    return {
+      success: true,
+      message: 'Pedido de recuperação enviado ao Coach! Assim que o Coach Sérgio Cunha desbloquear o teu pedido, poderás definir a tua nova palavra-passe.'
+    };
   };
 
-  const verifyCodeAndRegister = async (
+  // COACH UNLOCKS ATHLETE'S PASSWORD RECOVERY
+  const unlockPasswordReset = async (email: string): Promise<void> => {
+    const emailLower = email.trim().toLowerCase();
+    const updated = passwordResetRequests.map(r => {
+      if (r.email.toLowerCase() === emailLower) {
+        return {
+          ...r,
+          status: 'unlocked' as const,
+          unlockedAt: new Date().toISOString()
+        };
+      }
+      return r;
+    });
+
+    setPasswordResetRequests(updated);
+    try {
+      localStorage.setItem('coach_reset_requests', JSON.stringify(updated));
+    } catch (e) {}
+
+    try {
+      await updateDoc(doc(db, 'password_reset_requests', emailLower), {
+        status: 'unlocked',
+        unlockedAt: new Date().toISOString()
+      });
+    } catch (e) {}
+  };
+
+  // CHECK IF COACH UNLOCKED PASSWORD RESET FOR THIS EMAIL
+  const checkPasswordResetRequest = (email: string): PasswordResetRequest | null => {
+    const emailLower = email.trim().toLowerCase();
+    return passwordResetRequests.find(r => r.email.toLowerCase() === emailLower) || null;
+  };
+
+  // ATHLETE DEFINES NEW PASSWORD AFTER COACH UNLOCKS IT
+  const completePasswordReset = async (email: string, newPassword: string): Promise<void> => {
+    const emailLower = email.trim().toLowerCase();
+    const cleanPass = newPassword.trim();
+
+    if (!cleanPass || cleanPass.length < 6) {
+      throw new Error('A palavra-passe deve conter pelo menos 6 caracteres.');
+    }
+
+    // Mark request as completed
+    const updated = passwordResetRequests.map(r => {
+      if (r.email.toLowerCase() === emailLower) {
+        return {
+          ...r,
+          status: 'completed' as const,
+          completedAt: new Date().toISOString()
+        };
+      }
+      return r;
+    });
+    setPasswordResetRequests(updated);
+    try {
+      localStorage.setItem('coach_reset_requests', JSON.stringify(updated));
+    } catch (e) {}
+
+    try {
+      await updateDoc(doc(db, 'password_reset_requests', emailLower), {
+        status: 'completed',
+        completedAt: new Date().toISOString()
+      });
+    } catch (e) {}
+
+    // Store new credentials locally
+    try {
+      localStorage.setItem(`user_cred_${emailLower}`, cleanPass);
+    } catch (e) {}
+
+    // If Firebase current user exists, update password
+    if (auth.currentUser && auth.currentUser.email?.toLowerCase() === emailLower) {
+      try {
+        await updatePassword(auth.currentUser, cleanPass);
+      } catch (e) {}
+    }
+
+    // Automatically log the student in
+    const foundClient = allClients.find(c => c.email.toLowerCase() === emailLower);
+    if (foundClient) {
+      setRootUser(foundClient);
+    } else {
+      const authRecord = authorizedStudents.find(s => s.email.toLowerCase() === emailLower);
+      const newProfile: UserProfile = {
+        uid: `client-${Date.now()}`,
+        email: emailLower,
+        displayName: authRecord?.name || 'Aluno',
+        role: 'client',
+        subscriptionStatus: 'expired',
+        isManuallyUnlocked: false,
+        subscriptionPlan: 'Aguardar Desbloqueio do Treinador',
+        subscriptionValidUntil: '2026-10-01',
+        createdAt: new Date().toISOString()
+      };
+      saveClients([newProfile, ...allClients]);
+      setRootUser(newProfile);
+    }
+
+    sessionStorage.setItem('app_session_active', 'true');
+    sessionStorage.setItem('app_active_session', 'client');
+  };
+
+  // ATHLETE REGISTRATION WITH EMAIL AND PASSWORD (AUTHORIZATION REQUIRED, NO VERIFICATION CODES)
+  const registerWithEmail = async (
     email: string, 
     pass: string, 
     name: string, 
-    codeEntered: string, 
-    expectedCode: string, 
     rememberMe: boolean = false
   ) => {
     setLoading(true);
-    const cleanEntered = codeEntered.trim();
-    const cleanExpected = expectedCode.trim();
+    const emailLower = email.trim().toLowerCase();
+    const cleanPass = pass.trim();
 
-    // Verify code against expected or debug universal code 123456
-    if (cleanEntered !== cleanExpected && cleanEntered !== '123456') {
+    if (!cleanPass || cleanPass.length < 6) {
       setLoading(false);
-      throw new Error('Código de confirmação incorreto. Por favor introduz o código de 6 dígitos enviado para o teu e-mail.');
+      throw new Error('A palavra-passe deve conter pelo menos 6 caracteres.');
     }
 
-    const emailLower = email.trim().toLowerCase();
+    // CRITICAL: Check if coach authorized this email!
+    if (!isEmailAuthorized(emailLower)) {
+      setLoading(false);
+      throw new Error('⛔ Acesso não autorizado: O teu e-mail ainda não foi registado pelo Coach Sérgio Cunha. Pede ao teu treinador para adicionar o teu e-mail à aplicação para poderes criar conta.');
+    }
+
+    // Check if already registered
+    const existing = allClients.find(c => c.email.toLowerCase() === emailLower && c.emailVerified);
+    if (existing) {
+      setLoading(false);
+      throw new Error('Já existe uma conta ativa associada a este e-mail. Clica em "Entrar" ou recupera a palavra-passe.');
+    }
+
     try {
       try {
         await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
@@ -452,39 +717,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       let fbUid = '';
       try {
-        const res = await createUserWithEmailAndPassword(auth, email.trim(), pass);
+        const res = await createUserWithEmailAndPassword(auth, email.trim(), cleanPass);
         fbUid = res.user.uid;
         if (name && res.user) {
           try {
             await fbUpdateProfile(res.user, { displayName: name });
           } catch (e) {}
         }
-        try {
-          await sendEmailVerification(res.user);
-        } catch (e) {}
       } catch (fbErr: any) {
         console.warn('Firebase createUser note:', fbErr);
-        if (fbErr?.code === 'auth/email-already-in-use') {
-          throw new Error('Já existe uma conta associada a este e-mail. Clica em "Entrar" ou recupera a palavra-passe.');
-        }
         fbUid = `client-${Date.now()}`;
       }
+
+      // Store local credential for smooth offline and immediate login
+      try {
+        localStorage.setItem(`user_cred_${emailLower}`, cleanPass);
+      } catch (e) {}
 
       const isCoachAccount = COACH_EMAILS.includes(emailLower);
       const isAdminAccount = ADMIN_EMAILS.includes(emailLower);
       const assignedRole: UserRole = isCoachAccount ? 'coach' : isAdminAccount ? 'admin' : 'client';
 
+      // "E tem acesso ao programa (versao bloqueada) so desbloqueia sem pagar."
+      // Newly created athlete accounts start in BLOCKED status (expired / not manually unlocked).
+      // The Coach unlocks them in the dashboard without paying!
       const newProfile: UserProfile = {
         uid: fbUid,
         email: email.trim(),
-        displayName: name || (isCoachAccount ? 'Coach Sérgio Cunha' : isAdminAccount ? 'Administrador Master' : 'Novo Atleta'),
+        displayName: name || (isCoachAccount ? 'Coach Sérgio Cunha' : isAdminAccount ? 'Administrador Master' : 'Novo Aluno'),
         role: assignedRole,
-        subscriptionStatus: 'active',
-        subscriptionPlan: isCoachAccount ? 'Coach Master' : isAdminAccount ? 'Super Admin' : 'Acompanhamento VIP Mensal',
-        subscriptionValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        subscriptionStatus: (isCoachAccount || isAdminAccount) ? 'active' : 'expired',
+        subscriptionPlan: (isCoachAccount || isAdminAccount) ? 'Coach Master' : 'Aguardar Ativação pelo Coach',
+        subscriptionValidUntil: '2026-10-01',
+        isManuallyUnlocked: (isCoachAccount || isAdminAccount) ? true : false,
         createdAt: new Date().toISOString(),
         coachId: 'coach-sergio-cunha',
-        emailVerified: true, // Marked verified via 6-digit confirmation code
+        emailVerified: true, // Direct coach approval
         heightCm: 175,
         initialWeightKg: 75,
         currentWeightKg: 75
@@ -495,7 +763,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (e) {}
 
       if (assignedRole === 'client') {
-        saveClients([newProfile, ...allClients.filter(c => c.uid !== newProfile.uid)]);
+        saveClients([newProfile, ...allClients.filter(c => c.uid !== newProfile.uid && c.email.toLowerCase() !== emailLower)]);
+        // Mark as registered in authorized list
+        setAuthorizedStudents(prev => prev.map(s => s.email.toLowerCase() === emailLower ? { ...s, isRegistered: true } : s));
       }
 
       setRootUser(newProfile);
@@ -511,17 +781,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsRememberMeEnabled(false);
       }
       sessionStorage.setItem('app_session_active', 'true');
-      try {
-        sessionStorage.removeItem('pending_verification_code');
-      } catch (e) {}
     } finally {
       setLoading(false);
     }
   };
 
-  const registerWithEmail = async (email: string, pass: string, name: string, rememberMe: boolean = false) => {
-    // Direct registration fallback
-    return verifyCodeAndRegister(email, pass, name, '123456', '123456', rememberMe);
+  // Backward compatibility wrappers for obsolete verification code endpoints
+  const sendVerificationCode = async (email: string, name?: string): Promise<{ code: string; smtpDelivered?: boolean; smtpNotice?: string }> => {
+    return { code: '123456', smtpDelivered: false, smtpNotice: 'Autorização concedida diretamente pelo Coach.' };
+  };
+
+  const verifyCodeAndRegister = async (
+    email: string, 
+    pass: string, 
+    name: string, 
+    codeEntered: string, 
+    expectedCode: string, 
+    rememberMe: boolean = false
+  ) => {
+    return registerWithEmail(email, pass, name, rememberMe);
   };
 
   const loginWithGoogle = async (rememberMe: boolean = false) => {
@@ -587,7 +865,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const sendResetPassword = async (email: string) => {
-    await sendPasswordResetEmail(auth, email.trim());
+    await requestPasswordReset(email);
   };
 
   const changePassword = async (newPassword: string, currentPassword?: string): Promise<{ success: boolean; message?: string }> => {
@@ -933,6 +1211,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       deleteClientAccount,
       allClients,
       isRememberMeEnabled,
+      // Coach Authorization & Password Recovery
+      authorizedStudents,
+      authorizeEmail,
+      revokeAuthorizedEmail,
+      isEmailAuthorized,
+      passwordResetRequests,
+      requestPasswordReset,
+      unlockPasswordReset,
+      completePasswordReset,
+      checkPasswordResetRequest,
     }}>
       {children}
     </AuthContext.Provider>

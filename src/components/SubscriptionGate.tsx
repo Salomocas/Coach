@@ -115,16 +115,22 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ onSuccess })
           <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center mx-auto mb-4">
             <Lock className="w-7 h-7" />
           </div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold mb-2">
+            <span>🔒 Versão Bloqueada do Programa</span>
+          </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Acesso Reservado a Alunos VIP
+            Aguardar Ativação pelo Coach
           </h2>
           <p className="text-slate-500 dark:text-neutral-400 text-xs sm:text-sm mt-2 leading-relaxed">
-            Olá, <strong className="text-slate-900 dark:text-white">{currentUser?.displayName}</strong>. Para acederes aos teus treinos, ementa alimentar e chat direto com o Personal Trainer Sérgio Cunha, regulariza a tua mensalidade.
+            Olá, <strong className="text-slate-900 dark:text-white">{currentUser?.displayName}</strong>. A tua conta foi criada com sucesso com a tua palavra-passe! O teu programa inicia em versão bloqueada e o Coach Sérgio Cunha desbloqueia diretamente sem pagamentos adicionais.
           </p>
 
-          <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-700 dark:text-amber-300">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>O Coach pode também desbloquear o teu acesso manualmente a qualquer momento.</span>
+          <div className="mt-4 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2.5 text-left">
+            <Sparkles className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold block">Desbloqueio Gratuito pelo Treinador:</span>
+              <span>O teu Coach tem controlo total e pode ativar o teu acesso a qualquer momento através do painel de controlo. Podes também subscrever a mensalidade online se preferires ativação automática imediata.</span>
+            </div>
           </div>
         </div>
 

@@ -320,3 +320,22 @@ export interface PaymentGatewayConfig {
   multibancoSubEntity?: string;
   antiPhishingKey?: string;
 }
+
+export interface AuthorizedStudent {
+  email: string;
+  name?: string;
+  authorizedAt: string;
+  authorizedBy: string;
+  isRegistered?: boolean;
+}
+
+export interface PasswordResetRequest {
+  id: string; // email in lowercase
+  email: string;
+  studentName?: string;
+  requestedAt: string;
+  status: 'pending' | 'unlocked' | 'completed';
+  unlockedAt?: string;
+  completedAt?: string;
+}
+

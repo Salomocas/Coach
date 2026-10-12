@@ -12,7 +12,6 @@ import { Navbar } from './components/Navbar';
 import { ClientSidebar } from './components/ClientSidebar';
 import { CoachSidebar } from './components/CoachSidebar';
 import { SubscriptionGate } from './components/SubscriptionGate';
-import { EmailVerificationBanner } from './components/EmailVerificationBanner';
 import { CoachCunhaLogo } from './components/CoachCunhaLogo';
 import { AuthPortalView } from './views/auth/AuthPortalView';
 
@@ -47,9 +46,6 @@ const MainLayout: React.FC = () => {
         onNavigateClient={(tab) => setClientTab(tab)} 
         onNavigateCoach={(tab) => setCoachTab(tab)} 
       />
-
-      {/* Email Verification Alert Banner for newly registered students */}
-      <EmailVerificationBanner />
 
       {/* Main Body */}
       <div className="flex-1 flex max-w-[1600px] w-full mx-auto">

@@ -13,11 +13,18 @@ import {
   ExternalLink,
   CheckCircle2,
   ShieldAlert,
-  Server
+  Server,
+  UserPlus,
+  KeyRound,
+  ShieldCheck,
+  AlertCircle,
+  Mail,
+  Clock,
+  Check
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { UserProfile } from '../../types';
+import { UserProfile, AuthorizedStudent, PasswordResetRequest } from '../../types';
 import { firebaseConfig } from '../../firebase';
 
 interface CoachAthletesViewProps {
@@ -25,11 +32,29 @@ interface CoachAthletesViewProps {
 }
 
 export const CoachAthletesView: React.FC<CoachAthletesViewProps> = ({ onNavigateTab }) => {
-  const { allClients, toggleStudentManualAccess, deleteClientAccount, isAdmin, isCoach } = useAuth();
+  const { 
+    allClients, 
+    toggleStudentManualAccess, 
+    deleteClientAccount, 
+    isAdmin, 
+    isCoach,
+    authorizedStudents,
+    authorizeEmail,
+    revokeAuthorizedEmail,
+    passwordResetRequests,
+    unlockPasswordReset
+  } = useAuth();
   const { setSelectedAthleteId } = useData();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
+
+  // State for new athlete email authorization
+  const [newAthleteEmail, setNewAthleteEmail] = useState('');
+  const [newAthleteName, setNewAthleteName] = useState('');
+  const [isAuthorizing, setIsAuthorizing] = useState(false);
+  const [authorizeError, setAuthorizeError] = useState<string | null>(null);
+  const [showAuthorizedList, setShowAuthorizedList] = useState(false);
   
   // State for athlete deletion confirmation modal
   const [clientToDelete, setClientToDelete] = useState<UserProfile | null>(null);
@@ -49,11 +74,54 @@ export const CoachAthletesView: React.FC<CoachAthletesViewProps> = ({ onNavigate
     await toggleStudentManualAccess(client.uid, newUnlock);
     
     setActionFeedback(newUnlock
-      ? `Acesso ativado para ${client.displayName}.`
+      ? `Acesso ativado para ${client.displayName} (sem pagar).`
       : `Acesso bloqueado para ${client.displayName}.`
     );
     setTimeout(() => setActionFeedback(null), 3500);
   };
+
+  const handleAuthorizeEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthorizeError(null);
+    const emailToAuth = newAthleteEmail.trim().toLowerCase();
+    if (!emailToAuth || !emailToAuth.includes('@')) {
+      setAuthorizeError('Por favor introduz um e-mail válido.');
+      return;
+    }
+
+    setIsAuthorizing(true);
+    try {
+      await authorizeEmail(emailToAuth, newAthleteName.trim());
+      setActionFeedback(`E-mail ${emailToAuth} autorizado com sucesso! O aluno pode agora criar a sua conta com palavra-passe.`);
+      setNewAthleteEmail('');
+      setNewAthleteName('');
+      setTimeout(() => setActionFeedback(null), 5000);
+    } catch (err: any) {
+      setAuthorizeError(err?.message || 'Erro ao autorizar e-mail.');
+    } finally {
+      setIsAuthorizing(false);
+    }
+  };
+
+  const handleRevokeEmail = async (email: string) => {
+    if (confirm(`Remover a autorização para ${email}? O aluno deixará de conseguir criar conta.`)) {
+      await revokeAuthorizedEmail(email);
+      setActionFeedback(`Autorização removida para ${email}.`);
+      setTimeout(() => setActionFeedback(null), 3500);
+    }
+  };
+
+  const handleUnlockReset = async (email: string) => {
+    try {
+      await unlockPasswordReset(email);
+      setActionFeedback(`🔓 Desbloqueio aprovado para ${email}! Quando o aluno aceder à aplicação, será encaminhado diretamente para definir a nova palavra-passe.`);
+      setTimeout(() => setActionFeedback(null), 6000);
+    } catch (err: any) {
+      alert(err?.message || 'Erro ao desbloquear recuperação.');
+    }
+  };
+
+  const pendingResetRequests = passwordResetRequests.filter(r => r.status === 'pending');
 
   const handleOpenAthlete = (clientId: string) => {
     setSelectedAthleteId(clientId);
@@ -132,6 +200,194 @@ export const CoachAthletesView: React.FC<CoachAthletesViewProps> = ({ onNavigate
         </div>
       </div>
 
+      {/* NOTIFICAÇÃO: Pedidos de Recuperação de Palavra-passe */}
+      {pendingResetRequests.length > 0 && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-red-500/10 to-amber-500/15 border-2 border-amber-500/60 shadow-lg shadow-amber-500/10 space-y-3 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-amber-500 text-black flex items-center justify-center font-black animate-pulse shadow-md shadow-amber-500/30">
+                <KeyRound className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>{pendingResetRequests.length === 1 ? '1 Pedido de Recuperação de Senha' : `${pendingResetRequests.length} Pedidos de Recuperação de Senha`}</span>
+                  <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 text-[10px] font-bold animate-pulse">
+                    Requer Desbloqueio
+                  </span>
+                </h2>
+                <p className="text-[11px] text-slate-500 dark:text-neutral-400">
+                  O aluno esqueceu a palavra-passe e solicitou recuperação. Clica em desbloquear para autorizares a definição da nova senha.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            {pendingResetRequests.map((req) => (
+              <div 
+                key={req.email}
+                className="p-3.5 bg-white dark:bg-neutral-900 rounded-xl border border-amber-500/40 flex items-center justify-between gap-3 shadow-sm"
+              >
+                <div className="min-w-0">
+                  <span className="font-bold text-xs text-slate-900 dark:text-white block truncate">
+                    {req.studentName}
+                  </span>
+                  <span className="text-[11px] text-amber-600 dark:text-amber-400 font-mono block truncate">
+                    {req.email}
+                  </span>
+                  <span className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                    <Clock className="w-3 h-3" />
+                    <span>Pedido às: {new Date(req.requestedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleUnlockReset(req.email)}
+                  className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs transition flex items-center gap-1.5 shrink-0 shadow-md shadow-amber-500/20 cursor-pointer"
+                >
+                  <Unlock className="w-3.5 h-3.5" />
+                  <span>Desbloquear Acesso</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* AUTORIZAÇÃO DE NOVOS ALUNOS (APENAS E-MAIL) */}
+      <div className="p-5 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-neutral-800">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center">
+              <UserPlus className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="font-bold text-sm text-slate-900 dark:text-white">
+                Autorizar Novo Aluno (Sem Serviços de E-mail)
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-neutral-400">
+                O Coach adiciona apenas o e-mail à aplicação. O aluno cria a sua própria palavra-passe e acede à versão bloqueada.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowAuthorizedList(!showAuthorizedList)}
+            className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer self-start sm:self-center"
+          >
+            <span>{authorizedStudents.length} E-mails Autorizados</span>
+            <span>{showAuthorizedList ? '▲ Ocultar' : '▼ Ver Lista'}</span>
+          </button>
+        </div>
+
+        {/* Form to Authorize Athlete */}
+        <form onSubmit={handleAuthorizeEmail} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+          <div className="sm:col-span-6">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-neutral-400 mb-1">
+              E-mail do Aluno *
+            </label>
+            <div className="relative">
+              <Mail className="w-4 h-4 text-slate-400 dark:text-neutral-500 absolute left-3 top-2.5" />
+              <input
+                type="email"
+                required
+                value={newAthleteEmail}
+                onChange={(e) => setNewAthleteEmail(e.target.value)}
+                placeholder="exemplo: novo_aluno@gmail.com"
+                className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:border-amber-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="sm:col-span-4">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-neutral-400 mb-1">
+              Nome do Aluno (Opcional)
+            </label>
+            <input
+              type="text"
+              value={newAthleteName}
+              onChange={(e) => setNewAthleteName(e.target.value)}
+              placeholder="exemplo: Carlos Sousa"
+              className="w-full bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:border-amber-500 focus:outline-none"
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <button
+              type="submit"
+              disabled={isAuthorizing || !newAthleteEmail.trim()}
+              className="w-full py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs transition flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
+            >
+              <Check className="w-4 h-4" />
+              <span>{isAuthorizing ? 'A gravar...' : 'Autorizar'}</span>
+            </button>
+          </div>
+        </form>
+
+        {authorizeError && (
+          <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-600 dark:text-red-400 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{authorizeError}</span>
+          </div>
+        )}
+
+        {/* Informative Guidance */}
+        <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/15 text-[11px] text-slate-600 dark:text-neutral-400 leading-relaxed flex items-start gap-2">
+          <ShieldCheck className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+          <span>
+            <strong>Fluxo Direto:</strong> Ao adicionares o e-mail aqui, o aluno pode abrir a página, selecionar <em>"Criar Conta"</em> e escolher a sua palavra-passe. O programa inicia na versão bloqueada e podes ativá-lo diretamente abaixo <strong>sem custos nem gateways de pagamento</strong>.
+          </span>
+        </div>
+
+        {/* Expandable list of authorized emails */}
+        {showAuthorizedList && (
+          <div className="pt-3 border-t border-slate-100 dark:border-neutral-800 space-y-2">
+            <h3 className="text-xs font-bold text-slate-700 dark:text-neutral-300">
+              E-mails com Permissão de Criação de Conta:
+            </h3>
+            <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+              {authorizedStudents.map((authStudent) => {
+                const hasAccount = allClients.some(c => c.email.toLowerCase() === authStudent.email.toLowerCase());
+                return (
+                  <div 
+                    key={authStudent.email}
+                    className="p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="min-w-0">
+                      <span className="font-semibold text-slate-900 dark:text-white block truncate">
+                        {authStudent.name ? `${authStudent.name} (${authStudent.email})` : authStudent.email}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block">
+                        Autorizado em: {new Date(authStudent.authorizedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        hasAccount
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
+                          : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25'
+                      }`}>
+                        {hasAccount ? '✓ Conta Criada' : '⏳ Aguarda Criação'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRevokeEmail(authStudent.email)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition cursor-pointer"
+                        title="Remover autorização deste e-mail"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Database Quick Access Banner */}
       <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-neutral-900/40 to-neutral-900/60 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
         <div className="flex items-start sm:items-center gap-2.5">
@@ -201,10 +457,10 @@ export const CoachAthletesView: React.FC<CoachAthletesViewProps> = ({ onNavigate
                   <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${
                     isActive
                       ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                      : 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
+                      : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
                   }`}>
-                    <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                    <span className="hidden sm:inline">{isActive ? 'Ativo' : 'Bloqueado'}</span>
+                    <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                    <span className="hidden sm:inline">{isActive ? 'Acesso Ativo' : 'Versão Bloqueada'}</span>
                   </span>
 
                   {/* Toggle Button */}
@@ -213,9 +469,9 @@ export const CoachAthletesView: React.FC<CoachAthletesViewProps> = ({ onNavigate
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                       isActive
                         ? 'bg-slate-100 hover:bg-red-500/10 text-slate-700 dark:text-neutral-300 hover:text-red-600 dark:hover:text-red-400 border border-slate-200 dark:border-neutral-700'
-                        : 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm'
+                        : 'bg-emerald-500 text-black hover:bg-emerald-400 font-extrabold shadow-sm'
                     }`}
-                    title={isActive ? 'Bloquear acesso do atleta' : 'Ativar acesso do atleta'}
+                    title={isActive ? 'Bloquear programa do atleta' : 'Desbloquear programa sem pagar'}
                   >
                     {isActive ? (
                       <>
@@ -225,7 +481,7 @@ export const CoachAthletesView: React.FC<CoachAthletesViewProps> = ({ onNavigate
                     ) : (
                       <>
                         <Unlock className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Ativar</span>
+                        <span className="hidden sm:inline">Desbloquear (Sem Pagar)</span>
                       </>
                     )}
                   </button>

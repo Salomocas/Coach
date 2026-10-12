@@ -24,7 +24,9 @@ import {
   Users,
   Send,
   MailCheck,
-  Server
+  Server,
+  UserPlus,
+  Mail
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -34,7 +36,7 @@ import { CoachCunhaLogo } from './CoachCunhaLogo';
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  defaultTab?: 'theme' | 'logo' | 'security' | 'profile' | 'database';
+  defaultTab?: 'theme' | 'logo' | 'security' | 'profile' | 'database' | 'smtp' | 'authorizations';
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -42,7 +44,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   defaultTab = 'logo'
 }) => {
-  const { currentUser, isCoach, isAdmin, changePassword, allClients, deleteClientAccount } = useAuth();
+  const { 
+    currentUser, 
+    isCoach, 
+    isAdmin, 
+    changePassword, 
+    allClients, 
+    deleteClientAccount,
+    authorizedStudents,
+    authorizeEmail,
+    revokeAuthorizedEmail
+  } = useAuth();
   const { theme, setTheme, isDark } = useTheme();
   const { 
     logoUrl, 
@@ -56,7 +68,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     toggleAuthLogo
   } = useLogo();
 
-  const [activeTab, setActiveTab] = useState<'theme' | 'logo' | 'security' | 'profile' | 'database' | 'smtp'>(defaultTab);
+  const [activeTab, setActiveTab] = useState<'theme' | 'logo' | 'security' | 'profile' | 'database' | 'smtp' | 'authorizations'>(defaultTab);
 
   // Sync tab when modal opens or defaultTab changes
   useEffect(() => {
@@ -78,7 +90,48 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [passwordStatus, setPasswordStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' });
   const [isChangingPass, setIsChangingPass] = useState(false);
 
-  if (!isOpen) return null;
+  // Database search & deletion state
+  const [dbSearch, setDbSearch] = useState('');
+  const [accountToDelete, setAccountToDelete] = useState<{ uid: string; name: string; email: string } | null>(null);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [accountActionFeedback, setAccountActionFeedback] = useState<string | null>(null);
+
+  // Student Authorization state (Coach/Admin)
+  const [newAuthEmail, setNewAuthEmail] = useState('');
+  const [newAuthName, setNewAuthName] = useState('');
+  const [isAuthorizingStudent, setIsAuthorizingStudent] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authSuccess, setAuthSuccess] = useState<string | null>(null);
+
+  // SMTP Settings State
+  const [smtpHost, setSmtpHost] = useState('');
+  const [smtpPort, setSmtpPort] = useState('465');
+  const [smtpSecure, setSmtpSecure] = useState(true);
+  const [smtpUser, setSmtpUser] = useState('');
+  const [smtpPass, setSmtpPass] = useState('');
+  const [smtpFromName, setSmtpFromName] = useState('Coach Cunha');
+  const [smtpFromEmail, setSmtpFromEmail] = useState('noreply@coachcunha.pt');
+  const [smtpStatusInfo, setSmtpStatusInfo] = useState<{ configured: boolean; source: string; host: string | null } | null>(null);
+  const [smtpFeedback, setSmtpFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [isTestingSmtp, setIsTestingSmtp] = useState(false);
+  const [isSavingSmtp, setIsSavingSmtp] = useState(false);
+
+  useEffect(() => {
+    // Fetch SMTP status on open
+    if (isOpen) {
+      fetch('/api/smtp/status')
+        .then(res => res.json())
+        .then(data => {
+          setSmtpStatusInfo(data);
+          if (data.host) setSmtpHost(data.host);
+          if (data.port) setSmtpPort(String(data.port));
+          if (data.secure !== undefined) setSmtpSecure(data.secure);
+          if (data.fromName) setSmtpFromName(data.fromName);
+          if (data.fromEmail) setSmtpFromEmail(data.fromEmail);
+        })
+        .catch(err => console.warn('Could not check SMTP status:', err));
+    }
+  }, [isOpen]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -235,41 +288,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
-  const [dbSearch, setDbSearch] = useState('');
-  const [accountToDelete, setAccountToDelete] = useState<{ uid: string; name: string; email: string } | null>(null);
-  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-  const [accountActionFeedback, setAccountActionFeedback] = useState<string | null>(null);
-
-  // SMTP Settings State
-  const [smtpHost, setSmtpHost] = useState('');
-  const [smtpPort, setSmtpPort] = useState('465');
-  const [smtpSecure, setSmtpSecure] = useState(true);
-  const [smtpUser, setSmtpUser] = useState('');
-  const [smtpPass, setSmtpPass] = useState('');
-  const [smtpFromName, setSmtpFromName] = useState('Coach Cunha');
-  const [smtpFromEmail, setSmtpFromEmail] = useState('noreply@coachcunha.pt');
-  const [smtpStatusInfo, setSmtpStatusInfo] = useState<{ configured: boolean; source: string; host: string | null } | null>(null);
-  const [smtpFeedback, setSmtpFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const [isTestingSmtp, setIsTestingSmtp] = useState(false);
-  const [isSavingSmtp, setIsSavingSmtp] = useState(false);
-
-  useEffect(() => {
-    // Fetch SMTP status on open
-    if (isOpen) {
-      fetch('/api/smtp/status')
-        .then(res => res.json())
-        .then(data => {
-          setSmtpStatusInfo(data);
-          if (data.host) setSmtpHost(data.host);
-          if (data.port) setSmtpPort(String(data.port));
-          if (data.secure !== undefined) setSmtpSecure(data.secure);
-          if (data.fromName) setSmtpFromName(data.fromName);
-          if (data.fromEmail) setSmtpFromEmail(data.fromEmail);
-        })
-        .catch(err => console.warn('Could not check SMTP status:', err));
-    }
-  }, [isOpen]);
-
   const handleTestSmtp = async () => {
     setIsTestingSmtp(true);
     setSmtpFeedback(null);
@@ -347,6 +365,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setIsDeletingAccount(false);
     }
   };
+
+  const handleAuthorizeStudentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setAuthSuccess(null);
+    const emailToAuth = newAuthEmail.trim().toLowerCase();
+    if (!emailToAuth || !emailToAuth.includes('@')) {
+      setAuthError('Por favor introduz um e-mail válido.');
+      return;
+    }
+    setIsAuthorizingStudent(true);
+    try {
+      await authorizeEmail(emailToAuth, newAuthName.trim());
+      setAuthSuccess(`E-mail ${emailToAuth} autorizado com sucesso! O aluno pode agora criar a sua conta.`);
+      setNewAuthEmail('');
+      setNewAuthName('');
+    } catch (err: any) {
+      setAuthError(err?.message || 'Erro ao autorizar e-mail.');
+    } finally {
+      setIsAuthorizingStudent(false);
+    }
+  };
+
+  const handleRevokeStudent = async (email: string) => {
+    if (confirm(`Remover a autorização para ${email}? O aluno deixará de conseguir criar conta.`)) {
+      await revokeAuthorizedEmail(email);
+      setAuthSuccess(`Autorização removida para ${email}.`);
+      setTimeout(() => setAuthSuccess(null), 3500);
+    }
+  };
+
+  if (!isOpen) return null;
 
   return (
     <div 
@@ -449,6 +499,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <span>Base de Dados & Contas</span>
                   <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500 font-bold">
                     {allClients.length}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('authorizations')}
+                  className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold border-b-2 transition whitespace-nowrap cursor-pointer ${
+                    activeTab === 'authorizations'
+                      ? 'border-amber-500 text-amber-500'
+                      : 'border-transparent text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>Autorizar Alunos</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500 font-bold">
+                    {authorizedStudents.length}
                   </span>
                 </button>
 
