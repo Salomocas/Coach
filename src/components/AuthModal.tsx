@@ -54,6 +54,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isSmtpDelivered, setIsSmtpDelivered] = useState<boolean>(false);
 
   // Reset internal states when opened
   React.useEffect(() => {
@@ -119,14 +120,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           onClose();
         }, 800);
       } else if (mode === 'register') {
-        const { code } = await sendVerificationCode(email.trim(), name.trim());
+        const { code, smtpDelivered, smtpNotice } = await sendVerificationCode(email.trim(), name.trim());
         setExpectedCode(code);
+        setIsSmtpDelivered(!!smtpDelivered);
         setVerificationCodeInput('');
         setMode('verify-code');
         setCodeResendCountdown(60);
-        setSuccessMessage(
-          `Código de segurança gerado! Enviámos uma confirmação de 6 dígitos para ${email.trim()}.`
-        );
+        if (smtpDelivered) {
+          setSuccessMessage(
+            `E-mail de confirmação enviado para a tua caixa de correio (${email.trim()}) com o código de 6 dígitos!`
+          );
+        } else {
+          setSuccessMessage(
+            smtpNotice || `Código de segurança gerado! Enviámos uma confirmação de 6 dígitos para ${email.trim()}.`
+          );
+        }
       } else if (mode === 'forgot') {
         await sendResetPassword(email.trim());
         setSuccessMessage(
@@ -190,10 +198,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsResendingCode(true);
     setError(null);
     try {
-      const { code } = await sendVerificationCode(email.trim(), name.trim());
+      const { code, smtpDelivered, smtpNotice } = await sendVerificationCode(email.trim(), name.trim());
       setExpectedCode(code);
+      setIsSmtpDelivered(!!smtpDelivered);
       setCodeResendCountdown(60);
-      setSuccessMessage(`Novo código enviado para ${email.trim()}.`);
+      if (smtpDelivered) {
+        setSuccessMessage(`Novo código enviado para a tua caixa de correio (${email.trim()})!`);
+      } else {
+        setSuccessMessage(smtpNotice || `Novo código gerado para ${email.trim()}.`);
+      }
     } catch (err: any) {
       setError(err?.message || 'Erro ao reenviar código de segurança.');
     } finally {
@@ -389,15 +402,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
               </div>
 
-              {/* Virtual Inbox Simulation Card */}
+              {/* Virtual Inbox Simulation & Delivery Card */}
               <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-950 border border-amber-500/30 text-xs space-y-2">
                 <div className="flex items-center justify-between pb-1.5 border-b border-slate-200 dark:border-neutral-800">
                   <span className="font-bold text-slate-800 dark:text-neutral-200 text-[11px] flex items-center gap-1.5">
-                    <span>✉️</span>
-                    <span>Caixa de Correio Virtual</span>
+                    <span>{isSmtpDelivered ? '🚀' : '✉️'}</span>
+                    <span>{isSmtpDelivered ? 'Enviado para a tua Caixa de Correio' : 'Caixa de Entrada & Validação'}</span>
                   </span>
-                  <span className="text-[10px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.2 rounded-full">
-                    E-mail Gerado
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    isSmtpDelivered
+                      ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                      : 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                  }`}>
+                    {isSmtpDelivered ? '✓ Enviado via SMTP' : 'Código Gerado'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-2">
@@ -416,7 +433,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </button>
                 </div>
                 <p className="text-[10px] text-slate-500 dark:text-neutral-400 leading-tight">
-                  ℹ️ O e-mail foi simulado para validação imediata (código de teste alternativo: <strong className="font-mono text-amber-500">123456</strong>).
+                  {isSmtpDelivered ? (
+                    <>
+                      📬 <strong>E-mail enviado via SMTP!</strong> Verifica a tua caixa de entrada em <strong>{email}</strong>.
+                    </>
+                  ) : (
+                    <>
+                      ℹ️ O código gerado acima permite-te validar o registo imediatamente (código alternativo: <strong className="font-mono text-amber-500">123456</strong>).
+                    </>
+                  )}
                 </p>
               </div>
 

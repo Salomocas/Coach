@@ -46,7 +46,7 @@ interface AuthContextType {
   stopImpersonation: () => void;
   loginWithEmail: (email: string, pass: string, rememberMe?: boolean) => Promise<void>;
   registerWithEmail: (email: string, pass: string, name: string, rememberMe?: boolean) => Promise<void>;
-  sendVerificationCode: (email: string, name?: string) => Promise<{ code: string }>;
+  sendVerificationCode: (email: string, name?: string) => Promise<{ code: string; smtpDelivered?: boolean; smtpNotice?: string }>;
   verifyCodeAndRegister: (email: string, pass: string, name: string, codeEntered: string, expectedCode: string, rememberMe?: boolean) => Promise<void>;
   loginWithGoogle: (rememberMe?: boolean) => Promise<void>;
   sendVerificationEmail: () => Promise<void>;
@@ -371,7 +371,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const sendVerificationCode = async (email: string, name?: string): Promise<{ code: string }> => {
+  const sendVerificationCode = async (email: string, name?: string): Promise<{ code: string; smtpDelivered?: boolean; smtpNotice?: string }> => {
     const emailLower = email.trim().toLowerCase();
     if (!emailLower || !emailLower.includes('@')) {
       throw new Error('Por favor introduz um endereço de e-mail válido.');
@@ -396,8 +396,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       sessionStorage.setItem('pending_verification_code', JSON.stringify(payload));
     } catch (e) {}
 
+    // Dispatch real email via Backend SMTP Service
+    let smtpDelivered = false;
+    let smtpNotice = '';
+    try {
+      const response = await fetch('/api/smtp/send-verification-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: emailLower,
+          code: generatedCode,
+          name: (name || '').trim()
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        smtpDelivered = true;
+        smtpNotice = data.message || `E-mail enviado para ${emailLower}`;
+        console.log(`[AUTH SMTP] E-mail enviado com sucesso para ${emailLower}!`, data);
+      } else {
+        smtpNotice = data.message || '';
+        console.warn(`[AUTH SMTP] Servidor SMTP respondeu:`, data);
+      }
+    } catch (err: any) {
+      console.warn('[AUTH SMTP] Falha na chamada da API SMTP:', err);
+    }
+
     console.log(`[AUTH CODE VERIFICATION] Código de 6 dígitos gerado para ${emailLower}:`, generatedCode);
-    return { code: generatedCode };
+    return { code: generatedCode, smtpDelivered, smtpNotice };
   };
 
   const verifyCodeAndRegister = async (

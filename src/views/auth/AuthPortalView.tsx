@@ -71,6 +71,7 @@ export const AuthPortalView: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isSmtpDelivered, setIsSmtpDelivered] = useState(false);
 
   // Countdown timer for resending verification code
   React.useEffect(() => {
@@ -119,14 +120,21 @@ export const AuthPortalView: React.FC = () => {
       if (mode === 'login') {
         await loginWithEmail(email.trim(), password, rememberMe);
       } else if (mode === 'register') {
-        const { code } = await sendVerificationCode(email.trim(), name.trim());
+        const { code, smtpDelivered, smtpNotice } = await sendVerificationCode(email.trim(), name.trim());
         setExpectedCode(code);
+        setIsSmtpDelivered(!!smtpDelivered);
         setVerificationCodeInput('');
         setMode('verify-code');
         setCodeResendCountdown(60);
-        setSuccessMessage(
-          `Código de segurança gerado! Enviámos uma confirmação de 6 dígitos para ${email.trim()}.`
-        );
+        if (smtpDelivered) {
+          setSuccessMessage(
+            `E-mail de confirmação enviado para a tua caixa de correio (${email.trim()}) com o código de 6 dígitos!`
+          );
+        } else {
+          setSuccessMessage(
+            smtpNotice || `Código de segurança gerado! Enviámos uma confirmação de 6 dígitos para ${email.trim()}.`
+          );
+        }
       } else if (mode === 'forgot') {
         await sendResetPassword(email.trim());
         setSuccessMessage(
@@ -187,10 +195,15 @@ export const AuthPortalView: React.FC = () => {
     setIsResendingCode(true);
     setError(null);
     try {
-      const { code } = await sendVerificationCode(email.trim(), name.trim());
+      const { code, smtpDelivered, smtpNotice } = await sendVerificationCode(email.trim(), name.trim());
       setExpectedCode(code);
+      setIsSmtpDelivered(!!smtpDelivered);
       setCodeResendCountdown(60);
-      setSuccessMessage(`Novo código enviado para ${email.trim()}.`);
+      if (smtpDelivered) {
+        setSuccessMessage(`Novo código enviado para a tua caixa de correio (${email.trim()})!`);
+      } else {
+        setSuccessMessage(smtpNotice || `Novo código gerado para ${email.trim()}.`);
+      }
     } catch (err: any) {
       setError(err?.message || 'Erro ao reenviar código de segurança.');
     } finally {
@@ -438,24 +451,28 @@ export const AuthPortalView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Virtual Inbox Simulation Card */}
+              {/* Delivery Status & Virtual Mailbox Card */}
               <div className="p-4 bg-gradient-to-b from-neutral-900 to-neutral-950 border border-amber-500/40 rounded-2xl text-xs space-y-2.5 shadow-xl">
                 <div className="flex items-center justify-between pb-2 border-b border-neutral-800">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs">
-                      ✉️
+                      {isSmtpDelivered ? '🚀' : '✉️'}
                     </div>
                     <div>
                       <span className="font-bold text-white text-[11px] block">
-                        Caixa de Entrada Virtual
+                        {isSmtpDelivered ? 'Enviado para a tua Caixa de Correio Real' : 'Caixa de Entrada & Validador Instantâneo'}
                       </span>
                       <span className="text-[10px] text-neutral-400">
                         De: <span className="text-amber-400 font-mono">noreply@coachcunha.pt</span>
                       </span>
                     </div>
                   </div>
-                  <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
-                    E-mail Gerado
+                  <span className={`text-[10px] border px-2 py-0.5 rounded-full font-bold ${
+                    isSmtpDelivered 
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
+                      : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                  }`}>
+                    {isSmtpDelivered ? '✓ Enviado via SMTP' : 'Código Gerado'}
                   </span>
                 </div>
 
@@ -479,7 +496,15 @@ export const AuthPortalView: React.FC = () => {
                 </div>
 
                 <p className="text-[10px] text-neutral-400 leading-relaxed">
-                  ℹ️ <strong>Nota informativa:</strong> Em aplicações web a correr no navegador, o envio físico de e-mails para servidores externos (Gmail/Hotmail) necessita de um serviço SMTP com chave de API (ex: SendGrid ou Resend). O código foi gerado acima para que possas confirmar a conta e testar sem atrasos de entrega! (Código alternativo: <span className="font-mono text-amber-400 font-bold">123456</span>).
+                  {isSmtpDelivered ? (
+                    <>
+                      📬 <strong>E-mail enviado via SMTP!</strong> Verifica a tua caixa de entrada (e pasta de spam) em <strong className="text-amber-400">{email}</strong>. Se quiseres agilizar o teste agora mesmo, clica diretamente em <strong>"Preencher Código"</strong> acima.
+                    </>
+                  ) : (
+                    <>
+                      ℹ️ <strong>Envio SMTP Integrado:</strong> A aplicação já suporta disparo SMTP direto para o teu e-mail real. Podes configurar as credenciais do teu servidor SMTP (Gmail, Brevo, Outlook) no painel de configurações ou no ficheiro <code className="text-amber-400">.env</code>. O código gerado acima permite-te entrar imediatamente sem demoras! (Código universal: <span className="font-mono text-amber-400 font-bold">123456</span>).
+                    </>
+                  )}
                 </p>
               </div>
 
