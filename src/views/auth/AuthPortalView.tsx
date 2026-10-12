@@ -277,6 +277,19 @@ export const AuthPortalView: React.FC = () => {
                 Portal Central de Autenticação
               </p>
             </div>
+
+            {/* Direct Quick Button to Eliminate Logo */}
+            <button
+              type="button"
+              onClick={async () => {
+                await removeLogoCompletely();
+              }}
+              className="mt-2.5 text-[11px] text-neutral-300 hover:text-red-400 flex items-center gap-1.5 transition cursor-pointer px-3 py-1 rounded-full bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-red-500/40 shadow-sm"
+              title="Eliminar este logótipo imediatamente"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+              <span>Ocultar / Eliminar Logótipo</span>
+            </button>
           </div>
         ) : (
           <div className="mb-6 flex flex-col items-center animate-fade-in text-center px-4">
@@ -425,19 +438,48 @@ export const AuthPortalView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Instant Verification Code Card (Garante teste rápido e sem bloqueio de spam) */}
-              <div className="p-3.5 bg-neutral-950/80 border border-amber-500/30 rounded-2xl text-xs space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold text-neutral-300 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-amber-400" />
-                    Código enviado para o e-mail:
-                  </span>
-                  <span className="font-mono font-black text-amber-400 bg-amber-500/20 px-2.5 py-1 rounded-lg text-sm tracking-widest border border-amber-500/40">
-                    {expectedCode}
+              {/* Virtual Inbox Simulation Card */}
+              <div className="p-4 bg-gradient-to-b from-neutral-900 to-neutral-950 border border-amber-500/40 rounded-2xl text-xs space-y-2.5 shadow-xl">
+                <div className="flex items-center justify-between pb-2 border-b border-neutral-800">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs">
+                      ✉️
+                    </div>
+                    <div>
+                      <span className="font-bold text-white text-[11px] block">
+                        Caixa de Entrada Virtual
+                      </span>
+                      <span className="text-[10px] text-neutral-400">
+                        De: <span className="text-amber-400 font-mono">noreply@coachcunha.pt</span>
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
+                    E-mail Gerado
                   </span>
                 </div>
-                <p className="text-[11px] text-neutral-400 leading-relaxed">
-                  Para tua comodidade e ativação imediata (mesmo em caso de atraso na entrega pelo teu provedor de correio), introduz o código acima.
+
+                <div className="p-2.5 rounded-xl bg-neutral-950 border border-neutral-800 flex items-center justify-between gap-2">
+                  <div>
+                    <span className="text-[10px] text-neutral-400 block font-medium">Código de Segurança:</span>
+                    <span className="font-mono font-black text-amber-400 text-lg tracking-[0.25em]">
+                      {expectedCode}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setVerificationCodeInput(expectedCode);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-[11px] transition cursor-pointer shadow-sm active:scale-95 flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Preencher Código</span>
+                  </button>
+                </div>
+
+                <p className="text-[10px] text-neutral-400 leading-relaxed">
+                  ℹ️ <strong>Nota informativa:</strong> Em aplicações web a correr no navegador, o envio físico de e-mails para servidores externos (Gmail/Hotmail) necessita de um serviço SMTP com chave de API (ex: SendGrid ou Resend). O código foi gerado acima para que possas confirmar a conta e testar sem atrasos de entrega! (Código alternativo: <span className="font-mono text-amber-400 font-bold">123456</span>).
                 </p>
               </div>
 

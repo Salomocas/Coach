@@ -86,31 +86,36 @@ const LogoContext = createContext<LogoContextType | undefined>(undefined);
 export const LogoProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLogoRemoved, setIsLogoRemoved] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('coach_cunha_logo_removed') === 'true';
-    } catch {
-      return false;
-    }
-  });
-
-  const [showAuthLogo, setShowAuthLogo] = useState<boolean>(() => {
-    try {
-      if (localStorage.getItem('coach_cunha_logo_removed') === 'true') return false;
-      const val = localStorage.getItem('coach_cunha_show_auth_logo');
-      return val !== 'false';
+      const explicit = localStorage.getItem('coach_cunha_logo_removed');
+      if (explicit !== null) return explicit === 'true';
+      // User requested to remove the initial logo: default to true so it stays clean
+      return true;
     } catch {
       return true;
     }
   });
 
+  const [showAuthLogo, setShowAuthLogo] = useState<boolean>(() => {
+    try {
+      const removed = localStorage.getItem('coach_cunha_logo_removed');
+      if (removed === 'true' || removed === null) return false;
+      const val = localStorage.getItem('coach_cunha_show_auth_logo');
+      return val === 'true';
+    } catch {
+      return false;
+    }
+  });
+
   const [logoUrl, setLogoUrl] = useState<string>(() => {
     try {
-      if (localStorage.getItem('coach_cunha_logo_removed') === 'true') return '';
+      const removed = localStorage.getItem('coach_cunha_logo_removed');
+      if (removed === 'true' || removed === null) return '';
       const saved = localStorage.getItem('coach_cunha_custom_logo');
       if (saved) return saved;
     } catch (e) {
       console.warn('Could not read cached logo from localStorage:', e);
     }
-    return DEFAULT_LOGO;
+    return '';
   });
 
   const [logoDetails, setLogoDetails] = useState<{

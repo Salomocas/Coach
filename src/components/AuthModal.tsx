@@ -389,19 +389,34 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
               </div>
 
-              {/* Instant code test indicator */}
-              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-neutral-950 border border-amber-500/30 text-xs space-y-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold text-slate-700 dark:text-neutral-300 flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
-                    Código enviado:
+              {/* Virtual Inbox Simulation Card */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-950 border border-amber-500/30 text-xs space-y-2">
+                <div className="flex items-center justify-between pb-1.5 border-b border-slate-200 dark:border-neutral-800">
+                  <span className="font-bold text-slate-800 dark:text-neutral-200 text-[11px] flex items-center gap-1.5">
+                    <span>✉️</span>
+                    <span>Caixa de Correio Virtual</span>
                   </span>
-                  <span className="font-mono font-black text-amber-600 dark:text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded text-xs tracking-widest border border-amber-500/40">
-                    {expectedCode}
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.2 rounded-full">
+                    E-mail Gerado
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-500 dark:text-neutral-400">
-                  Introduz o código de segurança para ativar a tua conta imediatamente.
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <span className="text-[10px] text-slate-500 dark:text-neutral-400 block">Código de 6 Dígitos:</span>
+                    <span className="font-mono font-black text-amber-600 dark:text-amber-400 text-base tracking-widest">
+                      {expectedCode}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setVerificationCodeInput(expectedCode)}
+                    className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-[11px] transition cursor-pointer"
+                  >
+                    Preencher Código
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-500 dark:text-neutral-400 leading-tight">
+                  ℹ️ O e-mail foi simulado para validação imediata (código de teste alternativo: <strong className="font-mono text-amber-500">123456</strong>).
                 </p>
               </div>
 
