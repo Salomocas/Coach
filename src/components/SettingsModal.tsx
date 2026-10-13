@@ -36,7 +36,7 @@ import { CoachCunhaLogo } from './CoachCunhaLogo';
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  defaultTab?: 'theme' | 'logo' | 'security' | 'profile' | 'database' | 'smtp' | 'authorizations';
+  defaultTab?: 'theme' | 'logo' | 'security' | 'profile' | 'database' | 'authorizations';
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -68,7 +68,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     toggleAuthLogo
   } = useLogo();
 
-  const [activeTab, setActiveTab] = useState<'theme' | 'logo' | 'security' | 'profile' | 'database' | 'smtp' | 'authorizations'>(defaultTab);
+  const [activeTab, setActiveTab] = useState<'theme' | 'logo' | 'security' | 'profile' | 'database' | 'authorizations'>(defaultTab);
 
   // Sync tab when modal opens or defaultTab changes
   useEffect(() => {
@@ -103,35 +103,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
 
-  // SMTP Settings State
-  const [smtpHost, setSmtpHost] = useState('');
-  const [smtpPort, setSmtpPort] = useState('465');
-  const [smtpSecure, setSmtpSecure] = useState(true);
-  const [smtpUser, setSmtpUser] = useState('');
-  const [smtpPass, setSmtpPass] = useState('');
-  const [smtpFromName, setSmtpFromName] = useState('Coach Cunha');
-  const [smtpFromEmail, setSmtpFromEmail] = useState('noreply@coachcunha.pt');
-  const [smtpStatusInfo, setSmtpStatusInfo] = useState<{ configured: boolean; source: string; host: string | null } | null>(null);
-  const [smtpFeedback, setSmtpFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const [isTestingSmtp, setIsTestingSmtp] = useState(false);
-  const [isSavingSmtp, setIsSavingSmtp] = useState(false);
-
-  useEffect(() => {
-    // Fetch SMTP status on open
-    if (isOpen) {
-      fetch('/api/smtp/status')
-        .then(res => res.json())
-        .then(data => {
-          setSmtpStatusInfo(data);
-          if (data.host) setSmtpHost(data.host);
-          if (data.port) setSmtpPort(String(data.port));
-          if (data.secure !== undefined) setSmtpSecure(data.secure);
-          if (data.fromName) setSmtpFromName(data.fromName);
-          if (data.fromEmail) setSmtpFromEmail(data.fromEmail);
-        })
-        .catch(err => console.warn('Could not check SMTP status:', err));
-    }
-  }, [isOpen]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -285,69 +256,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setPasswordStatus({ type: 'error', message: err?.message || 'Falha ao atualizar a palavra-passe.' });
     } finally {
       setIsChangingPass(false);
-    }
-  };
-
-  const handleTestSmtp = async () => {
-    setIsTestingSmtp(true);
-    setSmtpFeedback(null);
-    try {
-      const res = await fetch('/api/smtp/verify-connection', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          host: smtpHost.trim(),
-          port: Number(smtpPort),
-          secure: smtpSecure,
-          user: smtpUser.trim(),
-          pass: smtpPass.trim(),
-          fromName: smtpFromName.trim(),
-          fromEmail: smtpFromEmail.trim(),
-          saveToRuntime: true
-        })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSmtpFeedback({ type: 'success', message: data.message });
-        setSmtpStatusInfo({ configured: true, source: 'runtime_saved', host: smtpHost });
-      } else {
-        setSmtpFeedback({ type: 'error', message: data.message });
-      }
-    } catch (e: any) {
-      setSmtpFeedback({ type: 'error', message: e.message || 'Falha ao testar conexão SMTP.' });
-    } finally {
-      setIsTestingSmtp(false);
-    }
-  };
-
-  const handleSaveSmtp = async () => {
-    setIsSavingSmtp(true);
-    setSmtpFeedback(null);
-    try {
-      const res = await fetch('/api/smtp/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          host: smtpHost.trim(),
-          port: Number(smtpPort),
-          secure: smtpSecure,
-          user: smtpUser.trim(),
-          pass: smtpPass.trim(),
-          fromName: smtpFromName.trim(),
-          fromEmail: smtpFromEmail.trim()
-        })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSmtpFeedback({ type: 'success', message: 'Configurações SMTP guardadas com sucesso no servidor!' });
-        setSmtpStatusInfo({ configured: !!smtpHost && !!smtpUser, source: 'runtime_saved', host: smtpHost });
-      } else {
-        setSmtpFeedback({ type: 'error', message: data.message });
-      }
-    } catch (e: any) {
-      setSmtpFeedback({ type: 'error', message: e.message || 'Erro ao guardar configurações SMTP.' });
-    } finally {
-      setIsSavingSmtp(false);
     }
   };
 
@@ -515,21 +423,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500 font-bold">
                     {authorizedStudents.length}
                   </span>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('smtp')}
-                  className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold border-b-2 transition whitespace-nowrap cursor-pointer ${
-                    activeTab === 'smtp'
-                      ? 'border-amber-500 text-amber-500'
-                      : 'border-transparent text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Server className="w-3.5 h-3.5" />
-                  <span>Serviço SMTP (E-mails)</span>
-                  {smtpStatusInfo?.configured && (
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                  )}
                 </button>
               </>
             )}
@@ -1103,219 +996,157 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           )}
 
-          {/* TAB 6: SMTP SERVICE (E-MAIL SENDING CONFIGURATION) */}
-          {activeTab === 'smtp' && (
-            <div className="space-y-4 animate-fade-in">
+          {/* TAB 6: STUDENT AUTHORIZATION (COACH CONFIGURATION) */}
+          {activeTab === 'authorizations' && (
+            <div className="space-y-5 animate-fade-in">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-neutral-800">
                 <div>
                   <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                    <Server className="w-4 h-4 text-amber-500" />
-                    Configuração do Serviço SMTP (Envio Real de E-mails)
+                    <UserPlus className="w-4 h-4 text-amber-500" />
+                    Autorização de Novos Alunos (Configuração do Coach)
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-                    Garante o disparo físico de e-mails com o código de 6 dígitos para o Gmail, Hotmail ou Outlook dos novos atletas.
+                    Permite que novos atletas criem conta sem serviços de e-mail externos. Necessitas apenas do e-mail do aluno.
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 ${
-                    smtpStatusInfo?.configured
-                      ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                      : 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                  }`}>
-                    <span className={`w-2 h-2 rounded-full ${smtpStatusInfo?.configured ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-                    <span>{smtpStatusInfo?.configured ? 'Serviço Ativo' : 'Não Configurado'}</span>
-                  </span>
-                </div>
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25 self-start sm:self-auto">
+                  {authorizedStudents.length} {authorizedStudents.length === 1 ? 'e-mail autorizado' : 'e-mails autorizados'}
+                </span>
               </div>
 
-              {/* Status Feedback Banner */}
-              {smtpFeedback && (
-                <div className={`p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2 animate-fade-in ${
-                  smtpFeedback.type === 'success'
-                    ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
-                    : 'bg-red-500/15 border border-red-500/30 text-red-700 dark:text-red-300'
-                }`}>
-                  {smtpFeedback.type === 'success' ? (
-                    <MailCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-                  ) : (
-                    <Shield className="w-4 h-4 text-red-500 shrink-0" />
-                  )}
-                  <span>{smtpFeedback.message}</span>
+              {/* Feedback messages */}
+              {authSuccess && (
+                <div className="p-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2.5 animate-fade-in">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span className="flex-1">{authSuccess}</span>
+                  <button onClick={() => setAuthSuccess(null)} className="p-1 cursor-pointer">
+                    <X className="w-3.5 h-3.5 opacity-60 hover:opacity-100" />
+                  </button>
                 </div>
               )}
 
-              {/* Quick Presets */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 space-y-2">
-                <span className="text-[11px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider block">
-                  Modelos Rápidos de Provedor SMTP:
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSmtpHost('smtp.gmail.com');
-                      setSmtpPort('465');
-                      setSmtpSecure(true);
-                      setSmtpFromName('Coach Cunha');
-                      setSmtpFromEmail('sgpmcunha@gmail.com');
-                    }}
-                    className="px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-neutral-800 text-xs font-bold text-slate-700 dark:text-neutral-300 hover:bg-amber-500/20 hover:text-amber-500 transition cursor-pointer"
-                  >
-                    📧 Gmail (Porta 465 SSL)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSmtpHost('smtp.office365.com');
-                      setSmtpPort('587');
-                      setSmtpSecure(false);
-                      setSmtpFromName('Coach Cunha');
-                    }}
-                    className="px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-neutral-800 text-xs font-bold text-slate-700 dark:text-neutral-300 hover:bg-amber-500/20 hover:text-amber-500 transition cursor-pointer"
-                  >
-                    📬 Outlook / Office365 (Porta 587)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSmtpHost('smtp-relay.brevo.com');
-                      setSmtpPort('587');
-                      setSmtpSecure(false);
-                      setSmtpFromName('Coach Cunha');
-                    }}
-                    className="px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-neutral-800 text-xs font-bold text-slate-700 dark:text-neutral-300 hover:bg-amber-500/20 hover:text-amber-500 transition cursor-pointer"
-                  >
-                    ⚡ Brevo / Sendinblue (Porta 587)
+              {authError && (
+                <div className="p-3.5 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-700 dark:text-red-300 text-xs font-semibold flex items-center gap-2.5 animate-fade-in">
+                  <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                  <span className="flex-1">{authError}</span>
+                  <button onClick={() => setAuthError(null)} className="p-1 cursor-pointer">
+                    <X className="w-3.5 h-3.5 opacity-60 hover:opacity-100" />
                   </button>
                 </div>
+              )}
+
+              {/* Info Callout */}
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-slate-700 dark:text-neutral-300 leading-relaxed">
+                <p>
+                  <strong>💡 Como funciona este fluxo:</strong> Quando adicionas o e-mail do aluno nesta lista, ele pode aceder ao formulário de registo e definir a sua própria palavra-passe. O programa inicia na versão bloqueada e tu (Coach) poderás desbloquear o acesso completo sem necessidade de pagamentos ou gateways.
+                </p>
               </div>
 
-              {/* SMTP Credentials Form */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div>
-                  <label className="block text-slate-700 dark:text-neutral-300 font-bold mb-1">
-                    Servidor SMTP (Host):
-                  </label>
-                  <input
-                    type="text"
-                    value={smtpHost}
-                    onChange={(e) => setSmtpHost(e.target.value)}
-                    placeholder="Ex: smtp.gmail.com"
-                    className="w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-amber-500"
-                  />
-                </div>
+              {/* Authorize Form */}
+              <form onSubmit={handleAuthorizeStudentSubmit} className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 space-y-3">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-neutral-200 block">
+                  Adicionar E-mail de Aluno com Acesso Autorizado
+                </span>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-700 dark:text-neutral-300 font-bold mb-1">
-                      Porta:
+                    <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300 mb-1">
+                      Endereço de E-mail *
+                    </label>
+                    <div className="relative">
+                      <Mail className="w-4 h-4 text-slate-400 dark:text-neutral-500 absolute left-3 top-2.5" />
+                      <input
+                        type="email"
+                        required
+                        value={newAuthEmail}
+                        onChange={(e) => setNewAuthEmail(e.target.value)}
+                        placeholder="ex: aluno@gmail.com"
+                        className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300 mb-1">
+                      Nome do Aluno (Opcional)
                     </label>
                     <input
-                      type="number"
-                      value={smtpPort}
-                      onChange={(e) => setSmtpPort(e.target.value)}
-                      placeholder="465 ou 587"
-                      className="w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-amber-500"
+                      type="text"
+                      value={newAuthName}
+                      onChange={(e) => setNewAuthName(e.target.value)}
+                      placeholder="ex: João Silva"
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-amber-500"
                     />
                   </div>
-                  <div>
-                    <label className="block text-slate-700 dark:text-neutral-300 font-bold mb-1">
-                      SSL / TLS Seguro:
-                    </label>
-                    <select
-                      value={smtpSecure ? 'true' : 'false'}
-                      onChange={(e) => setSmtpSecure(e.target.value === 'true')}
-                      className="w-full py-2 px-2.5 rounded-xl bg-slate-100 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-amber-500"
-                    >
-                      <option value="true">Sim (SSL - 465)</option>
-                      <option value="false">Não (TLS - 587/25)</option>
-                    </select>
-                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-slate-700 dark:text-neutral-300 font-bold mb-1">
-                    Utilizador / E-mail de Envio (User):
-                  </label>
-                  <input
-                    type="text"
-                    value={smtpUser}
-                    onChange={(e) => setSmtpUser(e.target.value)}
-                    placeholder="Ex: seu-email@gmail.com"
-                    className="w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
-                  />
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    disabled={isAuthorizingStudent || !newAuthEmail.trim()}
+                    className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs transition cursor-pointer shadow-md disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>{isAuthorizingStudent ? 'A autorizar...' : 'Autorizar Aluno'}</span>
+                  </button>
                 </div>
+              </form>
 
-                <div>
-                  <label className="block text-slate-700 dark:text-neutral-300 font-bold mb-1">
-                    Palavra-passe / Palavra-passe de Aplicação:
-                  </label>
-                  <input
-                    type="password"
-                    value={smtpPass}
-                    onChange={(e) => setSmtpPass(e.target.value)}
-                    placeholder="Ex: abcd efgh ijkl mnop"
-                    className="w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-amber-500"
-                  />
-                  <span className="text-[10px] text-slate-500 dark:text-neutral-400 mt-0.5 block">
-                    No Gmail, utiliza a "Palavra-passe de aplicação" gerada na segurança da Google.
+              {/* List of Authorized Students */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-neutral-300">
+                    E-mails Autorizados no Sistema ({authorizedStudents.length})
+                  </h4>
+                  <span className="text-[10px] text-slate-400">
+                    Podem criar conta imediatamente
                   </span>
                 </div>
 
-                <div>
-                  <label className="block text-slate-700 dark:text-neutral-300 font-bold mb-1">
-                    Nome do Remetente (From Name):
-                  </label>
-                  <input
-                    type="text"
-                    value={smtpFromName}
-                    onChange={(e) => setSmtpFromName(e.target.value)}
-                    placeholder="Coach Cunha"
-                    className="w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
+                {authorizedStudents.length === 0 ? (
+                  <div className="p-6 text-center rounded-2xl bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 text-slate-400 text-xs">
+                    Nenhum e-mail de aluno autorizado até ao momento. Usa o formulário acima para autorizar o primeiro aluno.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100 dark:divide-neutral-800/80 rounded-2xl border border-slate-200 dark:border-neutral-800 overflow-hidden bg-slate-50/50 dark:bg-neutral-950/50 max-h-56 overflow-y-auto">
+                    {authorizedStudents.map((authStudent) => {
+                      const hasAccount = allClients.some(c => c.email.toLowerCase() === authStudent.email.toLowerCase());
+                      return (
+                        <div key={authStudent.email} className="p-3 flex items-center justify-between gap-3 hover:bg-slate-100/60 dark:hover:bg-neutral-900/60 transition">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-extrabold text-xs text-slate-900 dark:text-white truncate">
+                                {authStudent.name || authStudent.email}
+                              </span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                hasAccount
+                                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
+                                  : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25'
+                              }`}>
+                                {hasAccount ? '✓ Conta Criada' : '⏳ Aguarda Criação'}
+                              </span>
+                            </div>
+                            <span className="text-[11px] text-slate-500 dark:text-neutral-400 block truncate font-mono mt-0.5">
+                              {authStudent.email}
+                            </span>
+                          </div>
 
-                <div>
-                  <label className="block text-slate-700 dark:text-neutral-300 font-bold mb-1">
-                    E-mail do Remetente (From Email):
-                  </label>
-                  <input
-                    type="email"
-                    value={smtpFromEmail}
-                    onChange={(e) => setSmtpFromEmail(e.target.value)}
-                    placeholder="noreply@coachcunha.pt"
-                    className="w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-neutral-800">
-                <span className="text-[11px] text-slate-500 dark:text-neutral-400">
-                  Podes testar a autenticação antes de guardar as configurações.
-                </span>
-
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <button
-                    type="button"
-                    disabled={isTestingSmtp || !smtpHost || !smtpUser}
-                    onClick={handleTestSmtp}
-                    className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-slate-200 dark:bg-neutral-800 text-slate-800 dark:text-neutral-200 text-xs font-bold hover:bg-slate-300 dark:hover:bg-neutral-700 transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>{isTestingSmtp ? 'A testar conexão...' : 'Testar Conexão'}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={isSavingSmtp || !smtpHost || !smtpUser}
-                    onClick={handleSaveSmtp}
-                    className="flex-1 sm:flex-none px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-black transition cursor-pointer shadow-md disabled:opacity-50 flex items-center justify-center gap-1.5"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>{isSavingSmtp ? 'A Guardar...' : 'Guardar Configurações'}</span>
-                  </button>
-                </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleRevokeStudent(authStudent.email)}
+                              className="px-2.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 border border-red-500/20 hover:border-red-500/40 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                              title="Revogar autorização deste e-mail"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Revogar</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}

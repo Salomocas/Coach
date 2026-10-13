@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Bell, 
   ChevronDown, 
@@ -17,7 +17,8 @@ import {
   ArrowLeft,
   Settings,
   Image as ImageIcon,
-  Shield
+  Shield,
+  UserPlus
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
@@ -57,7 +58,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateClient, onNavigateCoac
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<'theme' | 'logo' | 'security' | 'profile'>('theme');
+  const [settingsTab, setSettingsTab] = useState<'theme' | 'logo' | 'security' | 'profile' | 'database' | 'authorizations'>('theme');
+
+  // Allow other views (such as CoachAthletesView) to open Settings directly to a specific tab
+  useEffect(() => {
+    const handleOpenSettings = (e: any) => {
+      if (e.detail?.tab) {
+        setSettingsTab(e.detail.tab);
+      }
+      setIsSettingsOpen(true);
+    };
+    window.addEventListener('open-settings', handleOpenSettings);
+    return () => window.removeEventListener('open-settings', handleOpenSettings);
+  }, []);
 
   return (
     <>
@@ -338,6 +351,26 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateClient, onNavigateCoac
                         <span className="text-[10px] text-slate-500 dark:text-neutral-400 block">Logótipo oficial, aparência visual e conta</span>
                       </div>
                     </button>
+
+                    {/* Autorizar Novos Alunos (Configuração do Coach) */}
+                    {(isCoach || isAdmin) && (
+                      <button
+                        onClick={() => {
+                          setSettingsTab('authorizations');
+                          setIsSettingsOpen(true);
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-200 hover:text-slate-900 dark:hover:text-white flex items-center gap-2.5 transition group cursor-pointer"
+                      >
+                        <div className="w-6 h-6 rounded-md bg-amber-500/10 text-amber-500 flex items-center justify-center group-hover:bg-amber-500 group-hover:text-black transition">
+                          <UserPlus className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <span className="font-semibold text-xs block text-slate-800 dark:text-neutral-200 group-hover:text-slate-900 dark:group-hover:text-white">Autorizar Alunos</span>
+                          <span className="text-[10px] text-slate-500 dark:text-neutral-400 block">Adicionar e-mails de novos alunos</span>
+                        </div>
+                      </button>
+                    )}
 
                     {/* Edit Profile Action */}
                     <button

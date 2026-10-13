@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   TrendingUp, 
   Calendar, 
@@ -26,7 +26,8 @@ import {
   Clock,
   MessageSquare,
   Edit2,
-  RotateCcw
+  RotateCcw,
+  Check
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -77,6 +78,30 @@ export const CoachReportsView: React.FC = () => {
   // Multi-selection of metrics to plot/cross:
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['weight', 'bodyFat']);
   
+  // Metrics Dropdown State & Ref
+  const [isMetricsDropdownOpen, setIsMetricsDropdownOpen] = useState(false);
+  const metricsDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Hidden/deleted metric keys (allows eliminating standard metrics as well as custom metrics):
+  const [hiddenMetricKeys, setHiddenMetricKeys] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('coach_hidden_metrics');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (metricsDropdownRef.current && !metricsDropdownRef.current.contains(e.target as Node)) {
+        setIsMetricsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Date interval: purely 'De [date] até [date]' (shortcuts removed as requested)
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
@@ -253,7 +278,7 @@ export const CoachReportsView: React.FC = () => {
     };
   }, [athleteMealLogs, currentNutritionPlan]);
 
-  // Combined metric configs: standard + client's custom metrics
+  // Combined metric configs: standard (filtered if hidden) + client's custom metrics
   const combinedMetricConfigs: MetricConfig[] = useMemo(() => {
     const customList: MetricConfig[] = customMetrics.map(cm => ({
       key: cm.id,
@@ -262,8 +287,15 @@ export const CoachReportsView: React.FC = () => {
       color: cm.color || '#f97316',
       isCustom: true
     }));
-    return [...STANDARD_METRICS, ...customList];
-  }, [customMetrics]);
+    return [...STANDARD_METRICS, ...customList].filter(m => !hiddenMetricKeys.includes(m.key));
+  }, [customMetrics, hiddenMetricKeys]);
+
+  // Metric configs sorted alphabetically by label for the dropdown filter
+  const alphabeticalMetrics = useMemo(() => {
+    return [...combinedMetricConfigs].sort((a, b) => 
+      a.label.localeCompare(b.label, 'pt', { sensitivity: 'base' })
+    );
+  }, [combinedMetricConfigs]);
 
   // Client logs chronologically sorted
   const sortedLogs = useMemo(() => {
@@ -508,8 +540,28 @@ export const CoachReportsView: React.FC = () => {
     if (window.confirm(`Tem a certeza que deseja remover a métrica "${name}" deste aluno?`)) {
       await deleteCustomMetric(metricId);
       setSelectedMetrics(prev => prev.filter(k => k !== metricId));
-      setFeedback(`Métrica "${name}" removida.`);
+      setFeedback(`Métrica "${name}" removida com sucesso.`);
       setTimeout(() => setFeedback(null), 3000);
+    }
+  };
+
+  // Handle Delete ANY metric (Custom or Standard) with delete icon
+  const handleDeleteMetric = async (metric: MetricConfig) => {
+    if (metric.isCustom) {
+      await handleDeleteCustomMetric(metric.key, metric.label);
+    } else {
+      if (window.confirm(`Tem a certeza que deseja eliminar a métrica "${metric.label}" dos relatórios?`)) {
+        const updated = [...hiddenMetricKeys, metric.key];
+        setHiddenMetricKeys(updated);
+        try {
+          localStorage.setItem('coach_hidden_metrics', JSON.stringify(updated));
+        } catch (e) {
+          console.warn('Could not save hidden metrics', e);
+        }
+        setSelectedMetrics(prev => prev.filter(k => k !== metric.key));
+        setFeedback(`Métrica "${metric.label}" eliminada dos relatórios.`);
+        setTimeout(() => setFeedback(null), 3000);
+      }
     }
   };
 
@@ -589,7 +641,7 @@ export const CoachReportsView: React.FC = () => {
 
           {/* Action Buttons: Contextual by Tab */}
           <div className="flex items-center gap-2 self-end sm:self-auto sm:mt-4">
-            {reportTab === 'evolution' ? (
+            {reportTab === 'evolution' && (
               <>
                 <button
                   onClick={() => {
@@ -611,17 +663,6 @@ export const CoachReportsView: React.FC = () => {
                   <span>Registar Avaliação</span>
                 </button>
               </>
-            ) : (
-              <button
-                onClick={() => {
-                  setMenuFilterOnlyMissed(false);
-                  setIsMenuModalOpen(true);
-                }}
-                className="px-4 py-2.5 rounded-xl bg-amber-500 text-black font-extrabold text-xs hover:bg-amber-400 transition flex items-center gap-2 shadow-md shadow-amber-500/10 cursor-pointer"
-              >
-                <Eye className="w-4 h-4" />
-                <span>Auditar Cardápio Semanal</span>
-              </button>
             )}
           </div>
         </div>
@@ -827,54 +868,143 @@ export const CoachReportsView: React.FC = () => {
                     <BarChart2 className="w-4 h-4 text-amber-500" />
                     Evolução Gráfica no Tempo
                   </h3>
-                  <p className="text-xs text-slate-400 dark:text-neutral-500">
-                    Clica em qualquer métrica para mostrar ou cruzar linhas no gráfico
-                  </p>
                 </div>
 
-                {/* Metric multi-select buttons: standard + student custom metrics */}
-                <div className="flex items-center gap-1.5 flex-wrap self-start sm:self-auto">
-                  <span className="text-[11px] font-bold text-slate-400 mr-1 hidden sm:inline">Parâmetros:</span>
-                  {combinedMetricConfigs.map((m) => {
-                    const isSelected = selectedMetrics.includes(m.key);
-                    return (
-                      <button
-                        key={m.key}
-                        onClick={() => toggleMetric(m.key)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm ${
-                          isSelected
-                            ? 'text-black font-extrabold ring-2 ring-black/20'
-                            : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
-                        }`}
-                        style={isSelected ? { backgroundColor: m.color } : {}}
-                        title={isSelected ? `Ocultar linha de ${m.label}` : `Mostrar e cruzar linha de ${m.label}`}
-                      >
-                        <span 
-                          className={`w-2 h-2 rounded-full ${isSelected ? 'bg-black' : ''}`} 
-                          style={!isSelected ? { backgroundColor: m.color } : {}}
-                        />
-                        <span>{m.label} ({m.unit})</span>
-                        {m.isCustom && (
-                          <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${isSelected ? 'bg-black/20 text-black' : 'bg-slate-200 dark:bg-neutral-700 text-slate-500'}`}>
-                            aluno
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
+                {/* Metric Filters Dropdown (Alphabetically Organized with Delete Icons) */}
+                <div className="relative" ref={metricsDropdownRef}>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsMetricsDropdownOpen(!isMetricsDropdownOpen)}
+                      className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-slate-800 dark:text-neutral-200 font-bold text-xs transition flex items-center gap-2 cursor-pointer shadow-sm border border-slate-200 dark:border-neutral-700"
+                      title="Filtrar e gerir métricas a apresentar no gráfico"
+                    >
+                      <Sliders className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Filtros de Métricas ({selectedMetrics.length} {selectedMetrics.length === 1 ? 'ativa' : 'ativas'})</span>
+                      <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isMetricsDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
 
-                  {/* Botão para definir nova métrica para este aluno */}
-                  <button
-                    onClick={() => {
-                      handleCancelEditMetric();
-                      setIsCustomMetricModalOpen(true);
-                    }}
-                    className="px-2.5 py-1.5 rounded-xl border border-dashed border-amber-500/50 hover:border-amber-500 text-amber-600 dark:text-amber-400 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
-                    title="Criar nova métrica específica para este aluno"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Nova Métrica</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleCancelEditMetric();
+                        setIsCustomMetricModalOpen(true);
+                      }}
+                      className="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer border border-amber-500/30"
+                      title="Adicionar nova métrica específica para este aluno"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Nova Métrica</span>
+                    </button>
+                  </div>
+
+                  {/* Dropdown Menu (Alphabetical list with delete icons) */}
+                  {isMetricsDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl shadow-2xl z-30 p-2.5 text-xs animate-fade-in">
+                      <div className="px-2 py-1.5 border-b border-slate-100 dark:border-neutral-800 flex items-center justify-between">
+                        <span className="font-extrabold text-[11px] uppercase tracking-wider text-slate-400 dark:text-neutral-500">
+                          Métricas (Ordem Alfabética)
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {alphabeticalMetrics.length} disponíveis
+                        </span>
+                      </div>
+
+                      <div className="max-h-60 overflow-y-auto space-y-1 py-1.5 scrollbar-thin">
+                        {alphabeticalMetrics.map((m) => {
+                          const isSelected = selectedMetrics.includes(m.key);
+                          return (
+                            <div
+                              key={m.key}
+                              className={`flex items-center justify-between p-2 rounded-xl transition ${
+                                isSelected 
+                                  ? 'bg-amber-500/10 dark:bg-amber-500/15' 
+                                  : 'hover:bg-slate-50 dark:hover:bg-neutral-800/60'
+                              }`}
+                            >
+                              {/* Toggle metric on chart */}
+                              <button
+                                type="button"
+                                onClick={() => toggleMetric(m.key)}
+                                className="flex items-center gap-2.5 flex-1 text-left cursor-pointer min-w-0"
+                                title={isSelected ? `Ocultar linha de ${m.label}` : `Mostrar linha de ${m.label}`}
+                              >
+                                <div 
+                                  className={`w-4 h-4 rounded-md border flex items-center justify-center transition shrink-0 ${
+                                    isSelected 
+                                      ? 'bg-amber-500 border-amber-500 text-black' 
+                                      : 'border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950'
+                                  }`}
+                                >
+                                  {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                                </div>
+
+                                <span 
+                                  className="w-2.5 h-2.5 rounded-full shrink-0" 
+                                  style={{ backgroundColor: m.color }} 
+                                />
+
+                                <span className="font-bold text-slate-800 dark:text-neutral-200 truncate">
+                                  {m.label} <span className="font-mono text-slate-400 text-[10px]">({m.unit})</span>
+                                </span>
+
+                                {m.isCustom && (
+                                  <span className="text-[9px] px-1 py-0.2 rounded font-mono bg-slate-200 dark:bg-neutral-800 text-slate-500 shrink-0">
+                                    personalizada
+                                  </span>
+                                )}
+                              </button>
+
+                              {/* Delete Metric Icon */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteMetric(m);
+                                }}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition cursor-pointer shrink-0 ml-1"
+                                title={`Eliminar métrica "${m.label}"`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-100 dark:border-neutral-800 flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsMetricsDropdownOpen(false);
+                            handleCancelEditMetric();
+                            setIsCustomMetricModalOpen(true);
+                          }}
+                          className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer py-1"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Adicionar nova métrica</span>
+                        </button>
+
+                        {hiddenMetricKeys.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setHiddenMetricKeys([]);
+                              try {
+                                localStorage.removeItem('coach_hidden_metrics');
+                              } catch {}
+                              setFeedback('Métricas originais repostas com sucesso.');
+                              setTimeout(() => setFeedback(null), 3000);
+                            }}
+                            className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-neutral-300 underline cursor-pointer"
+                          >
+                            Repor eliminadas ({hiddenMetricKeys.length})
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1097,28 +1227,6 @@ export const CoachReportsView: React.FC = () => {
                   </p>
                 </div>
               </div>
-
-              {/* Action button to inspect weekly menu */}
-              <button
-                onClick={() => {
-                  setMenuFilterOnlyMissed(false);
-                  setIsMenuModalOpen(true);
-                }}
-                className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm ${
-                  dietStats.missedCount > 0
-                    ? 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30'
-                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-slate-800 dark:text-white'
-                }`}
-                title="Abrir cardápio semanal para auditar refeições e motivos das faltas"
-              >
-                <Eye className="w-4 h-4 text-amber-500" />
-                <span>Visualizar Cardápio Semanal</span>
-                {dietStats.missedCount > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-black text-[10px] font-black">
-                    {dietStats.missedCount} {dietStats.missedCount === 1 ? 'falta' : 'faltas'}
-                  </span>
-                )}
-              </button>
             </div>
 
             {/* 3 Main Compliance Stats */}
