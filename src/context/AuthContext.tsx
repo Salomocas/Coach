@@ -220,6 +220,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return [];
   });
 
+  // Sync authorized students and password reset requests from Firestore on startup
+  useEffect(() => {
+    const fetchPublicAuthConfig = async () => {
+      try {
+        const authSnap = await getDocs(collection(db, 'authorized_students'));
+        if (!authSnap.empty) {
+          const remoteAuth = authSnap.docs.map(d => d.data() as AuthorizedStudent);
+          setAuthorizedStudents(prev => {
+            const map = new Map<string, AuthorizedStudent>();
+            prev.forEach(a => map.set(a.email.toLowerCase(), a));
+            remoteAuth.forEach(a => map.set(a.email.toLowerCase(), a));
+            return Array.from(map.values());
+          });
+        }
+      } catch (errAuth) {}
+
+      try {
+        const resetSnap = await getDocs(collection(db, 'password_reset_requests'));
+        if (!resetSnap.empty) {
+          const remoteResets = resetSnap.docs.map(d => d.data() as PasswordResetRequest);
+          setPasswordResetRequests(remoteResets);
+        }
+      } catch (errReset) {}
+    };
+
+    fetchPublicAuthConfig();
+  }, []);
+
   // Monitor Firebase Auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
@@ -697,17 +725,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error('A palavra-passe deve conter pelo menos 6 caracteres.');
     }
 
-    // CRITICAL: Check if coach authorized this email!
-    if (!isEmailAuthorized(emailLower)) {
-      setLoading(false);
-      throw new Error('⛔ Acesso não autorizado: O teu e-mail ainda não foi registado pelo Coach Sérgio Cunha. Pede ao teu treinador para adicionar o teu e-mail à aplicação para poderes criar conta.');
+    // CRITICAL: Check if coach authorized this email in the database!
+    let isAuthorized = isEmailAuthorized(emailLower);
+    let matchedAuth = authorizedStudents.find(s => s.email.toLowerCase() === emailLower);
+
+    if (!isAuthorized) {
+      try {
+        const snap = await getDoc(doc(db, 'authorized_students', emailLower));
+        if (snap.exists()) {
+          isAuthorized = true;
+          matchedAuth = snap.data() as AuthorizedStudent;
+          setAuthorizedStudents(prev => [...prev.filter(s => s.email.toLowerCase() !== emailLower), matchedAuth!]);
+        }
+      } catch (e) {
+        console.warn('Could not check Firestore authorization:', e);
+      }
     }
 
-    // Check if already registered
-    const existing = allClients.find(c => c.email.toLowerCase() === emailLower && c.emailVerified);
-    if (existing) {
+    if (!isAuthorized) {
       setLoading(false);
-      throw new Error('Já existe uma conta ativa associada a este e-mail. Clica em "Entrar" ou recupera a palavra-passe.');
+      throw new Error(`O seu e-mail não existe. O endereço "${emailLower}" ainda não foi pré-aprovado nem adicionado à base de dados pelo Coach Sérgio Cunha.`);
+    }
+
+    // Check if user already set custom password
+    const existingSavedCred = localStorage.getItem(`user_cred_${emailLower}`);
+    if (matchedAuth?.isRegistered && existingSavedCred) {
+      setLoading(false);
+      throw new Error('Já existe uma palavra-passe definida para este e-mail. Clica em "Entrar" ou em "Recuperar" se te esqueceste da senha.');
     }
 
     try {
@@ -741,10 +785,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // "E tem acesso ao programa (versao bloqueada) so desbloqueia sem pagar."
       // Newly created athlete accounts start in BLOCKED status (expired / not manually unlocked).
       // The Coach unlocks them in the dashboard without paying!
+      const studentDisplayName = (name || matchedAuth?.name || (isCoachAccount ? 'Coach Sérgio Cunha' : isAdminAccount ? 'Administrador Master' : 'Novo Aluno')).trim();
+
       const newProfile: UserProfile = {
         uid: fbUid,
         email: email.trim(),
-        displayName: name || (isCoachAccount ? 'Coach Sérgio Cunha' : isAdminAccount ? 'Administrador Master' : 'Novo Aluno'),
+        displayName: studentDisplayName,
         role: assignedRole,
         subscriptionStatus: (isCoachAccount || isAdminAccount) ? 'active' : 'expired',
         subscriptionPlan: (isCoachAccount || isAdminAccount) ? 'Coach Master' : 'Aguardar Ativação pelo Coach',
@@ -762,10 +808,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await setDoc(doc(db, 'users', newProfile.uid), newProfile);
       } catch (e) {}
 
+      try {
+        await updateDoc(doc(db, 'authorized_students', emailLower), {
+          isRegistered: true,
+          registeredAt: new Date().toISOString()
+        });
+      } catch (e) {}
+
       if (assignedRole === 'client') {
         saveClients([newProfile, ...allClients.filter(c => c.uid !== newProfile.uid && c.email.toLowerCase() !== emailLower)]);
         // Mark as registered in authorized list
-        setAuthorizedStudents(prev => prev.map(s => s.email.toLowerCase() === emailLower ? { ...s, isRegistered: true } : s));
+        setAuthorizedStudents(prev => {
+          const nextList = prev.map(s => s.email.toLowerCase() === emailLower ? { ...s, isRegistered: true } : s);
+          try {
+            localStorage.setItem('coach_authorized_students', JSON.stringify(nextList));
+          } catch (e) {}
+          return nextList;
+        });
       }
 
       setRootUser(newProfile);

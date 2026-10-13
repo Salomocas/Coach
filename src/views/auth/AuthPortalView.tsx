@@ -21,16 +21,20 @@ import {
   Eye,
   EyeOff,
   Image as ImageIcon,
+  UserPlus,
   X
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useLogo } from '../../context/LogoContext';
 import { CoachCunhaLogo } from '../../components/CoachCunhaLogo';
+import { db, doc, getDoc } from '../../firebase';
 
 export const AuthPortalView: React.FC = () => {
   const { 
     loginWithEmail, 
+    registerWithEmail,
+    isEmailAuthorized,
     requestPasswordReset,
     completePasswordReset,
     checkPasswordResetRequest,
@@ -53,7 +57,7 @@ export const AuthPortalView: React.FC = () => {
   const [isSavingBranding, setIsSavingBranding] = useState(false);
   const quickFileInputRef = useRef<HTMLInputElement>(null);
 
-  const [mode, setMode] = useState<'login' | 'forgot' | 'reset-password'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'reset-password'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -98,6 +102,39 @@ export const AuthPortalView: React.FC = () => {
       }
     }
 
+    if (mode === 'register') {
+      if (!emailTrim || !emailTrim.includes('@')) {
+        setError('Por favor introduz o endereço de e-mail que o Coach adicionou à base de dados.');
+        return;
+      }
+      if (password.length < 6) {
+        setError('A palavra-passe deve conter pelo menos 6 caracteres.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('As palavras-passe introduzidas não coincidem. Confirma se são idênticas.');
+        return;
+      }
+
+      // Check if email is authorized before proceeding
+      let isAuthorized = isEmailAuthorized(emailTrim);
+      if (!isAuthorized) {
+        try {
+          const snap = await getDoc(doc(db, 'authorized_students', emailTrim));
+          if (snap.exists()) {
+            isAuthorized = true;
+          }
+        } catch (e) {
+          console.warn('Firestore authorization check notice:', e);
+        }
+      }
+
+      if (!isAuthorized) {
+        setError(`O seu e-mail não existe. O endereço "${emailTrim}" não foi pré-aprovado nem adicionado à base de dados pelo Coach Sérgio Cunha.`);
+        return;
+      }
+    }
+
     if (mode === 'reset-password') {
       if (password.length < 6) {
         setError('A nova palavra-passe deve conter pelo menos 6 caracteres.');
@@ -123,6 +160,9 @@ export const AuthPortalView: React.FC = () => {
         }
 
         await loginWithEmail(emailTrim, password, rememberMe);
+      } else if (mode === 'register') {
+        await registerWithEmail(emailTrim, password, '', rememberMe);
+        setSuccessMessage('🎉 Registo concluído com sucesso! Bem-vindo ao programa do Coach Sérgio Cunha.');
       } else if (mode === 'forgot') {
         const res = await requestPasswordReset(emailTrim);
         setSuccessMessage(
@@ -135,8 +175,12 @@ export const AuthPortalView: React.FC = () => {
     } catch (err: any) {
       console.error('Auth error in portal:', err);
       let msg = 'Ocorreu um erro no processamento. Por favor tenta novamente.';
-      if (err?.code === 'auth/user-not-found' || err?.code === 'auth/wrong-password' || err?.code === 'auth/invalid-credential') {
-        msg = 'E-mail ou palavra-passe incorretos. Verifica os dados ou solicita recuperação ao Coach.';
+      if (err?.message?.includes('não existe')) {
+        msg = err.message;
+      } else if (err?.code === 'auth/user-not-found' || err?.code === 'auth/wrong-password' || err?.code === 'auth/invalid-credential') {
+        msg = mode === 'register' 
+          ? `O seu e-mail não existe. O endereço "${emailTrim}" não foi pré-aprovado nem adicionado à base de dados pelo Coach Sérgio Cunha.`
+          : 'E-mail ou palavra-passe incorretos. Verifica os dados ou solicita recuperação ao Coach.';
       } else if (err?.code === 'auth/email-already-in-use') {
         msg = 'Já existe uma conta associada a este e-mail. Clica em "Entrar" ou recupera a palavra-passe.';
       } else if (err?.code === 'auth/weak-password') {
@@ -247,9 +291,9 @@ export const AuthPortalView: React.FC = () => {
         {/* Authentication Box */}
         <div className="w-full bg-neutral-900/90 border border-neutral-800/90 rounded-3xl p-6 sm:p-7 shadow-2xl backdrop-blur-xl transition-all">
           
-          {/* Tabs: Only Entrar and Recuperar */}
+          {/* Tabs: Entrar, Registo, Recuperar */}
           {mode !== 'reset-password' ? (
-            <div className="grid grid-cols-2 p-1 mb-5 bg-neutral-950/80 rounded-2xl border border-neutral-800 text-xs font-bold">
+            <div className="grid grid-cols-3 p-1 mb-5 bg-neutral-950/80 rounded-2xl border border-neutral-800 text-xs font-bold">
               <button
                 type="button"
                 onClick={() => { setMode('login'); setError(null); setSuccessMessage(null); }}
@@ -260,6 +304,17 @@ export const AuthPortalView: React.FC = () => {
                 }`}
               >
                 Entrar
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMode('register'); setError(null); setSuccessMessage(null); }}
+                className={`py-2 rounded-xl transition cursor-pointer ${
+                  mode === 'register'
+                    ? 'bg-amber-500 text-black shadow-md'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                Registo
               </button>
               <button
                 type="button"
@@ -306,6 +361,19 @@ export const AuthPortalView: React.FC = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-3.5">
+            {/* Mode: register notification */}
+            {mode === 'register' && (
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-1.5 mb-2 animate-fade-in">
+                <div className="flex items-center gap-2 text-amber-400 font-bold">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Registo de Aluno (E-mail Autorizado)</span>
+                </div>
+                <p className="text-[11px] text-neutral-300 leading-relaxed">
+                  Insere o teu e-mail (que já foi previamente adicionado à base de dados pelo <strong className="text-amber-400">Coach Sérgio Cunha</strong>) e escolhe a tua palavra-passe. O teu e-mail tem de constar na base de dados do Coach para ser validado e poderes iniciar.
+                </p>
+              </div>
+            )}
+
             {/* Mode: reset-password notification */}
             {mode === 'reset-password' && (
               <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-2 mb-2">
@@ -319,11 +387,11 @@ export const AuthPortalView: React.FC = () => {
               </div>
             )}
 
-            {/* Email (Login, Forgot) */}
+            {/* Email (Login, Register, Forgot) */}
             {mode !== 'reset-password' && (
               <div>
                 <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                  E-mail
+                  {mode === 'register' ? 'E-mail do Aluno (adicionado pelo Coach)' : 'E-mail'}
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
@@ -345,11 +413,11 @@ export const AuthPortalView: React.FC = () => {
               </div>
             )}
 
-            {/* Password (Login, Reset-password) */}
+            {/* Password (Login, Register, Reset-password) */}
             {mode !== 'forgot' && (
               <div>
                 <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                  {mode === 'reset-password' ? 'Nova Palavra-passe' : 'Palavra-passe'}
+                  {mode === 'reset-password' ? 'Nova Palavra-passe' : mode === 'register' ? 'Escolhe a Palavra-passe' : 'Palavra-passe'}
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
@@ -365,11 +433,11 @@ export const AuthPortalView: React.FC = () => {
               </div>
             )}
 
-            {/* Confirm Password (Reset-password only) */}
-            {mode === 'reset-password' && (
+            {/* Confirm Password (Register or Reset-password) */}
+            {(mode === 'register' || mode === 'reset-password') && (
               <div>
                 <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                  Confirmar Nova Palavra-passe
+                  {mode === 'register' ? 'Confirmar Palavra-passe' : 'Confirmar Nova Palavra-passe'}
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
@@ -378,15 +446,20 @@ export const AuthPortalView: React.FC = () => {
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repete a palavra-passe"
+                    placeholder="Repete a palavra-passe para confirmar"
                     className="w-full pl-10 pr-3 py-2.5 text-xs rounded-xl bg-neutral-950 border border-neutral-800 focus:outline-none focus:border-amber-500 text-white transition"
                   />
                 </div>
+                {mode === 'register' && password && confirmPassword && (
+                  <p className={`text-[11px] mt-1 font-semibold ${password === confirmPassword ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {password === confirmPassword ? '✓ As palavras-passe coincidem' : '✕ As palavras-passe não são iguais'}
+                  </p>
+                )}
               </div>
             )}
 
-            {/* Manter Sessão Iniciada Checkbox (Login) */}
-            {mode === 'login' && (
+            {/* Manter Sessão Iniciada Checkbox (Login / Register) */}
+            {(mode === 'login' || mode === 'register') && (
               <div className="flex items-center justify-between text-xs py-1">
                 <label className="flex items-center gap-2 cursor-pointer select-none text-neutral-300 hover:text-white transition">
                   <input
@@ -397,13 +470,15 @@ export const AuthPortalView: React.FC = () => {
                   />
                   <span className="font-medium text-[11px] sm:text-xs">Manter sessão iniciada</span>
                 </label>
-                <button
-                  type="button"
-                  onClick={() => { setMode('forgot'); setError(null); }}
-                  className="text-[11px] sm:text-xs text-amber-400 hover:underline font-semibold cursor-pointer"
-                >
-                  Esqueceste-te da senha?
-                </button>
+                {mode === 'login' && (
+                  <button
+                    type="button"
+                    onClick={() => { setMode('forgot'); setError(null); }}
+                    className="text-[11px] sm:text-xs text-amber-400 hover:underline font-semibold cursor-pointer"
+                  >
+                    Esqueceste-te da senha?
+                  </button>
+                )}
               </div>
             )}
 
@@ -422,6 +497,11 @@ export const AuthPortalView: React.FC = () => {
                 <>
                   <span>Entrar no Programa</span>
                   <ArrowRight className="w-4 h-4" />
+                </>
+              ) : mode === 'register' ? (
+                <>
+                  <UserPlus className="w-4 h-4" />
+                  <span>Registar & Iniciar Sessão</span>
                 </>
               ) : mode === 'forgot' ? (
                 <>
@@ -449,16 +529,55 @@ export const AuthPortalView: React.FC = () => {
             )}
           </form>
 
-          {/* Mode Switcher footer text */}
-          {mode === 'forgot' && (
-            <div className="mt-4 text-center">
+          {/* Mode Switcher footer texts */}
+          {mode === 'login' && (
+            <div className="mt-4 text-center text-xs text-neutral-400">
+              Novo aluno com e-mail adicionado pelo Coach?{' '}
               <button
                 type="button"
-                onClick={() => { setMode('login'); setError(null); }}
-                className="text-xs font-bold text-amber-400 hover:underline cursor-pointer"
+                onClick={() => { setMode('register'); setError(null); setSuccessMessage(null); }}
+                className="text-amber-400 hover:underline font-bold cursor-pointer"
               >
-                ← Voltar ao Início de Sessão
+                Regista a tua senha aqui
               </button>
+            </div>
+          )}
+
+          {mode === 'register' && (
+            <div className="mt-4 text-center text-xs text-neutral-400">
+              Já tens uma palavra-passe definida?{' '}
+              <button
+                type="button"
+                onClick={() => { setMode('login'); setError(null); setSuccessMessage(null); }}
+                className="text-amber-400 hover:underline font-bold cursor-pointer"
+              >
+                Clica aqui para Entrar
+              </button>
+            </div>
+          )}
+
+          {mode === 'forgot' && (
+            <div className="mt-4 text-center text-xs text-neutral-400 space-y-1.5">
+              <div>
+                Lembraste-te da palavra-passe?{' '}
+                <button
+                  type="button"
+                  onClick={() => { setMode('login'); setError(null); }}
+                  className="text-amber-400 hover:underline font-bold cursor-pointer"
+                >
+                  Voltar ao Início de Sessão
+                </button>
+              </div>
+              <div>
+                Primeiro acesso de aluno?{' '}
+                <button
+                  type="button"
+                  onClick={() => { setMode('register'); setError(null); }}
+                  className="text-neutral-300 hover:underline cursor-pointer"
+                >
+                  Registar Palavra-passe
+                </button>
+              </div>
             </div>
           )}
 
